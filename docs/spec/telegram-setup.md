@@ -55,9 +55,24 @@ npm run dev            # в одном терминале, порт обычно
 npx localtunnel --port 5173     # даст https://xxx.loca.lt
 ```
 
-Если локальный туннель капризничает, есть варианты надёжнее:
-- `cloudflared tunnel --url http://localhost:5173` (бинарник с GitHub Releases);
-- задеплоить ветку на Cloudflare Pages или Vercel — получаешь постоянный HTTPS-адрес, его удобно держать в кнопке меню.
+Лучше сразу cloudflared — без промежуточной страницы с IP и стабильнее:
+
+```bash
+npx cloudflared tunnel --url http://localhost:5173
+```
+
+Если `npx cloudflared` не ставится, скачать бинарник напрямую (Mac на Apple Silicon):
+
+```bash
+mkdir -p ~/bin
+curl -L -o /tmp/cloudflared.tgz https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-arm64.tgz
+tar -xzf /tmp/cloudflared.tgz -C ~/bin
+~/bin/cloudflared tunnel --url http://localhost:5173
+```
+
+На выходе — строка вида `https://<случайные-слова>.trycloudflare.com`. Адрес живёт, пока открыт терминал, и меняется при перезапуске.
+
+Ещё вариант — задеплоить на Cloudflare Pages или Vercel: постоянный HTTPS-адрес, его удобно держать в кнопке меню.
 
 Обновляя кнопку меню: `/setmenubutton` каждый раз заново, либо через Bot API `setChatMenuButton`. После смены URL на iOS иногда нужно закрыть чат с ботом и открыть заново.
 
@@ -72,6 +87,26 @@ window.Telegram?.WebApp?.initData ? 'tg: ok' : 'tg: браузер'
 В браузере — `браузер`, в Телеграме — `ok`. Если в Телеграме `браузер`, значит страница открылась не как Mini App (обычно потому, что URL не HTTPS или кнопка меню ведёт не туда).
 
 ---
+
+## Если не открывается
+
+**`HTTP ERROR 408` или бескрайняя загрузка через туннель.** Почти всегда это Vite: он отдаёт 403 на запросы с чужим `Host` (домен туннеля), а localtunnel показывает это как 408. В `vite.config.ts` должно быть:
+
+```ts
+server: { host: true, allowedHosts: true },
+```
+
+Проверить, что это именно оно:
+
+```bash
+curl -o /dev/null -w '%{http_code}\n' -H 'Host: <твой-домен>.loca.lt' http://localhost:5173/
+```
+
+`403` — вот она, причина. `200` — Vite в порядке, смотреть дальше.
+
+**Страница «You are about to visit…» с просьбой ввести IP** — защита localtunnel. Ввести IP, который она показывает, один раз в 7 дней на один IP.
+
+**Пустая страница в Телеграме.** Проверить, что живы оба терминала: `npm run dev` и туннель. Адрес туннеля меняется при каждом перезапуске — тогда обновить его в меню-кнопке бота.
 
 ## Чего пока не делать
 
