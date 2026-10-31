@@ -1,0 +1,38 @@
+export type Artist = {
+  id: string
+  name: string
+  aliases: string[]
+}
+
+export type Polarity = 'paper' | 'dark'
+
+export type ReleaseType = 'album' | 'ep' | 'single'
+
+export type Track = {
+  id: string
+  title: string
+  /** секунды */
+  duration: number
+  artistId: string
+  releaseId: string
+  audio: string
+  lrc?: string
+}
+
+export type Release = {
+  id: string
+  title: string
+  artistId: string
+  year: number
+  type: ReleaseType
+  palette: { mode: Polarity; accent: string }
+  cover: string
+  coverSmall: string
+  tracks: Track[]
+}
+
+export type Catalog = {
+  artist: Artist
+  releases: Release[]
+  generatedAt: string
+}

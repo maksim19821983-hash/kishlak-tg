@@ -1,0 +1,95 @@
+/* Токены — ровно из docs/design/system.md, п. 2–6. Новое — сначала туда. */
+
+:root {
+  /* п. 2 — бумага */
+  --paper-bg: #ede7dc;
+  --paper-surface: #e4ddd0;
+  --paper-ink: #131211;
+  --paper-dim: rgba(19, 18, 17, 0.55);
+  --paper-line: rgba(19, 18, 17, 0.18);
+
+  /* п. 2 — чернота */
+  --dark-bg: #0b0b0c;
+  --dark-surface: #17171a;
+  --dark-ink: #f1ede6;
+  --dark-dim: rgba(241, 237, 230, 0.55);
+  --dark-line: rgba(241, 237, 230, 0.16);
+
+  /* п. 2 — акцент, фолбэк медь; реальные значения ставит полярность (фаза 2) */
+  --accent: #8c5334;
+  --accent-text: #8c5334;
+
+  /* п. 3 — типографика */
+  --font-display: 'Unbounded', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --text-display-frame: 52px;
+  --text-display-l: 36px;
+  --text-h1: 32px;
+  --text-h2: 20px;
+  --text-body: 14px;
+  --text-body-strong: 13px;
+  --text-mono-label: 10.5px;
+  --text-mono-num: 11px;
+  --text-lyric: 13.5px;
+  --text-lyric-active: 16px;
+
+  /* п. 4 — сетка */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-14: 56px;
+  --screen-pad: 24px;
+
+  --radius-cassette: 10px;
+  --radius-sleeve: 12px;
+  --radius-plate: 16px;
+  --radius-sheet: 24px;
+  --radius-pill: 999px;
+
+  --shadow-cassette: 0 18px 30px -18px rgba(0, 0, 0, 0.55);
+
+  /* п. 5 — зерно */
+  --grain-opacity: 0.05;
+
+  /* п. 6 — движение */
+  --dur-micro: 120ms;
+  --dur-ui: 200ms;
+  --dur-theme: 420ms;
+  --dur-tape: 600ms;
+  --dur-lyric: 300ms;
+}
+
+/* п. 1 — полярность: атрибут ставит стор, классы — для локальных вставок */
+[data-polarity='paper'],
+.paper {
+  --bg: var(--paper-bg);
+  --surface: var(--paper-surface);
+  --ink: var(--paper-ink);
+  --dim: var(--paper-dim);
+  --line: var(--paper-line);
+}
+
+[data-polarity='dark'],
+.dark {
+  --bg: var(--dark-bg);
+  --surface: var(--dark-surface);
+  --ink: var(--dark-ink);
+  --dim: var(--dark-dim);
+  --line: var(--dark-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-micro: 0ms;
+    --dur-ui: 0ms;
+    --dur-theme: 0ms;
+    --dur-tape: 0ms;
+    --dur-lyric: 0ms;
+  }
+}
