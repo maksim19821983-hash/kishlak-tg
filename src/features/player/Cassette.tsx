@@ -65,8 +65,12 @@ export function Cassette({ side, onTap, releaseTitle, polarity }: Props) {
   }, [playing])
 
   const pol = polarity ?? (document.documentElement.dataset.polarity as 'paper' | 'dark' | undefined) ?? 'paper'
-  const bodyBg = pol === 'paper' ? '#1E1C1A' : '#E4DED2'
-  const windowBg = pol === 'paper' ? 'rgba(0,0,0,.6)' : 'rgba(255,255,255,.15)'
+  // тёмный корпус → кремовый текст; светлый корпус → тёмный текст
+  const bodyBg      = pol === 'paper' ? '#1E1C1A' : '#E4DED2'
+  const bodyInk     = pol === 'paper' ? '#F1EDE6' : '#131211'
+  const bodyDim     = pol === 'paper' ? 'rgba(241,237,230,.55)' : 'rgba(19,18,17,.55)'
+  const bodyBorder  = pol === 'paper' ? 'rgba(241,237,230,.2)' : 'rgba(19,18,17,.2)'
+  const windowBg    = pol === 'paper' ? 'rgba(0,0,0,.45)' : 'rgba(19,18,17,.12)'
   const releaseLabel = releaseTitle ? `КИШЛАК — ${releaseTitle.toUpperCase()}` : 'КИШЛАК'
 
   return (
@@ -87,22 +91,22 @@ export function Cassette({ side, onTap, releaseTitle, polarity }: Props) {
       {[['top-3 left-3'], ['top-3 right-3'], ['bottom-3 left-3'], ['bottom-3 right-3']].map(([cls], i) => (
         <div
           key={i}
-          className={`absolute ${cls} rounded-full border border-line`}
-          style={{ width: 5, height: 5, background: 'var(--bg)' }}
+          className={`absolute ${cls} rounded-full`}
+          style={{ width: 5, height: 5, background: bodyDim, border: `1px solid ${bodyBorder}` }}
         />
       ))}
 
       {/* лейбл сверху */}
       <div className="flex items-center justify-between mb-2">
         <span
-          className="font-mono uppercase text-ink"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1 }}
+          className="font-mono uppercase"
+          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyInk }}
         >
           {releaseLabel}
         </span>
         <span
-          className="font-mono uppercase text-dim"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1 }}
+          className="font-mono uppercase"
+          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyDim }}
         >
           №0341
         </span>
@@ -110,11 +114,12 @@ export function Cassette({ side, onTap, releaseTitle, polarity }: Props) {
 
       {/* окно с катушками */}
       <div
-        className="relative flex items-center justify-center gap-0 overflow-hidden border border-line"
+        className="relative flex items-center justify-center gap-0 overflow-hidden"
         style={{
           height: 92,
           borderRadius: 6,
           background: windowBg,
+          border: `1px solid ${bodyBorder}`,
         }}
       >
         {/* левая катушка */}
@@ -129,9 +134,9 @@ export function Cassette({ side, onTap, releaseTitle, polarity }: Props) {
           <div
             ref={leftHubRef}
             className="absolute rounded-full"
-            style={{ width: 20, height: 20, background: 'var(--bg)' }}
+            style={{ width: 20, height: 20, background: bodyBg }}
           >
-            <Spokes />
+            <Spokes color={bodyDim} />
           </div>
         </div>
 
@@ -152,9 +157,9 @@ export function Cassette({ side, onTap, releaseTitle, polarity }: Props) {
           <div
             ref={rightHubRef}
             className="absolute rounded-full"
-            style={{ width: 20, height: 20, background: 'var(--bg)' }}
+            style={{ width: 20, height: 20, background: bodyBg }}
           >
-            <Spokes />
+            <Spokes color={bodyDim} />
           </div>
         </div>
       </div>
@@ -162,14 +167,14 @@ export function Cassette({ side, onTap, releaseTitle, polarity }: Props) {
       {/* нижняя подпись */}
       <div className="flex items-center justify-between mt-2">
         <span
-          className="font-mono uppercase text-ink"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1 }}
+          className="font-mono uppercase"
+          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyInk }}
         >
           СТОРОНА {side}
         </span>
         <span
-          className="font-mono uppercase text-dim"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1 }}
+          className="font-mono uppercase"
+          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyDim }}
         >
           C-60 · 2026
         </span>
@@ -178,7 +183,7 @@ export function Cassette({ side, onTap, releaseTitle, polarity }: Props) {
   )
 }
 
-function Spokes() {
+function Spokes({ color }: { color: string }) {
   return (
     <>
       {[0, 60, 120].map((deg) => (
@@ -190,7 +195,7 @@ function Spokes() {
             style={{
               width: 1.5,
               height: 14,
-              background: 'var(--surface)',
+              background: color,
               borderRadius: 1,
               transform: `rotate(${deg}deg)`,
             }}

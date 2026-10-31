@@ -89,14 +89,14 @@ export function InsertScreen({ lyrics, currentTime, queue, release, onSeek, onCl
           {/* строки лирики */}
           <div className="mb-6">
             {lyrics.lines.map((line, i) => {
-              if (line.isBlank) return <div key={i} style={{ height: 17 }} />
+              if (line.isBlank) return <div key={i} style={{ height: 34 }} />
 
               if (line.isSection) {
                 return (
                   <p
                     key={i}
-                    className="font-mono text-mono-label text-dim uppercase mt-4 mb-1"
-                    style={{ letterSpacing: '0.16em' }}
+                    className="font-mono text-mono-label text-dim uppercase"
+                    style={{ letterSpacing: '0.16em', marginTop: 24, marginBottom: 4 }}
                   >
                     {line.text}
                   </p>
@@ -119,7 +119,7 @@ export function InsertScreen({ lyrics, currentTime, queue, release, onSeek, onCl
                       ? 'font-display text-lyric-active text-[var(--accent-text)]'
                       : 'font-mono text-lyric text-dim'
                   }`}
-                  style={{ lineHeight: '34px', minHeight: 34 }}
+                  style={{ lineHeight: '34px' }}
                 >
                   {line.text}
                 </button>

@@ -34,21 +34,19 @@ export function Sleeve({ release, progress, listenedCount, onClick }: Props) {
           draggable={false}
         />
 
-        {/* цветная копия: открывается снизу по прогрессу */}
-        {p > 0 && (
-          <div
-            className="absolute inset-0 overflow-hidden"
-            style={{ clipPath: `inset(${(1 - p) * 100}% 0 0 0)` }}
-          >
-            <img
-              src={release.cover}
-              alt={release.title}
-              className="w-full h-full object-cover"
-              style={{ filter: `saturate(${0.2 + 0.8 * p})` }}
-              draggable={false}
-            />
-          </div>
-        )}
+        {/* цветная копия: открывается снизу по прогрессу; saturate(.3) при p=0 — узнаваема */}
+        <div
+          className="absolute inset-0 overflow-hidden"
+          style={{ clipPath: `inset(${(1 - p) * 100}% 0 0 0)` }}
+        >
+          <img
+            src={release.cover}
+            alt={release.title}
+            className="w-full h-full object-cover"
+            style={{ filter: `saturate(${0.3 + 0.7 * p})` }}
+            draggable={false}
+          />
+        </div>
 
         {/* штамп при p=1 */}
         {p >= 1 && (

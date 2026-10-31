@@ -200,9 +200,9 @@ export function PlayerScreen({ onClose }: Props) {
         </p>
       </div>
 
-      {/* превью текста / кнопка вкладыша */}
-      <div className="px-screen mt-3 shrink-0">
-        {hasLyrics ? (
+      {/* превью текста / кнопка вкладыша — только если есть LRC */}
+      {hasLyrics && (
+        <div className="px-screen mt-3 shrink-0">
           <button
             onClick={() => setInsertOpen(true)}
             className="w-full text-left"
@@ -220,14 +220,8 @@ export function PlayerScreen({ onClose }: Props) {
             )}
             {!nextLine && <p className="font-mono text-lyric text-dim line-clamp-1 opacity-0">·</p>}
           </button>
-        ) : (
-          <>
-            <p className="font-mono text-lyric text-dim line-clamp-1">···</p>
-            <p className="font-display text-lyric-active text-[var(--accent-text)] line-clamp-1">···</p>
-            <p className="font-mono text-lyric text-dim line-clamp-1">···</p>
-          </>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* дальше на кассете */}
       {nextTracks.length > 0 && (
