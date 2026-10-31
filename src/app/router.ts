@@ -10,6 +10,7 @@ export type Route =
   | { name: 'profile' }
   | { name: 'search' }
   | { name: 'spike' }
+  | { name: 'polarity' }
 
 export function parse(pathname: string): Route | null {
   const parts = pathname.split('/').filter(Boolean)
@@ -20,6 +21,7 @@ export function parse(pathname: string): Route | null {
   if (id !== undefined) return null
   if (head === 'player' || head === 'insert' || head === 'profile' || head === 'search') return { name: head }
   if (head === 'spike' && import.meta.env.DEV) return { name: 'spike' }
+  if (head === 'polarity' && import.meta.env.DEV) return { name: 'polarity' }
   return null
 }
 
