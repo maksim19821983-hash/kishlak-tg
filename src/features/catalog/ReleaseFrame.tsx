@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Release } from '@/data/types'
 import { useAudioStore } from '@/audio/store'
-import { back } from '@/app/router'
-import { disableVerticalSwipes } from '@/app/telegram'
+import { showBackButton, hideBackButton, disableVerticalSwipes } from '@/app/telegram'
 
 const SCRIM = 'linear-gradient(to bottom, rgba(0,0,0,.5), transparent 22%, rgba(0,0,0,.4) 55%, rgba(0,0,0,.94) 90%)'
 
@@ -31,12 +30,13 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay }: Props)
   // BackButton Telegram
   useEffect(() => {
     disableVerticalSwipes()
-    return () => {}
+    showBackButton(close)
+    return () => hideBackButton()
   }, [])
 
   const close = () => {
     setClosing(true)
-    setTimeout(() => { onClose(); back() }, 300)
+    setTimeout(() => { onClose() }, 300)
   }
 
   const onTouchStart = (e: React.TouchEvent) => {
