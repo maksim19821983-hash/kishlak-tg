@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Кишлак Player — макеты</title>
+<style>
+@font-face{font-family:'U';src:url('assets/unbounded.ttf') format('truetype');font-weight:200 900}
+@font-face{font-family:'M';src:url('assets/jbmono-regular.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'M';src:url('assets/jbmono-medium.ttf') format('truetype');font-weight:500}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0B0B0C;color:#F1EDE6;font-family:'U',sans-serif;padding:48px 40px 80px}
+h1{font-weight:800;font-size:40px;line-height:42px;letter-spacing:-.03em}
+.sub{font-family:'M';font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#6B6660;margin-top:12px}
+h2{font-weight:700;font-size:20px;margin:56px 0 6px;letter-spacing:-.01em}
+.note{font-family:'M';font-size:12px;line-height:20px;color:#8A857F;max-width:760px;margin-bottom:18px}
+.grid{display:flex;gap:24px;flex-wrap:wrap}
+figure{width:640px}
+figure.portrait{width:380px}
+figure img{width:100%;border-radius:12px;border:1px solid rgba(241,237,230,.12);display:block}
+figcaption{font-family:'M';font-size:10.5px;letter-spacing:.12em;color:#8A857F;margin-top:8px;line-height:16px}
+figcaption b{color:#C9C3BB;font-weight:500}
+a{color:inherit}
+.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.links a{font-family:'M';font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#C9C3BB;text-decoration:none;border:1px solid rgba(241,237,230,.18);border-radius:999px;padding:9px 14px}
+.links a:hover{border-color:rgba(241,237,230,.45)}
+.rule{height:1px;background:rgba(241,237,230,.12);margin:44px 0 0}
+</style>
+</head>
+<body>
+<h1>КИШЛАК · ПЛЕЕР</h1>
+<div class="sub">макеты · 31 октября 2026</div>
+
+<h2>Финальная связка</h2>
+<div class="note">Каталог → тап по обложке → кадр релиза → «Слушать» → кассета. Полярность (бумага / чернота) выбирает обложка.</div>
+<div class="grid">
+  <figure><a href="preview/flow.png"><img src="preview/flow.png"></a><figcaption><b>3 экрана:</b> каталог, кадр релиза, кассета</figcaption></figure>
+  <figure><a href="sheet-flow.html"><img src="preview/flow.png"></a><figcaption><b>Живой макет</b> — открыть в браузере</figcaption></figure>
+</div>
+<div class="links"><a href="sheet-flow.html">Открыть живой макет</a></div>
+
+<div class="rule"></div>
+<h2>Кассета</h2>
+<div class="note">Светлая обложка — бумага, тёмная — чернота. Катушки, лента, номер экземпляра, вкладыш с текстом.</div>
+<div class="grid">
+  <figure><img src="preview/v2.png"><figcaption><b>Плеер:</b> кассета, светлая и тёмная сцена, вкладыш</figcaption></figure>
+</div>
+
+<div class="rule"></div>
+<h2>Мини-плеер</h2>
+<div class="note">Принято: A «Лента» как основа, C «Тихий» на главной. B «Торец кассеты» уходит в скины.</div>
+<div class="grid">
+  <figure><img src="preview/mini.png"><figcaption><b>Три варианта:</b> лента / торец кассеты / тихий</figcaption></figure>
+</div>
+
+<div class="rule"></div>
+<h2>Фан-слой</h2>
+<div class="note">Обложки проявляются по прослушанному. Профиль: титул, цифры, топ-релиз — из шапки каталога.</div>
+<div class="grid">
+  <figure><img src="preview/fan.png"><figcaption><b>Каталог с проявлением + экран профиля</b></figcaption></figure>
+  <figure class="portrait"><img src="preview/card.png"><figcaption><b>Карточка шаринга</b> 1080×1350 — после запуска</figcaption></figure>
+</div>
+
+<div class="rule"></div>
+<h2>Ранние варианты</h2>
+<div class="note">Печать и Сцена — из них выросли каталог и кадр релиза. Коллекция и Зин — идеи и отказ.</div>
+<div class="grid">
+  <figure><img src="preview/c-a.png"><figcaption><b>Печать</b> — принят как основа каталога</figcaption></figure>
+  <figure><img src="preview/c-b.png"><figcaption><b>Сцена</b> — вошла в кадр релиза</figcaption></figure>
+  <figure><img src="preview/v3.png"><figcaption><b>Коллекция</b> — идея на второй слой</figcaption></figure>
+  <figure><img src="preview/c-c.png"><figcaption><b>Зин</b> — отклонён</figcaption></figure>
+</div>
+
+<div class="rule"></div>
+<div class="note" style="margin-top:20px">Документация: <code>docs/MAP.md</code> — карта проекта, <code>docs/design/</code> — система и экраны, <code>docs/spec/fan-layer.md</code> — фан-слой.</div>
+</body>
+</html>

@@ -9,3 +9,8 @@ build/
 coverage/
 .vite/
 refs/
+tools/.venv/
+content/
+public/audio/
+vdps/
+public/content/
