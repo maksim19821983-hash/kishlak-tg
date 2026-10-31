@@ -24,13 +24,13 @@ export function Sleeve({ release, progress, listenedCount, onClick }: Props) {
         style={{ WebkitTapHighlightColor: 'transparent' }}
         aria-label={`${release.title}, открыть кадр релиза`}
       >
-        {/* серая подложка */}
+        {/* базовый слой: при p=0 saturate(0.3) — узнаваем, к p=1 уходит в серый под цветной копией */}
         <img
           src={release.cover}
           alt=""
           aria-hidden
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: 'grayscale(1)' }}
+          style={{ filter: `saturate(${0.3 * (1 - p)})` }}
           draggable={false}
         />
 

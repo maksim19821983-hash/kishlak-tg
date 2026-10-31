@@ -86,9 +86,12 @@ export function PlayerScreen({ onClose }: Props) {
   // live lyrics: 3 lines around active (only text lines, not sections)
   const textLines = lyrics ? lyrics.lines.filter((l) => !l.isSection) : []
   const activeIdx = lyrics ? getActiveLineIndex(textLines, currentTime) : -1
-  const prevLine = activeIdx > 0 ? textLines[activeIdx - 1] : null
-  const activeLine = activeIdx >= 0 ? textLines[activeIdx] : null
-  const nextLine = activeIdx >= 0 && activeIdx < textLines.length - 1 ? textLines[activeIdx + 1] : null
+  const prevLine = activeIdx > 0 ? textLines[activeIdx - 1] ?? null : null
+  const activeLine = activeIdx >= 0 ? textLines[activeIdx] ?? null : null
+  // до первой строки: показываем первую непустую как «следующую»
+  const nextLine = activeIdx === -1
+    ? (textLines.find((l) => !l.isBlank) ?? null)
+    : (activeIdx < textLines.length - 1 ? textLines[activeIdx + 1] ?? null : null)
   const hasLyrics = lyrics !== null && textLines.length > 0
 
   const handleTap = () => {
