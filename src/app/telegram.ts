@@ -1,6 +1,31 @@
 // Единственное место, где разрешено трогать window.Telegram.
 
+import { useSyncExternalStore } from 'react'
 import type { WebApp } from 'telegram-web-app'
+
+export type TelegramStatus = 'loading' | 'ready' | 'browser'
+
+let status: TelegramStatus = 'loading'
+const statusListeners = new Set<() => void>()
+
+function setStatus(next: TelegramStatus): void {
+  status = next
+  statusListeners.forEach((fn) => fn())
+}
+
+export function getTelegramStatus(): TelegramStatus {
+  return status
+}
+
+export function subscribeTelegramStatus(fn: () => void): () => void {
+  statusListeners.add(fn)
+  return () => statusListeners.delete(fn)
+}
+
+/** Реактивный статус: SDK грузится лениво, поэтому проверять его один раз при импорте нельзя. */
+export function useTelegramStatus(): TelegramStatus {
+  return useSyncExternalStore(subscribeTelegramStatus, getTelegramStatus)
+}
 
 export function safeTelegram(): WebApp | null {
   try {
@@ -76,6 +101,9 @@ export function ensureSdk(timeoutMs = 3000): Promise<void> {
 export function initTelegram(): void {
   // Рендер не ждёт SDK: инициализация догоняет, когда скрипт загрузится или отвалится.
   void ensureSdk().then(() => {
+    const app = safeTelegram()
+    setStatus(app ? 'ready' : 'browser')
+    if (!app) return
     ready()
     expand()
     disableVerticalSwipes()

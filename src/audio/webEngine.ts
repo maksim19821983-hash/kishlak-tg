@@ -49,11 +49,6 @@ class WebAudioEngine implements AudioPort {
       pause: () => this.pause(),
       prev: () => this.prev(),
       next: () => this.next('user'),
-      seek: (t) => {
-        this.el.currentTime = t
-        updatePositionState(this.el)
-        this.patch({ currentTime: t })
-      },
     })
     // RAF запускается только во время воспроизведения (см. bindAudioEvents)
   }
@@ -273,12 +268,11 @@ class WebAudioEngine implements AudioPort {
   }
 
   private patch(partial: Partial<PlaybackState>): void {
+    // Важные изменения (трек, статус, очередь) отдаём сразу: троттлинг нужен только
+    // для currentTime в RAF, иначе первые события после старта молча теряются.
     this.state = { ...this.state, ...partial }
-    const now = performance.now()
-    if (now - this.lastNotify >= 250) {
-      this.lastNotify = now
-      this.notify()
-    }
+    this.lastNotify = performance.now()
+    this.notify()
   }
 
   private notify(): void {

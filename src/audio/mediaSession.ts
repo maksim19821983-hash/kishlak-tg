@@ -13,6 +13,9 @@ export function updateMediaMetadata(track: Track, coverUrl: string): void {
 
 export function updatePositionState(el: HTMLAudioElement): void {
   if (!('mediaSession' in navigator)) return
+  // ?ms=nopos — диагностика: отключить setPositionState, чтобы проверить,
+  // не оно ли вытесняет кнопки переключения треков на локскрине.
+  if (window.location.hash.includes('ms=nopos')) return
   const dur = el.duration
   if (!isFinite(dur) || dur <= 0) return
   try {
@@ -29,31 +32,30 @@ type Handlers = {
   pause(): void
   prev(): void
   next(): void
-  seek(t: number): void
 }
 
 export function setupMediaSession(handlers: Handlers): () => void {
   if (!('mediaSession' in navigator)) return () => {}
   try {
+    // Явно сбрасываем перемотку: некоторые клиенты iOS активируют её по умолчанию,
+    // и тогда кнопки previoustrack/nexttrack заменяются на ±10 с.
+    navigator.mediaSession.setActionHandler('seekbackward', null)
+    navigator.mediaSession.setActionHandler('seekforward', null)
     navigator.mediaSession.setActionHandler('play', handlers.play)
     navigator.mediaSession.setActionHandler('pause', handlers.pause)
     navigator.mediaSession.setActionHandler('previoustrack', handlers.prev)
     navigator.mediaSession.setActionHandler('nexttrack', handlers.next)
-    navigator.mediaSession.setActionHandler('seekto', (d) => {
-      handlers.seek(d.seekTime ?? 0)
-    })
-    // seekbackward/seekforward намеренно не регистрируем:
-    // их регистрация вытесняет кнопки previoustrack/nexttrack на локскрине.
   } catch {}
 
   return () => {
     if (!('mediaSession' in navigator)) return
     try {
+      navigator.mediaSession.setActionHandler('seekbackward', null)
+      navigator.mediaSession.setActionHandler('seekforward', null)
       navigator.mediaSession.setActionHandler('play', null)
       navigator.mediaSession.setActionHandler('pause', null)
       navigator.mediaSession.setActionHandler('previoustrack', null)
       navigator.mediaSession.setActionHandler('nexttrack', null)
-      navigator.mediaSession.setActionHandler('seekto', null)
     } catch {}
   }
 }
