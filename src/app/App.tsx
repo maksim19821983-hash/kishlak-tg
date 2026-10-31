@@ -1,26 +1,31 @@
 import { useEffect, useState } from 'react'
 import { Grain } from '@/ui/Grain'
-import { Routes } from './routes'
 import { usePolarity } from '@/features/polarity/usePolarity'
-import { PlayerScreen } from '@/features/player/PlayerScreen'
-import { TapeStrip } from '@/ui/TapeStrip'
-import { useAudioStore } from '@/audio/store'
-import { usePathname } from './router'
+import { PlayerTab } from '@/features/player/PlayerTab'
+import { CatalogScreen } from '@/features/catalog/CatalogScreen'
+import { ProfileScreen } from '@/features/fan/ProfileScreen'
+import { TabBar, type Tab } from '@/ui/TabBar'
 import { initTrackListener } from '@/features/fan/trackListen'
 import { applyDeepLink } from './deepLink'
+import { getWebEngine } from '@/audio/webEngine'
+import { getState } from '@/features/fan/state'
+import type { Release } from '@/data/types'
+import { SpikePage } from '@/features/spike/SpikePage'
+import { PolarityPage } from '@/features/polarity/PolarityPage'
 
-function useShowTape(): boolean {
-  const track = useAudioStore((s) => s.track)
-  const status = useAudioStore((s) => s.status)
-  const pathname = usePathname()
-  const isMain = pathname === '/' || pathname === '/catalog'
-  return !isMain && !!track && status !== 'idle'
+function firstUnlistenedIndex(release: Release): number {
+  const fanState = getState()
+  for (let i = 0; i < release.tracks.length; i++) {
+    const t = release.tracks[i]!
+    const stat = fanState.tracks[t.id]
+    if (!stat || stat.listens === 0) return i
+  }
+  return 0
 }
 
 export function App() {
   usePolarity()
-  const [playerOpen, setPlayerOpen] = useState(false)
-  const showTape = useShowTape()
+  const [activeTab, setActiveTab] = useState<Tab>('player')
 
   useEffect(() => {
     const cleanup = initTrackListener()
@@ -29,18 +34,55 @@ export function App() {
 
   useEffect(() => {
     applyDeepLink().then(({ openPlayer }) => {
-      if (openPlayer) setPlayerOpen(true)
+      if (openPlayer) setActiveTab('player')
     }).catch(() => {})
   }, [])
 
+  // dev-only route overrides
+  if (import.meta.env.DEV) {
+    const p = window.location.pathname
+    if (p === '/spike') return <SpikePage />
+    if (p === '/polarity') return <PolarityPage />
+  }
+
+  const handlePlayRelease = (release: Release) => {
+    if (release.tracks.length === 0) return
+    const startIdx = firstUnlistenedIndex(release)
+    const engine = getWebEngine()
+    engine.load(release.tracks, startIdx)
+    engine.play()
+    setActiveTab('player')
+  }
+
   return (
-    <div className="min-h-[100dvh] bg-bg text-ink transition-colors duration-theme flex flex-col">
-      <div className="flex-1 min-h-0">
-        <Routes onOpenPlayer={() => setPlayerOpen(true)} />
-      </div>
-      {showTape && <TapeStrip onOpen={() => setPlayerOpen(true)} />}
+    <div
+      className="bg-bg text-ink transition-colors duration-theme flex flex-col"
+      style={{ height: '100dvh' }}
+    >
       <Grain />
-      {playerOpen && <PlayerScreen onClose={() => setPlayerOpen(false)} />}
+
+      <div className="flex-1 min-h-0 relative">
+        <div
+          className="absolute inset-0"
+          style={{ display: activeTab === 'player' ? undefined : 'none' }}
+        >
+          <PlayerTab />
+        </div>
+        <div
+          className="absolute inset-0 overflow-y-auto overscroll-contain"
+          style={{ display: activeTab === 'catalog' ? undefined : 'none' }}
+        >
+          <CatalogScreen onPlayRelease={handlePlayRelease} />
+        </div>
+        <div
+          className="absolute inset-0 overflow-y-auto overscroll-contain"
+          style={{ display: activeTab === 'profile' ? undefined : 'none' }}
+        >
+          <ProfileScreen asTab />
+        </div>
+      </div>
+
+      <TabBar active={activeTab} onSelect={setActiveTab} />
     </div>
   )
 }

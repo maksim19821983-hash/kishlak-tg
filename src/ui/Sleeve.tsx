@@ -5,6 +5,7 @@ type Props = {
   progress: number // 0..1
   listenedCount: number
   onClick: () => void
+  onPlay?: () => void
 }
 
 function fmt(sec: number): string {
@@ -12,7 +13,7 @@ function fmt(sec: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export function Sleeve({ release, progress, listenedCount, onClick }: Props) {
+export function Sleeve({ release, progress, listenedCount, onClick, onPlay }: Props) {
   const p = Math.max(0, Math.min(1, progress))
   const totalDuration = release.tracks.reduce((a, t) => a + t.duration, 0)
 
@@ -61,7 +62,19 @@ export function Sleeve({ release, progress, listenedCount, onClick }: Props) {
       </button>
 
       <div>
-        <p className="font-display text-body-strong line-clamp-2 text-ink">{release.title}</p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-display text-body-strong line-clamp-2 text-ink flex-1">{release.title}</p>
+          {onPlay && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onPlay() }}
+              className="shrink-0 flex items-center justify-center border border-line rounded-full text-ink"
+              style={{ width: 44, height: 44, fontSize: 14 }}
+              aria-label={`Слушать ${release.title}`}
+            >
+              ▶
+            </button>
+          )}
+        </div>
         <p className="font-mono text-mono-num text-dim">
           {release.year} · {listenedCount}/{release.tracks.length} · {fmt(totalDuration)}
         </p>

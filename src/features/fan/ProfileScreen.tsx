@@ -26,9 +26,9 @@ function fmtDate(ts: number): string {
     .replace('.', '')
 }
 
-type Props = { onClose: () => void }
+type Props = { onClose?: () => void; asTab?: boolean }
 
-export function ProfileScreen({ onClose }: Props) {
+export function ProfileScreen({ onClose, asTab }: Props) {
   const [stats, setStats] = useState<FanStats | null>(null)
   const [topRelease, setTopRelease] = useState<Release | null>(null)
 
@@ -72,21 +72,28 @@ export function ProfileScreen({ onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-bg flex flex-col overflow-hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className={asTab ? 'flex flex-col min-h-full' : 'fixed inset-0 z-50 bg-bg flex flex-col overflow-hidden'}
+      style={asTab
+        ? { paddingTop: 'env(safe-area-inset-top)', paddingBottom: 0 }
+        : { paddingBottom: 'env(safe-area-inset-bottom)' }
+      }
     >
       {/* шапка */}
       <div
         className="flex items-center justify-between px-screen shrink-0"
-        style={{ height: 40, marginTop: 'env(safe-area-inset-top)' }}
+        style={{ height: 40 }}
       >
-        <button
-          onClick={onClose}
-          className="font-mono text-mono-label uppercase text-dim min-h-[44px] pr-4"
-          aria-label="Назад"
-        >
-          ↓
-        </button>
+        {!asTab && onClose ? (
+          <button
+            onClick={onClose}
+            className="font-mono text-mono-label uppercase text-dim min-h-[44px] pr-4"
+            aria-label="Назад"
+          >
+            ↓
+          </button>
+        ) : (
+          <span className="font-mono text-mono-label uppercase text-ink">КИШЛАК</span>
+        )}
         <span className="font-mono text-mono-label uppercase text-ink">ПРОФИЛЬ</span>
         {since
           ? <span className="font-mono text-mono-num text-dim">{since}</span>
