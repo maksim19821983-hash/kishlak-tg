@@ -7,6 +7,7 @@ import { TapeStrip } from '@/ui/TapeStrip'
 import { useAudioStore } from '@/audio/store'
 import { usePathname } from './router'
 import { initTrackListener } from '@/features/fan/trackListen'
+import { applyDeepLink } from './deepLink'
 
 function useShowTape(): boolean {
   const track = useAudioStore((s) => s.track)
@@ -24,6 +25,12 @@ export function App() {
   useEffect(() => {
     const cleanup = initTrackListener()
     return cleanup
+  }, [])
+
+  useEffect(() => {
+    applyDeepLink().then(({ openPlayer }) => {
+      if (openPlayer) setPlayerOpen(true)
+    }).catch(() => {})
   }, [])
 
   return (

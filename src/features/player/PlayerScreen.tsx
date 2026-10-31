@@ -3,10 +3,12 @@ import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Release } from '@/data/types'
 import { Cassette } from './Cassette'
-import { HapticFeedback } from '@/app/telegram'
+import { haptic } from '@/app/telegram'
 import { parseLrc, getActiveLineIndex } from '@/features/lyrics/parseLrc'
 import type { Lyrics } from '@/features/lyrics/parseLrc'
 import { InsertScreen } from '@/features/lyrics/InsertScreen'
+import { shareTrack } from '@/features/telegram/share'
+import { SupportSheet } from '@/features/telegram/SupportSheet'
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60), s = Math.floor(sec % 60)
@@ -41,6 +43,7 @@ export function PlayerScreen({ onClose }: Props) {
   const [flipDeg, setFlipDeg] = useState(0)
   const [flipping, setFlipping] = useState(false)
   const [insertOpen, setInsertOpen] = useState(false)
+  const [supportOpen, setSupportOpen] = useState(false)
   const [lyrics, setLyrics] = useState<Lyrics | null>(null)
   const [polarity, setPolarity] = useState<'paper' | 'dark'>('paper')
 
@@ -97,7 +100,7 @@ export function PlayerScreen({ onClose }: Props) {
   const hasLyrics = lyrics !== null && textLines.length > 0
 
   const handleTap = () => {
-    try { HapticFeedback.impactOccurred('medium') } catch {}
+    haptic('medium')
     toggle()
   }
 
@@ -109,7 +112,7 @@ export function PlayerScreen({ onClose }: Props) {
       setSide((s) => s === 'A' ? 'B' : 'A')
       setFlipping(false)
     }, 600)
-    try { HapticFeedback.impactOccurred('medium') } catch {}
+    haptic('medium')
   }
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -117,7 +120,7 @@ export function PlayerScreen({ onClose }: Props) {
     const rect = e.currentTarget.getBoundingClientRect()
     const ratio = (e.clientX - rect.left) / rect.width
     seek(ratio * duration)
-    try { HapticFeedback.impactOccurred('light') } catch {}
+    haptic('light')
   }
 
   const handleProgressDragMove = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -131,7 +134,7 @@ export function PlayerScreen({ onClose }: Props) {
   const handleProgressDragEnd = () => {
     if (dragging) {
       seek(dragTime)
-      try { HapticFeedback.impactOccurred('light') } catch {}
+      haptic('light')
     }
     setDragging(false)
   }
@@ -284,7 +287,7 @@ export function PlayerScreen({ onClose }: Props) {
       </div>
 
       {/* транспорт */}
-      <div className="px-screen pb-4 flex items-center justify-between shrink-0">
+      <div className="px-screen pb-2 flex items-center justify-between shrink-0">
         <button
           onClick={() => prevFn()}
           className="w-11 h-11 flex items-center justify-center text-ink"
@@ -322,6 +325,25 @@ export function PlayerScreen({ onClose }: Props) {
         </button>
       </div>
 
+      {/* вспомогательные действия */}
+      <div className="px-screen pb-4 flex items-center gap-3 shrink-0">
+        <button
+          onClick={() => { if (track) { shareTrack(track.id) } }}
+          disabled={!track}
+          className="flex-1 font-mono text-mono-label uppercase border border-line h-[34px] rounded-pill text-ink disabled:opacity-40"
+          aria-label="Поделиться треком"
+        >
+          ПОДЕЛИТЬСЯ
+        </button>
+        <button
+          onClick={() => setSupportOpen(true)}
+          className="flex-1 font-mono text-mono-label uppercase border border-line h-[34px] rounded-pill text-ink"
+          aria-label="Поддержать артиста"
+        >
+          ПОДДЕРЖАТЬ ⭐
+        </button>
+      </div>
+
       {/* вкладыш */}
       {insertOpen && lyrics && (
         <InsertScreen
@@ -332,6 +354,10 @@ export function PlayerScreen({ onClose }: Props) {
           onSeek={seek}
           onClose={() => setInsertOpen(false)}
         />
+      )}
+
+      {supportOpen && (
+        <SupportSheet onClose={() => setSupportOpen(false)} />
       )}
     </div>
   )
