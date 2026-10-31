@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Catalog } from '@/data/types'
 import { parse, usePathname, type Route } from './router'
+import { SpikePage } from '@/features/spike/SpikePage'
 
 // Заглушки экранов. Каталог уже читает манифест — чтобы каркас проверял данные, а не моки.
 
@@ -63,5 +64,6 @@ export function Routes() {
   const route = parse(usePathname())
   if (route === null) return <div>экран не найден</div>
   if (route.name === 'catalog') return <CatalogStub />
+  if (route.name === 'spike') return <SpikePage />
   return <Stub route={route} />
 }

@@ -9,6 +9,7 @@ export type Route =
   | { name: 'insert' }
   | { name: 'profile' }
   | { name: 'search' }
+  | { name: 'spike' }
 
 export function parse(pathname: string): Route | null {
   const parts = pathname.split('/').filter(Boolean)
@@ -18,11 +19,13 @@ export function parse(pathname: string): Route | null {
   if (head === 'release') return id === undefined ? null : { name: 'release', id: decodeURIComponent(id) }
   if (id !== undefined) return null
   if (head === 'player' || head === 'insert' || head === 'profile' || head === 'search') return { name: head }
+  if (head === 'spike' && import.meta.env.DEV) return { name: 'spike' }
   return null
 }
 
 export function href(route: Route): string {
-  return route.name === 'release' ? `/release/${encodeURIComponent(route.id)}` : `/${route.name}`
+  if (route.name === 'release') return `/release/${encodeURIComponent(route.id)}`
+  return `/${route.name}`
 }
 
 const listeners = new Set<() => void>()

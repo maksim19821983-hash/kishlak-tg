@@ -42,8 +42,42 @@ export function setBackgroundColor(color: `#${string}`): void {
   call((app) => app.setBackgroundColor(color))
 }
 
+
+/**
+ * SDK Телеграма грузим сами и неблокирующе: если telegram.org недоступен (бывает в РФ),
+ * приложение всё равно отрисуется, а Telegram-функции просто не сработают.
+ */
+let sdkPromise: Promise<void> | null = null
+
+export function ensureSdk(timeoutMs = 3000): Promise<void> {
+  if (sdkPromise) return sdkPromise
+  if (window.Telegram?.WebApp) {
+    sdkPromise = Promise.resolve()
+    return sdkPromise
+  }
+  sdkPromise = new Promise<void>((resolve) => {
+    const script = document.createElement('script')
+    let settled = false
+    const done = (): void => {
+      if (settled) return
+      settled = true
+      resolve()
+    }
+    script.src = 'https://telegram.org/js/telegram-web-app.js'
+    script.async = true
+    script.onload = done
+    script.onerror = done
+    window.setTimeout(done, timeoutMs)
+    document.head.appendChild(script)
+  })
+  return sdkPromise
+}
+
 export function initTelegram(): void {
-  ready()
-  expand()
-  disableVerticalSwipes()
+  // Рендер не ждёт SDK: инициализация догоняет, когда скрипт загрузится или отвалится.
+  void ensureSdk().then(() => {
+    ready()
+    expand()
+    disableVerticalSwipes()
+  })
 }

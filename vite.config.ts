@@ -7,6 +7,8 @@ export default defineConfig({
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
+  // Туннель (localtunnel / cloudflared) ходит с чужим Host — без этого Vite отдаёт 403.
+  server: { host: true, allowedHosts: true },
   test: {
     include: ['src/**/*.test.ts'],
   },
