@@ -186,6 +186,7 @@ export function PlayerTab() {
     haptic('light')
   }
 
+  const globalIndex = track ? flatTracks.findIndex((ft) => ft.track.id === track.id) : -1
   const totalCount = flatTracks.length
 
   return (
@@ -200,7 +201,7 @@ export function PlayerTab() {
       >
         <span className="font-mono text-mono-label uppercase text-ink">КИШЛАК</span>
         <span className="font-mono text-mono-num tabular-nums text-dim">
-          {track ? `${String((index >= 0 ? index : 0) + 1).padStart(2, '0')} / ${String(queue.length || totalCount).padStart(2, '0')}` : '—'}
+          {track && totalCount > 0 ? `${String(globalIndex + 1).padStart(2, '0')} / ${String(totalCount).padStart(2, '0')}` : '—'}
         </span>
       </div>
 
