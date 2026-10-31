@@ -37,7 +37,9 @@ function getProgress(releaseId: string): number {
   return dev !== null ? dev : FanRepo.releaseProgress(releaseId)
 }
 
-export function CatalogScreen() {
+type Props = { onOpenPlayer: () => void }
+
+export function CatalogScreen({ onOpenPlayer }: Props) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
   const [activeRelease, setActiveRelease] = useState<Release | null>(null)
 
@@ -69,7 +71,7 @@ export function CatalogScreen() {
   const handlePlay = (release: Release) => {
     if (release.tracks.length === 0) return
     loadTracks(release.tracks, 0)
-    // плеер откроется когда появится кассета (задача 05)
+    onOpenPlayer()
   }
 
   return (

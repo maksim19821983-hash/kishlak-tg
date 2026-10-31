@@ -67,6 +67,18 @@ export function setBackgroundColor(color: `#${string}`): void {
   call((app) => app.setBackgroundColor(color))
 }
 
+export const HapticFeedback = {
+  impactOccurred(style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft'): void {
+    call((app) => app.HapticFeedback.impactOccurred(style))
+  },
+  notificationOccurred(type: 'error' | 'success' | 'warning'): void {
+    call((app) => app.HapticFeedback.notificationOccurred(type))
+  },
+  selectionChanged(): void {
+    call((app) => app.HapticFeedback.selectionChanged())
+  },
+}
+
 
 /**
  * SDK Телеграма грузим сами и неблокирующе: если telegram.org недоступен (бывает в РФ),
