@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Release } from '@/data/types'
 import { Cassette } from './Cassette'
 import { HapticFeedback } from '@/app/telegram'
+import { parseLrc, getActiveLineIndex } from '@/features/lyrics/parseLrc'
+import type { Lyrics } from '@/features/lyrics/parseLrc'
+import { InsertScreen } from '@/features/lyrics/InsertScreen'
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60), s = Math.floor(sec % 60)
@@ -35,6 +38,25 @@ export function PlayerScreen({ onClose }: Props) {
   const [side, setSide] = useState<'A' | 'B'>('A')
   const [dragging, setDragging] = useState(false)
   const [dragTime, setDragTime] = useState(0)
+  const [flipDeg, setFlipDeg] = useState(0)
+  const [flipping, setFlipping] = useState(false)
+  const [insertOpen, setInsertOpen] = useState(false)
+  const [lyrics, setLyrics] = useState<Lyrics | null>(null)
+  const [polarity, setPolarity] = useState<'paper' | 'dark'>('paper')
+
+  // cassette swipe-up to open insert
+  const cassetteTouchStartY = useRef<number | null>(null)
+
+  useEffect(() => {
+    const pol = document.documentElement.dataset.polarity as 'paper' | 'dark' | undefined
+    setPolarity(pol ?? 'paper')
+    const observer = new MutationObserver(() => {
+      const p = document.documentElement.dataset.polarity as 'paper' | 'dark' | undefined
+      setPolarity(p ?? 'paper')
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-polarity'] })
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!track) return
@@ -44,10 +66,30 @@ export function PlayerScreen({ onClose }: Props) {
     }).catch(() => {})
   }, [track?.releaseId])
 
+  // load LRC when track changes
+  useEffect(() => {
+    setLyrics(null)
+    if (!track?.lrc) return
+    let cancelled = false
+    fetch(track.lrc)
+      .then((r) => r.text())
+      .then((text) => { if (!cancelled) setLyrics(parseLrc(text)) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [track?.lrc])
+
   const progress = duration > 0 ? currentTime / duration : 0
   const nextTracks = queue.slice(index + 1, index + 3)
   const trackNum = index >= 0 ? String(index + 1).padStart(2, '0') : '01'
   const total = queue.length > 0 ? String(queue.length).padStart(2, '0') : '01'
+
+  // live lyrics: 3 lines around active (only text lines, not sections)
+  const textLines = lyrics ? lyrics.lines.filter((l) => !l.isSection) : []
+  const activeIdx = lyrics ? getActiveLineIndex(textLines, currentTime) : -1
+  const prevLine = activeIdx > 0 ? textLines[activeIdx - 1] : null
+  const activeLine = activeIdx >= 0 ? textLines[activeIdx] : null
+  const nextLine = activeIdx >= 0 && activeIdx < textLines.length - 1 ? textLines[activeIdx + 1] : null
+  const hasLyrics = lyrics !== null && textLines.length > 0
 
   const handleTap = () => {
     try { HapticFeedback.impactOccurred('medium') } catch {}
@@ -55,7 +97,13 @@ export function PlayerScreen({ onClose }: Props) {
   }
 
   const handleFlip = () => {
-    setSide((s) => s === 'A' ? 'B' : 'A')
+    if (flipping) return
+    setFlipping(true)
+    setFlipDeg((d) => d + 180)
+    setTimeout(() => {
+      setSide((s) => s === 'A' ? 'B' : 'A')
+      setFlipping(false)
+    }, 600)
     try { HapticFeedback.impactOccurred('medium') } catch {}
   }
 
@@ -83,6 +131,19 @@ export function PlayerScreen({ onClose }: Props) {
     setDragging(false)
   }
 
+  const handleCassetteTouchStart = (e: React.TouchEvent) => {
+    cassetteTouchStartY.current = e.touches[0]?.clientY ?? null
+  }
+
+  const handleCassetteTouchEnd = (e: React.TouchEvent) => {
+    const start = cassetteTouchStartY.current
+    cassetteTouchStartY.current = null
+    const end = e.changedTouches[0]?.clientY
+    if (start !== null && end !== undefined && start - end > 60 && hasLyrics) {
+      setInsertOpen(true)
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-40 flex flex-col bg-bg overflow-hidden"
@@ -106,9 +167,27 @@ export function PlayerScreen({ onClose }: Props) {
         <span className="font-mono text-mono-label uppercase text-ink">КИШЛАК</span>
       </div>
 
-      {/* кассета */}
-      <div className="px-screen shrink-0 mt-4">
-        <Cassette side={side} onTap={handleTap} />
+      {/* кассета с 3D-флипом */}
+      <div
+        className="px-screen shrink-0 mt-4"
+        style={{ perspective: '600px' }}
+        onTouchStart={handleCassetteTouchStart}
+        onTouchEnd={handleCassetteTouchEnd}
+      >
+        <div
+          style={{
+            transform: `rotateY(${flipDeg}deg)`,
+            transition: flipping ? 'transform var(--dur-tape)' : 'none',
+            transformStyle: 'preserve-3d',
+          }}
+        >
+          <Cassette
+            side={side}
+            onTap={handleTap}
+            releaseTitle={release?.title}
+            polarity={polarity}
+          />
+        </div>
       </div>
 
       {/* название */}
@@ -117,15 +196,37 @@ export function PlayerScreen({ onClose }: Props) {
           {track?.title ?? '—'}
         </p>
         <p className="font-mono text-mono-label uppercase text-dim mt-1">
-          КИШЛАК · {release?.year ?? '—'} · {release?.type?.toUpperCase() ?? '—'}
+          КИШЛАК · {release?.title ?? '—'} · {release?.year ?? '—'}
         </p>
       </div>
 
-      {/* текст-заглушка (задача 06 — LRC) */}
+      {/* превью текста / кнопка вкладыша */}
       <div className="px-screen mt-3 shrink-0">
-        <p className="font-mono text-lyric text-dim line-clamp-1">···</p>
-        <p className="font-display text-lyric-active text-[var(--accent-text)] line-clamp-1">···</p>
-        <p className="font-mono text-lyric text-dim line-clamp-1">···</p>
+        {hasLyrics ? (
+          <button
+            onClick={() => setInsertOpen(true)}
+            className="w-full text-left"
+            aria-label="Открыть текст песни"
+          >
+            {prevLine && !prevLine.isBlank && (
+              <p className="font-mono text-lyric text-dim line-clamp-1">{prevLine.text}</p>
+            )}
+            {!prevLine && <p className="font-mono text-lyric text-dim line-clamp-1 opacity-0">·</p>}
+            <p className="font-display text-lyric-active text-[var(--accent-text)] line-clamp-1">
+              {activeLine && !activeLine.isBlank ? activeLine.text : '···'}
+            </p>
+            {nextLine && !nextLine.isBlank && (
+              <p className="font-mono text-lyric text-dim line-clamp-1">{nextLine.text}</p>
+            )}
+            {!nextLine && <p className="font-mono text-lyric text-dim line-clamp-1 opacity-0">·</p>}
+          </button>
+        ) : (
+          <>
+            <p className="font-mono text-lyric text-dim line-clamp-1">···</p>
+            <p className="font-display text-lyric-active text-[var(--accent-text)] line-clamp-1">···</p>
+            <p className="font-mono text-lyric text-dim line-clamp-1">···</p>
+          </>
+        )}
       </div>
 
       {/* дальше на кассете */}
@@ -216,10 +317,23 @@ export function PlayerScreen({ onClose }: Props) {
           onClick={handleFlip}
           className="font-mono text-mono-label uppercase border border-line px-3 h-[34px] rounded-pill text-ink"
           aria-label="Перевернуть кассету"
+          disabled={flipping}
         >
           ПЕРЕВЕРНУТЬ
         </button>
       </div>
+
+      {/* вкладыш */}
+      {insertOpen && lyrics && (
+        <InsertScreen
+          lyrics={lyrics}
+          currentTime={currentTime}
+          queue={queue}
+          release={release}
+          onSeek={seek}
+          onClose={() => setInsertOpen(false)}
+        />
+      )}
     </div>
   )
 }

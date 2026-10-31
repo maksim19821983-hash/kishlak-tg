@@ -9,21 +9,23 @@ const DEG_PER_MS = 360 / 2000 // 360° / 2 s
 
 function tapeRadius(progress: number, isLeft: boolean): number {
   const p = Math.max(0, Math.min(1, progress))
+  // левая катушка: начинает полной (p=0 → TAPE_MAX), правая: начинает пустой
   return isLeft
-    ? TAPE_MIN + p * (TAPE_MAX - TAPE_MIN)
-    : TAPE_MAX - p * (TAPE_MAX - TAPE_MIN)
+    ? TAPE_MAX - p * (TAPE_MAX - TAPE_MIN)
+    : TAPE_MIN + p * (TAPE_MAX - TAPE_MIN)
 }
 
 type Props = {
   side: 'A' | 'B'
   onTap: () => void
+  releaseTitle?: string
+  polarity?: 'paper' | 'dark'
 }
 
-export function Cassette({ side, onTap }: Props) {
+export function Cassette({ side, onTap, releaseTitle, polarity }: Props) {
   const playing     = useAudioStore((s) => s.status === 'playing')
   const currentTime = useAudioStore((s) => s.currentTime)
   const duration    = useAudioStore((s) => s.duration)
-  const track       = useAudioStore((s) => s.track)
 
   const progress = duration > 0 ? currentTime / duration : 0
   const leftR  = tapeRadius(progress, true)
@@ -62,7 +64,10 @@ export function Cassette({ side, onTap }: Props) {
     }
   }, [playing])
 
-  const releaseLabel = track ? `КИШЛАК — ${track.releaseId.toUpperCase()}` : 'КИШЛАК'
+  const pol = polarity ?? (document.documentElement.dataset.polarity as 'paper' | 'dark' | undefined) ?? 'paper'
+  const bodyBg = pol === 'paper' ? '#1E1C1A' : '#E4DED2'
+  const windowBg = pol === 'paper' ? 'rgba(0,0,0,.6)' : 'rgba(255,255,255,.15)'
+  const releaseLabel = releaseTitle ? `КИШЛАК — ${releaseTitle.toUpperCase()}` : 'КИШЛАК'
 
   return (
     <button
@@ -72,7 +77,7 @@ export function Cassette({ side, onTap }: Props) {
       style={{
         aspectRatio: '1.44',
         borderRadius: 10,
-        background: 'var(--surface)',
+        background: bodyBg,
         boxShadow: 'var(--shadow-cassette)',
         padding: '14px 16px',
         WebkitTapHighlightColor: 'transparent',
@@ -109,7 +114,7 @@ export function Cassette({ side, onTap }: Props) {
         style={{
           height: 92,
           borderRadius: 6,
-          background: 'rgba(0,0,0,.45)',
+          background: windowBg,
         }}
       >
         {/* левая катушка */}
