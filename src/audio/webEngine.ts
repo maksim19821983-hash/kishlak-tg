@@ -26,6 +26,7 @@ class WebAudioEngine implements AudioPort {
   private el: HTMLAudioElement = createAudioElement()
   private state: PlaybackState = { ...initialPlaybackState }
   private subs = new Set<(s: PlaybackState) => void>()
+  private endedSubs = new Set<(track: Track, duration: number) => void>()
 
   // shuffled order (индексы в queue)
   private order: number[] = []
@@ -161,6 +162,11 @@ class WebAudioEngine implements AudioPort {
     this.patch({ volume: vol })
   }
 
+  subscribeEnded(fn: (track: Track, duration: number) => void): () => void {
+    this.endedSubs.add(fn)
+    return () => this.endedSubs.delete(fn)
+  }
+
   subscribe(fn: (s: PlaybackState) => void): () => void {
     this.subs.add(fn)
     return () => this.subs.delete(fn)
@@ -235,7 +241,10 @@ class WebAudioEngine implements AudioPort {
     })
 
     el.addEventListener('ended', () => {
+      const track = this.state.track
+      const duration = this.state.duration
       this.stopRaf()
+      if (track) this.endedSubs.forEach((fn) => fn(track, duration))
       this.next('ended')
     })
 

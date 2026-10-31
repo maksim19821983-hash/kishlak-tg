@@ -34,6 +34,7 @@ export function pickTitle(stats: FanStats): string | null {
   if (fullReleasesListened >= 10 || (totalCatalogReleases > 0 && fullReleasesListened >= totalCatalogReleases && totalCatalogReleases >= 5)) return 'ДИГГЕР'
   if (catalogShare >= 1 && totalCatalogTracks > 0) return 'ПЕРВЫЙ РЯД'
   if (listenedTracks >= 10) return 'СЛУШАТЕЛЬ'
+  // до 10 треков — профиль пустой
   return null
 }
 

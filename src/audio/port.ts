@@ -28,6 +28,8 @@ export interface AudioPort {
   setRepeat(mode: PlaybackState['repeat']): void
   setVolume(v: number): void
   subscribe(fn: (s: PlaybackState) => void): () => void
+  /** Срабатывает ровно один раз при натуральном окончании трека (ended-событие HTML audio). */
+  subscribeEnded(fn: (track: Track, duration: number) => void): () => void
   getState(): PlaybackState
   dispose(): void
 }
@@ -70,6 +72,7 @@ export function createStubPort(): AudioPort {
       subs.add(fn)
       return () => subs.delete(fn)
     },
+    subscribeEnded: () => () => undefined,
     getState: () => state,
     dispose: () => subs.clear(),
   }

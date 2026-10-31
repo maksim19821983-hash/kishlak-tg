@@ -13,6 +13,8 @@ export type ReleaseStat = {
 export type Session = {
   at: number
   withLyrics: boolean
+  trackId?: string
+  trackTitle?: string
 }
 
 export type FanState = {

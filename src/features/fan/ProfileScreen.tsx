@@ -42,7 +42,6 @@ export function ProfileScreen({ onClose }: Props) {
       const s = computeStats(trackCount, totalCatalogTracks, totalCatalogReleases)
       setStats(s)
 
-      // обновить титул если нужно
       const state = getState()
       const patch = maybeUpdateTitle(state, s)
       if (patch.title !== undefined || patch.titleComputedAt !== undefined) {
@@ -50,13 +49,10 @@ export function ProfileScreen({ onClose }: Props) {
         scheduleSave(true)
       }
 
-      // топ-релиз по listenedTracks
       const fanState = getState()
-      const sorted = [...cat.releases].sort((a, b) => {
-        const ba = fanState.releases[b.id]?.listenedTracks ?? 0
-        const aa = fanState.releases[a.id]?.listenedTracks ?? 0
-        return ba - aa
-      })
+      const sorted = [...cat.releases].sort((a, b) =>
+        (fanState.releases[b.id]?.listenedTracks ?? 0) - (fanState.releases[a.id]?.listenedTracks ?? 0)
+      )
       setTopRelease(sorted[0] ?? null)
     }).catch(() => {})
   }, [])
@@ -64,18 +60,15 @@ export function ProfileScreen({ onClose }: Props) {
   const fanState = getState()
   const title = fanState.title
   const since = title ? formatSince(title.since) : null
-
   const totalMinutes = stats ? Math.floor(stats.totalSeconds / 60) : 0
-
   const topReleaseProgress = topRelease ? getCachedProgress(topRelease.id) : 0
-  const topReleaseListened = topRelease
-    ? (fanState.releases[topRelease.id]?.listenedTracks ?? 0)
-    : 0
+  const topReleaseListened = topRelease ? (fanState.releases[topRelease.id]?.listenedTracks ?? 0) : 0
+  const hasData = !!title || (!!stats && stats.listenedTracks >= 10)
 
-  // последние 3 сессии с данными
   const recentSessions = [...fanState.sessions]
     .sort((a, b) => b.at - a.at)
     .slice(0, 3)
+    .filter((s) => s.trackTitle)
 
   return (
     <div
@@ -101,140 +94,145 @@ export function ProfileScreen({ onClose }: Props) {
         }
       </div>
 
-      <div className="flex-1 overflow-y-auto overscroll-contain px-screen py-4">
-
-        {/* титул */}
-        <div className="mb-4">
-          <h1 className="font-display text-display-l uppercase text-ink">
-            {title?.id ?? 'СЛУШАТЕЛЬ'}
-          </h1>
-          {topRelease && stats && stats.topReleaseTimeShare > 0 ? (
-            <p className="font-mono text-mono-label uppercase text-dim mt-1">
-              {topRelease.title.toUpperCase()} — {Math.round(stats.topReleaseTimeShare * 100)}%{' '}
-              ТВОЕГО ВРЕМЕНИ
-            </p>
-          ) : (
-            <p className="font-mono text-mono-label uppercase text-dim mt-1">
-              ПРОСЛУШАЙ 10 ТРЕКОВ
-            </p>
-          )}
+      {/* пустое состояние */}
+      {!hasData && (
+        <div className="flex-1 flex items-center justify-center px-screen">
+          <p className="font-mono text-mono-label uppercase text-dim text-center">
+            Слушай — и здесь появится твой профиль
+          </p>
         </div>
+      )}
 
-        {/* характеристика */}
-        {stats && stats.totalSeconds >= 600 && (
+      {/* основной контент */}
+      {hasData && (
+        <div className="flex-1 overflow-y-auto overscroll-contain px-screen py-4">
+
+          {/* титул */}
           <div className="mb-4">
-            <p className="font-mono text-dim" style={{ fontSize: 11, lineHeight: '18px' }}>
+            <h1 className="font-display text-display-l uppercase text-ink">
+              {title?.id ?? 'СЛУШАТЕЛЬ'}
+            </h1>
+            {topRelease && stats && stats.topReleaseTimeShare > 0 ? (
+              <p className="font-mono text-mono-label uppercase text-dim mt-1">
+                {topRelease.title.toUpperCase()} — {Math.round(stats.topReleaseTimeShare * 100)}%{' '}
+                ТВОЕГО ВРЕМЕНИ
+              </p>
+            ) : (
+              <p className="font-mono text-mono-label uppercase text-dim mt-1">
+                ПРОСЛУШАЙ ЕЩЁ
+              </p>
+            )}
+          </div>
+
+          {/* характеристика */}
+          {stats && stats.totalSeconds >= 600 && (
+            <div className="mb-4">
+              <p className="font-mono text-dim" style={{ fontSize: 11, lineHeight: '18px' }}>
+                {[
+                  topRelease
+                    ? `${topRelease.title.toUpperCase()} — ${Math.round(stats.topReleaseTimeShare * 100)}% ТВОЕГО ВРЕМЕНИ`
+                    : null,
+                  stats.nightShare >= 0.3 && totalMinutes >= 30
+                    ? `${Math.round(stats.nightShare * totalMinutes)} МИН НОЧЬЮ`
+                    : null,
+                  stats.maxTrackPlays >= 3
+                    ? `ПОВТОРОВ: ${fmtNum(stats.maxTrackPlays)}`
+                    : null,
+                ].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+          )}
+
+          {/* три цифры */}
+          {stats && (
+            <div
+              className="flex mb-4"
+              style={{ border: '1px solid var(--line)', borderRadius: 6 }}
+            >
               {[
-                topRelease
-                  ? `${topRelease.title.toUpperCase()} — ${Math.round(stats.topReleaseTimeShare * 100)}% ТВОЕГО ВРЕМЕНИ`
-                  : null,
-                stats.nightShare >= 0.3 && totalMinutes >= 30
-                  ? `${Math.round(stats.nightShare * totalMinutes)} МИН НОЧЬЮ`
-                  : null,
-                stats.maxTrackPlays >= 3
-                  ? `ПОВТОРОВ: ${fmtNum(stats.maxTrackPlays)}`
-                  : null,
-              ].filter(Boolean).join(' · ')}
-            </p>
-          </div>
-        )}
-
-        {/* три цифры */}
-        {stats && (
-          <div
-            className="flex mb-4"
-            style={{ border: '1px solid var(--line)', borderRadius: 6 }}
-          >
-            {[
-              { label: 'ТРЕКОВ', value: fmtNum(stats.listenedTracks) },
-              {
-                label: totalMinutes >= 600 ? 'ВРЕМЯ' : 'МИНУТ',
-                value: fmtMinutes(stats.totalSeconds),
-              },
-              { label: 'ПОВТОРОВ', value: fmtNum(stats.maxTrackPlays) },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className="flex-1 flex flex-col items-center justify-center py-3"
-                style={{ borderRight: i < 2 ? '1px solid var(--line)' : undefined }}
-              >
-                <span
-                  className="font-mono tabular-nums text-ink"
-                  style={{ fontSize: 20, lineHeight: 1, fontWeight: 600 }}
+                { label: 'ТРЕКОВ', value: fmtNum(stats.listenedTracks) },
+                { label: totalMinutes >= 600 ? 'ВРЕМЯ' : 'МИНУТ', value: fmtMinutes(stats.totalSeconds) },
+                { label: 'ПОВТОРОВ', value: fmtNum(stats.maxTrackPlays) },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className="flex-1 flex flex-col items-center justify-center py-3"
+                  style={{ borderRight: i < 2 ? '1px solid var(--line)' : undefined }}
                 >
-                  {item.value}
-                </span>
-                <span className="font-mono text-mono-label uppercase text-dim mt-1">
-                  {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+                  <span
+                    className="font-mono tabular-nums text-ink"
+                    style={{ fontSize: 20, lineHeight: 1, fontWeight: 600 }}
+                  >
+                    {item.value}
+                  </span>
+                  <span className="font-mono text-mono-label uppercase text-dim mt-1">
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
-        {/* топ-релиз */}
-        {topRelease && topReleaseListened > 0 && (
-          <div className="mb-4">
-            <p className="font-mono text-mono-label uppercase text-dim mb-2">ТОП-РЕЛИЗ</p>
-            <div className="flex items-center gap-3">
-              <img
-                src={topRelease.coverSmall}
-                alt={topRelease.title}
-                className="rounded-sleeve object-cover shrink-0"
-                style={{ width: 64, height: 64 }}
-              />
-              <div className="flex-1 min-w-0">
-                <p className="font-display text-body-strong text-ink truncate">{topRelease.title}</p>
-                <p className="font-mono text-mono-num text-dim mt-0.5">
-                  ТОП-РЕЛИЗ · {Math.round((stats?.topReleaseTimeShare ?? 0) * 100)}%{' '}
-                  · {topReleaseListened}
-                </p>
-                <div className="mt-2 h-0.5 w-full" style={{ background: 'var(--line)' }}>
-                  <div
-                    className="h-full"
-                    style={{
-                      width: `${topReleaseProgress * 100}%`,
-                      background: 'var(--accent)',
-                    }}
-                  />
+          {/* топ-релиз */}
+          {topRelease && topReleaseListened > 0 && (
+            <div className="mb-4">
+              <p className="font-mono text-mono-label uppercase text-dim mb-2">ТОП-РЕЛИЗ</p>
+              <div className="flex items-center gap-3">
+                <img
+                  src={topRelease.coverSmall}
+                  alt={topRelease.title}
+                  className="rounded-sleeve object-cover shrink-0"
+                  style={{ width: 64, height: 64 }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-display text-body-strong text-ink truncate">{topRelease.title}</p>
+                  <p className="font-mono text-mono-num text-dim mt-0.5">
+                    ТОП-РЕЛИЗ · {Math.round((stats?.topReleaseTimeShare ?? 0) * 100)}% · {topReleaseListened}
+                  </p>
+                  <div className="mt-2 h-0.5 w-full" style={{ background: 'var(--line)' }}>
+                    <div
+                      className="h-full"
+                      style={{ width: `${topReleaseProgress * 100}%`, background: 'var(--accent)' }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* последнее */}
-        {recentSessions.length > 0 && (
-          <div className="mb-4">
-            <p className="font-mono text-mono-label uppercase text-dim mb-2">ПОСЛЕДНЕЕ</p>
-            {recentSessions.map((s, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between py-1.5 border-b border-line last:border-0"
-              >
-                <span className="font-mono text-mono-label uppercase text-dim truncate flex-1 mr-2">
-                  {s.withLyrics ? 'С ТЕКСТОМ' : 'ПРОСЛУШИВАНИЕ'}
-                </span>
-                <span className="font-mono text-mono-num text-dim shrink-0">
-                  {fmtDate(s.at)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+          {/* последнее */}
+          {recentSessions.length > 0 && (
+            <div className="mb-4">
+              <p className="font-mono text-mono-label uppercase text-dim mb-2">ПОСЛЕДНЕЕ</p>
+              {recentSessions.map((s, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between py-1.5 border-b border-line last:border-0"
+                >
+                  <span className="font-display text-body-strong text-ink truncate flex-1 mr-2">
+                    {s.trackTitle}
+                  </span>
+                  <span className="font-mono text-mono-num text-dim shrink-0">
+                    {fmtDate(s.at)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
-        {/* заглушка шаринга */}
-        <button
-          className="w-full font-mono text-mono-label uppercase border border-line py-3 text-dim"
-          style={{ borderRadius: 6 }}
-          disabled
-          aria-label="Поделиться карточкой — скоро"
-        >
-          ПОДЕЛИТЬСЯ КАРТОЧКОЙ
-        </button>
+          {/* заглушка шаринга */}
+          <button
+            className="w-full font-mono text-mono-label uppercase border border-line py-3 text-dim"
+            style={{ borderRadius: 6 }}
+            disabled
+            aria-label="Поделиться карточкой — скоро"
+          >
+            ПОДЕЛИТЬСЯ КАРТОЧКОЙ · СКОРО
+          </button>
 
-        <div style={{ height: 32 }} />
-      </div>
+          <div style={{ height: 32 }} />
+        </div>
+      )}
     </div>
   )
 }
