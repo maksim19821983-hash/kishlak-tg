@@ -1,0 +1,135 @@
+import os
+OUT = "/Users/maksimremezov/Desktop/kishlak-tg/design"
+
+def statusbar(dark=False):
+    c = "#0E0E0F" if dark else "#F2EFEA"
+    return (f'<div class="status" style="color:{c}"><span>16:34</span><span class="sb">'
+            f'<svg width="18" height="12" viewBox="0 0 18 12" fill="{c}"><rect x="0" y="8" width="3" height="4" rx="1"/>'
+            f'<rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/>'
+            f'<rect x="15" y="0" width="3" height="12" rx="1" opacity=".4"/></svg>'
+            f'<svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="{c}" stroke-width="1.5" stroke-linecap="round">'
+            f'<path d="M1.5 4.2a11 11 0 0 1 14 0"/><path d="M4 6.8a7.4 7.4 0 0 1 9 0"/><path d="M6.6 9.3a3.8 3.8 0 0 1 0"/></svg>'
+            f'<svg width="26" height="13" viewBox="0 0 26 13" fill="none" stroke="{c}" stroke-width="1.2">'
+            f'<rect x="0.6" y="1.6" width="20" height="9.8" rx="2.6"/><rect x="2.2" y="3.2" width="14" height="6.6" rx="1.6" fill="{c}" stroke="none"/>'
+            f'<path d="M23 5v3" stroke-width="2" stroke-linecap="round"/></svg></span></div>')
+
+BASE = '''
+@font-face{font-family:'U';src:url('assets/unbounded.ttf') format('truetype');font-weight:200 900;font-display:block}
+@font-face{font-family:'M';src:url('assets/jbmono-regular.ttf') format('truetype');font-weight:400;font-display:block}
+@font-face{font-family:'M';src:url('assets/jbmono-medium.ttf') format('truetype');font-weight:500;font-display:block}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+body{background:#141416;display:flex;gap:36px;padding:36px;width:max-content;font-family:'U',sans-serif;color:#F2EFEA}
+.cell{display:flex;flex-direction:column;gap:10px;width:390px}
+.cap{font-family:'M';font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#6E6A66}
+.notes{font-family:'M';font-size:10.5px;line-height:17px;color:#8A857F}
+.notes b{color:#C9C3BB;font-weight:500}
+.screen{position:relative;width:390px;height:844px;overflow:hidden;border-radius:24px;display:flex;flex-direction:column;background:#EDE7DC;color:#131211}
+.status{position:relative;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font-family:'M';font-size:12px;letter-spacing:.05em}
+.sb{display:flex;gap:6px;align-items:center}
+.mono{font-family:'M';font-weight:500;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.top{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:40px;color:rgba(0,0,0,.5)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 14px;padding:16px 24px 0}
+.sv{position:relative;border:1px solid rgba(0,0,0,.18);overflow:hidden}
+.sv img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.sv .gray{filter:grayscale(1) brightness(.92) contrast(.95)}
+.sv .fill{position:absolute;left:0;right:0;bottom:0;overflow:hidden;transition:height .45s ease}
+.sv .fill img{position:absolute;left:0;bottom:0;width:100%;height:auto}
+.sv.locked{border-style:dashed}
+.stamp{position:absolute;right:-6px;top:-6px;width:30px;height:30px;background:#131211;color:#EDE7DC;display:flex;align-items:center;justify-content:center;font-family:'M';font-size:10px}
+.kt{font-weight:600;font-size:13px;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ky{font-family:'M';font-size:9.5px;letter-spacing:.14em;color:rgba(0,0,0,.45);margin-top:2px}
+.h1{font-weight:800;font-size:32px;line-height:34px;letter-spacing:-.025em;padding:6px 24px 0}
+.me-btn{width:30px;height:30px;border-radius:30px;border:1px solid rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-family:'M';font-size:11px;color:#131211;background:rgba(0,0,0,.04)}
+.hint{font-family:'M';font-size:10px;letter-spacing:.14em;color:rgba(0,0,0,.45);padding:8px 24px 0}
+/* ТЫ */
+.me-hero{padding:18px 24px 0}
+.me-title{font-weight:800;font-size:46px;line-height:48px;letter-spacing:-.035em}
+.me-sub{font-family:'M';font-size:11px;letter-spacing:.16em;color:rgba(0,0,0,.45);margin-top:10px}
+.me-quote{font-family:'M';font-size:13px;line-height:20px;color:rgba(0,0,0,.6);margin-top:18px}
+.stats{display:flex;gap:0;margin:26px 24px 0;border-top:1px solid rgba(0,0,0,.18);border-bottom:1px solid rgba(0,0,0,.18)}
+.stat{flex:1;padding:16px 0 14px;border-right:1px solid rgba(0,0,0,.12)}
+.stat:last-child{border-right:0}
+.stat .v{font-weight:800;font-size:24px;letter-spacing:-.02em}
+.stat .k{font-family:'M';font-size:9px;letter-spacing:.16em;color:rgba(0,0,0,.42);margin-top:5px}
+.top-rel{display:flex;gap:14px;align-items:center;padding:22px 24px 0}
+.top-rel img{width:64px;height:64px;object-fit:cover;border:1px solid rgba(0,0,0,.18)}
+.top-rel .n{font-weight:600;font-size:14px}
+.top-rel .m{font-family:'M';font-size:9.5px;letter-spacing:.14em;color:rgba(0,0,0,.45);margin-top:5px}
+.bar{height:3px;background:rgba(0,0,0,.14);margin:16px 24px 0;position:relative}
+.bar i{position:absolute;left:0;top:0;height:3px;background:#131211;display:block}
+.last{margin:26px 24px 0}
+.last .lh{font-family:'M';font-size:9px;letter-spacing:.18em;color:rgba(0,0,0,.4);margin-bottom:8px}
+.last .lr{display:flex;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.10);font-family:'M';font-size:12px;color:rgba(0,0,0,.65)}
+.last .lr span:first-child{font-size:9px;color:rgba(0,0,0,.35);width:18px}
+.last .ld{margin-left:auto;font-size:9px;letter-spacing:.1em;color:rgba(0,0,0,.35)}
+.share{margin:auto 24px 22px;height:52px;border:1px solid rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-family:'M';font-size:10.5px;letter-spacing:.18em}
+'''
+
+def grain():
+    return '<div class="grain"></div>'
+
+def sleeve(cover, title, year, progress, num=None):
+    gray = "gray" if progress < 1 else ""
+    locked = " locked" if progress == 0 else ""
+    fill = f'<div class="fill" style="height:{int(progress*100)}%"><img src="assets/real/{cover}.jpg"></div>' if 0 < progress < 1 else ""
+    stamp = f'<span class="stamp">{num}</span>' if progress >= 1 else ""
+    return (f'<div><div class="sv{locked}"><img class="{gray}" src="assets/real/{cover}.jpg">{fill}{stamp}</div>'
+            f'<div class="kt">{title}</div><div class="ky">{year} · {int(progress*11)}/11</div></div>')
+
+def catalog():
+    items = [("vdps","ВДПС","2026",1.0,"01"),("shiz2","СХИК2","2023",0.62,None),
+             ("boleyu","Болею тобой","2023",0.36,None),("apnoe","Апноэ","2023",0.12,None),
+             ("stigmata","STIGMATA","2024",0.0,None),("lava","lava","2021",0.0,None)]
+    g = "".join(sleeve(*it) for it in items)
+    return f'''<div class="screen">
+  {statusbar(dark=True)}
+  <div class="top"><span class="mono">КАТАЛОГ</span><span style="display:flex;align-items:center;gap:12px"><span class="mono">12 / 28</span><span class="me-btn">Р</span></span></div>
+  <div class="h1">ПРОЯВЛЕНИЕ</div>
+  <div class="hint">ПРОСЛУШАНО 4 ИЗ 11</div>
+  <div class="grid">{g}</div>
+  {grain()}
+</div>'''
+
+def me():
+    return f'''<div class="screen">
+  {statusbar(dark=True)}
+  <div class="top"><span class="mono">ПРОФИЛЬ</span><span class="mono">С НОЯБРЯ</span></div>
+  <div class="me-hero">
+    <div class="me-title">РЕЗИДЕНТ</div>
+    <div class="me-sub">ВДПС — 41% ТВОЕГО ВРЕМЕНИ</div>
+    <div class="me-quote">Ты слушаешь Кишлака так, будто это твоя личная кассета: сорок минут на «ВДПС», ночные сессии и три захода на «Болею тобой» подряд.</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="v">34</div><div class="k">ТРЕКА</div></div>
+    <div class="stat"><div class="v">1 240</div><div class="k">МИНУТ</div></div>
+    <div class="stat"><div class="v">57</div><div class="k">ПОВТОРОВ</div></div>
+  </div>
+  <div class="top-rel"><img src="assets/real/vdps.jpg">
+    <div><div class="n">ВДПС</div><div class="m">ТОП-РЕЛИЗ · 41% ВРЕМЕНИ · 10 ПРОСЛУШИВАНИЙ</div></div>
+  </div>
+  <div class="bar"><i style="width:41%"></i></div>
+  <div class="last">
+    <div class="lh">ПОСЛЕДНЕЕ</div>
+    <div class="lr"><span>01</span>Болею тобой<span class="ld">сегодня, 23:40</span></div>
+    <div class="lr"><span>02</span>Ночная смена<span class="ld">сегодня, 23:02</span></div>
+    <div class="lr"><span>03</span>СХИК2<span class="ld">вчера, 01:15</span></div>
+  </div>
+  <div class="share">ПОДЕЛИТЬСЯ КАРТОЧКОЙ</div>
+  {grain()}
+</div>'''
+
+cells = [
+ ("Каталог · обложка проявляется", catalog(),
+  "<b>1</b> заливка снизу вверх = доля прослушанных треков<br><b>2</b> сатурация растёт вместе с прогрессом<br><b>3</b> 100% — штамп и полный цвет"),
+ ("Профиль · титул и цифры", me(),
+  "<b>4</b> титул из привычек: релиз, ночь, повторы<br><b>5</b> подпись — конкретика, не вода<br><b>6</b> карточка 1080×1350 для шаринга"),
+]
+
+html = f'''<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Фан-слой</title>
+<style>{BASE}</style></head><body>
+{''.join(f'<div class="cell"><div class="cap">{c}</div>{h}<div class="notes">{n}</div></div>' for c,h,n in cells)}
+</body></html>'''
+open(os.path.join(OUT,"sheet-fan.html"),"w").write(html)
+print("ok")

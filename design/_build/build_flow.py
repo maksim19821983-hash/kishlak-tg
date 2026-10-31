@@ -1,0 +1,186 @@
+import os
+OUT = "/Users/maksimremezov/Desktop/kishlak-tg/design"
+
+def statusbar(dark=False):
+    c = "#0E0E0F" if dark else "#F2EFEA"
+    return (f'<div class="status" style="color:{c}"><span>16:34</span><span class="sb">'
+            f'<svg width="18" height="12" viewBox="0 0 18 12" fill="{c}"><rect x="0" y="8" width="3" height="4" rx="1"/>'
+            f'<rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/>'
+            f'<rect x="15" y="0" width="3" height="12" rx="1" opacity=".4"/></svg>'
+            f'<svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="{c}" stroke-width="1.5" stroke-linecap="round">'
+            f'<path d="M1.5 4.2a11 11 0 0 1 14 0"/><path d="M4 6.8a7.4 7.4 0 0 1 9 0"/><path d="M6.6 9.3a3.8 3.8 0 0 1 3.8 0"/></svg>'
+            f'<svg width="26" height="13" viewBox="0 0 26 13" fill="none" stroke="{c}" stroke-width="1.2">'
+            f'<rect x="0.6" y="1.6" width="20" height="9.8" rx="2.6"/><rect x="2.2" y="3.2" width="14" height="6.6" rx="1.6" fill="{c}" stroke="none"/>'
+            f'<path d="M23 5v3" stroke-width="2" stroke-linecap="round"/></svg></span></div>')
+
+def grain():
+    return '<div class="grain"></div>'
+
+BASE = '''
+@font-face{font-family:'U';src:url('assets/unbounded.ttf') format('truetype');font-weight:200 900}
+@font-face{font-family:'M';src:url('assets/jbmono-regular.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'M';src:url('assets/jbmono-medium.ttf') format('truetype');font-weight:500}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+body{background:#141416;display:flex;gap:36px;padding:36px;width:max-content;font-family:'U',sans-serif;color:#F2EFEA}
+.cell{display:flex;flex-direction:column;gap:10px;width:390px}
+.cap{font-family:'M';font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#6E6A66}
+.notes{font-family:'M';font-size:10.5px;line-height:17px;color:#8A857F}
+.notes b{color:#C9C3BB;font-weight:500}
+.screen{position:relative;width:390px;height:844px;overflow:hidden;border-radius:24px;display:flex;flex-direction:column}
+.paper{background:#EDE7DC;color:#131211}
+.dark{background:#0B0B0C;color:#F1EDE6}
+.status{position:relative;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font-family:'M';font-size:12px;letter-spacing:.05em}
+.sb{display:flex;gap:6px;align-items:center}
+.mono{font-family:'M';font-weight:500;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* каталог */
+.top{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:40px;color:rgba(0,0,0,.5)}
+.top .me-btn{width:30px;height:30px;border-radius:30px;border:1px solid rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-family:'M';font-size:11px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 14px;padding:14px 24px 0}
+.sv{position:relative;border:1px solid rgba(0,0,0,.18);overflow:hidden}
+.sv img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.sv .gray{filter:grayscale(1) brightness(.92)}
+.sv .fill{position:absolute;left:0;right:0;bottom:0;overflow:hidden}
+.sv .fill img{position:absolute;left:0;bottom:0;width:100%;height:auto}
+.sv.locked{border-style:dashed}
+.stamp{position:absolute;right:-6px;top:-6px;width:30px;height:30px;background:#131211;color:#EDE7DC;display:flex;align-items:center;justify-content:center;font-family:'M';font-size:10px}
+.kt{font-weight:600;font-size:13px;margin-top:7px}
+.ky{font-family:'M';font-size:9.5px;letter-spacing:.14em;color:rgba(0,0,0,.45);margin-top:2px}
+.h1{font-weight:800;font-size:32px;line-height:34px;letter-spacing:-.025em;padding:6px 24px 0}
+.hint{font-family:'M';font-size:10px;letter-spacing:.14em;color:rgba(0,0,0,.45);padding:8px 24px 0}
+/* кадр */
+.frame-scr{background:#000}
+.bg{position:absolute;inset:0}
+.bg img{width:100%;height:100%;object-fit:cover;display:block}
+.scrim{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.5) 0%,rgba(0,0,0,.05) 22%,rgba(0,0,0,.4) 55%,rgba(0,0,0,.94) 90%,#000 100%)}
+.fwrap{position:relative;margin-top:auto;padding:0 24px 46px;color:#fff}
+.fkick{font-family:'M';font-size:10px;letter-spacing:.2em;color:rgba(255,255,255,.62);margin-bottom:10px}
+.fh{font-weight:800;font-size:52px;line-height:52px;letter-spacing:-.03em}
+.fmeta{font-family:'M';font-size:11px;letter-spacing:.16em;color:rgba(255,255,255,.7);margin-top:12px}
+.fbar{margin-top:20px;height:2px;background:rgba(255,255,255,.3);position:relative}
+.fbar i{position:absolute;left:0;top:0;height:2px;background:#fff}
+.fcta{margin-top:18px;height:54px;border-radius:999px;background:#fff;color:#0B0B0C;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:13px;letter-spacing:.1em}
+/* кассета */
+.c-top{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:40px;color:rgba(0,0,0,.5)}
+.cass-wrap{padding:8px 24px 0}
+.cassette{position:relative;width:100%;aspect-ratio:1.44;border-radius:10px;padding:14px 16px;background:linear-gradient(180deg,#1E1C1A,#141312 60%,#191817);border:1px solid rgba(255,255,255,.10);box-shadow:0 18px 30px -18px rgba(0,0,0,.55)}
+.cass-lab{display:flex;align-items:baseline;justify-content:space-between;font-family:'M';font-size:8.5px;letter-spacing:.18em;color:rgba(241,237,230,.62)}
+.cass-win{position:relative;margin-top:10px;height:92px;border-radius:6px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;padding:0 22px}
+.reel{position:relative;width:72px;height:72px;border-radius:72px;border:2px solid rgba(241,237,230,.28);display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25)}
+.tape-disc{position:absolute;border-radius:50%;background:#8C5334}
+.hub{position:relative;z-index:2;width:16px;height:16px;border-radius:50%;background:#171614;border:1px solid rgba(241,237,230,.35)}
+.tape-path{position:absolute;left:70px;right:70px;top:50%;height:2px;background:#8C5334;opacity:.8}
+.screw{position:absolute;width:5px;height:5px;border-radius:5px;background:rgba(241,237,230,.28)}
+.cass-bot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:10px}
+.side{font-family:'M';font-size:9px;letter-spacing:.2em;color:rgba(241,237,230,.55)}
+.c-title{font-weight:800;font-size:36px;line-height:38px;letter-spacing:-.025em;padding:30px 24px 0}
+.c-meta{font-family:'M';font-size:10px;letter-spacing:.16em;color:rgba(0,0,0,.5);padding:10px 24px 0}
+.c-lyr{padding:32px 24px 0;font-family:'M';font-size:13.5px;line-height:34px;color:rgba(0,0,0,.45)}
+.c-lyr .on{font-family:'U';font-weight:600;font-size:16px;color:#131211}
+.c-queue{padding:26px 24px 0}
+.c-queue .qh{font-family:'M';font-size:9px;letter-spacing:.18em;color:rgba(0,0,0,.4);margin-bottom:10px}
+.c-queue .qr{display:flex;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.10);font-family:'M';font-size:12px;color:rgba(0,0,0,.6)}
+.c-queue .qn{font-size:9px;color:rgba(0,0,0,.35);width:18px}
+.c-queue .qd{margin-left:auto;font-size:9.5px;color:rgba(0,0,0,.35)}
+.c-bottom{margin-top:auto;padding:0 24px 18px}
+.c-bar{height:3px;background:rgba(0,0,0,.14);position:relative}
+.c-bar i{position:absolute;left:0;top:0;height:3px;background:#131211;display:block}
+.c-times{display:flex;justify-content:space-between;font-family:'M';font-size:10px;letter-spacing:.12em;color:rgba(0,0,0,.45);margin-top:9px}
+.c-tr{display:flex;align-items:center;justify-content:space-between;margin-top:16px}
+.c-pl{width:58px;height:58px;border-radius:58px;background:#131211;color:#EDE7DC;display:flex;align-items:center;justify-content:center}
+.c-plain{width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+.c-flip{font-family:'M';font-size:9.5px;letter-spacing:.18em;border:1px solid rgba(0,0,0,.18);padding:9px 14px 8px;border-radius:999px}
+'''
+
+def sleeve(cover, title, year, progress, num=None):
+    gray = "gray" if progress < 1 else ""
+    locked = " locked" if progress == 0 else ""
+    fill = (f'<div class="fill" style="height:{int(progress*100)}%"><img src="assets/real/{cover}.jpg"></div>'
+            if 0 < progress < 1 else "")
+    stamp = f'<span class="stamp">{num}</span>' if progress >= 1 else ""
+    return (f'<div><div class="sv{locked}"><img class="{gray}" src="assets/real/{cover}.jpg">{fill}{stamp}</div>'
+            f'<div class="kt">{title}</div><div class="ky">{year} · {int(progress*11)}/11</div></div>')
+
+def catalog():
+    items = [("vdps","ВДПС","2026",1.0,"01"),("shiz2","СХИК2","2023",0.62,None),
+             ("boleyu","Болею тобой","2023",0.36,None),("apnoe","Апноэ","2023",0.12,None),
+             ("stigmata","STIGMATA","2024",0.0,None),("lava","lava","2021",0.0,None)]
+    g = "".join(sleeve(*it) for it in items)
+    return f'''<div class="screen paper">
+  {statusbar(dark=True)}
+  <div class="top"><span class="mono">КИШЛАК</span><span style="display:flex;align-items:center;gap:12px"><span class="mono">12 / 28</span><span class="me-btn">Р</span></span></div>
+  <div class="h1">КАТАЛОГ</div>
+  <div class="hint">ПРОЯВЛЯЕТСЯ ПО МЕРЕ ПРОСЛУШИВАНИЯ</div>
+  <div class="grid">{g}</div>
+  {grain()}
+</div>'''
+
+def release_frame():
+    return f'''<div class="screen frame-scr">
+  <div class="bg"><img src="assets/real/vdps.jpg"></div>
+  <div class="scrim"></div>
+  {statusbar()}
+  <div class="fwrap">
+    <div class="fkick">РЕЛИЗ · 2026</div>
+    <div class="fh">ВДПС</div>
+    <div class="fmeta">11 ТРЕКОВ · 4 ПРОСЛУШАНО · 45:12</div>
+    <div class="fbar"><i style="width:36%"></i></div>
+    <div class="fcta">СЛУШАТЬ</div>
+  </div>
+  {grain()}
+</div>'''
+
+def cassette_player():
+    return f'''<div class="screen paper">
+  {statusbar(dark=True)}
+  <div class="c-top"><span class="mono">01 / 12</span><span class="mono">КИШЛАК</span></div>
+  <div class="cass-wrap">
+    <div class="cassette">
+      <span class="screw" style="left:8px;top:8px"></span><span class="screw" style="right:8px;top:8px"></span>
+      <span class="screw" style="left:8px;bottom:8px"></span><span class="screw" style="right:8px;bottom:8px"></span>
+      <div class="cass-lab"><span>КИШЛАК — ВДПС</span><span>№ 0341</span></div>
+      <div class="cass-win">
+        <span class="tape-path"></span>
+        <div class="reel"><span class="tape-disc" style="width:46px;height:46px"></span><span class="hub"></span></div>
+        <div class="reel"><span class="tape-disc" style="width:24px;height:24px"></span><span class="hub"></span></div>
+      </div>
+      <div class="cass-bot"><span class="side">СТОРОНА A</span><span class="side">C-60 · 2026</span></div>
+    </div>
+  </div>
+  <div class="c-title">ВДПС</div>
+  <div class="c-meta">КИШЛАК · 2026 · СИНГЛ</div>
+  <div class="c-lyr">я вырос там, где свет не достаёт<br><span class="on">болею тобой</span><br>и мне не холодно</div>
+  <div class="c-queue">
+    <div class="qh">ДАЛЬШЕ НА КАССЕТЕ</div>
+    <div class="qr"><span class="qn">02</span>Ночная смена<span class="qd">3:03</span></div>
+    <div class="qr"><span class="qn">03</span>Двинулся на тебе<span class="qd">2:56</span></div>
+  </div>
+  <div class="c-bottom">
+    <div class="c-bar"><i style="width:34%"></i></div>
+    <div class="c-times"><span>0:42</span><span>−1:38</span></div>
+    <div class="c-tr">
+      <span class="c-plain"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6v12L9.5 12z" fill="currentColor" stroke="none"/><rect x="6" y="6" width="1.8" height="12" fill="currentColor" stroke="none"/></svg></span>
+      <span class="c-pl"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="8" y="5.5" width="3" height="13" rx="1"/><rect x="13" y="5.5" width="3" height="13" rx="1"/></svg></span>
+      <span class="c-plain"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 6v12l8.5-6z" fill="currentColor" stroke="none"/><rect x="16.2" y="6" width="1.8" height="12" fill="currentColor" stroke="none"/></svg></span>
+      <span class="c-flip">ПЕРЕВЕРНУТЬ</span>
+    </div>
+  </div>
+  {grain()}
+</div>'''
+
+cells = [
+ ("1 · Каталог: обложки проявляются", catalog(),
+  "<b>1</b> сетка принтов, бумага<br><b>2</b> пустое — серое и пунктир<br><b>3</b> профиль — кнопка «Р»"),
+ ("2 · Тап по обложке: кадр на весь экран", release_frame(),
+  "<b>4</b> обложка = экран, без рамок<br><b>5</b> название крупно, прогресс релиза<br><b>6</b> свайп вниз — назад в каталог"),
+ ("3 · «Слушать»: кассета", cassette_player(),
+  "<b>7</b> плеер-предмет, катушки и лента<br><b>8</b> текст — вкладыш, не экран<br><b>9</b> «перевернуть» — сторона B"),
+]
+
+html = f'''<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Финальная связка</title>
+<style>{BASE}</style></head><body>
+{''.join(f'<div class="cell"><div class="cap">{c}</div>{h}<div class="notes">{n}</div></div>' for c,h,n in cells)}
+</body></html>'''
+open(os.path.join(OUT, "sheet-flow.html"), "w").write(html)
+print("ok")

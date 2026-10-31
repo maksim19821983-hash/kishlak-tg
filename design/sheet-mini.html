@@ -1,0 +1,83 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Мини-плеер</title>
+<style>
+@font-face{font-family:'U';src:url('assets/unbounded.ttf') format('truetype');font-weight:200 900}
+@font-face{font-family:'M';src:url('assets/jbmono-regular.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'M';src:url('assets/jbmono-medium.ttf') format('truetype');font-weight:500}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+body{background:#141416;display:flex;gap:36px;padding:36px;width:max-content;font-family:'U',sans-serif;color:#F2EFEA}
+.cell{display:flex;flex-direction:column;gap:10px;width:390px}
+.cap{font-family:'M';font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#6E6A66}
+.notes{font-family:'M';font-size:10.5px;line-height:17px;color:#8A857F}
+.notes b{color:#C9C3BB;font-weight:500}
+.screen{position:relative;width:390px;height:844px;overflow:hidden;border-radius:24px;display:flex;flex-direction:column;background:#EDE7DC;color:#131211}
+.status{position:relative;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font-family:'M';font-size:12px;letter-spacing:.05em}
+.sb{display:flex;gap:6px;align-items:center}
+.mono{font-family:'M';font-weight:500;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.top{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:40px;color:rgba(0,0,0,.5)}
+.me-btn{width:30px;height:30px;border-radius:30px;border:1px solid rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-family:'M';font-size:11px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 14px;padding:14px 24px 0}
+.sv{position:relative;border:1px solid rgba(0,0,0,.18);overflow:hidden}
+.sv img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.sv .gray{filter:grayscale(1) brightness(.92)}
+.sv .fill{position:absolute;left:0;right:0;bottom:0;overflow:hidden}
+.sv .fill img{position:absolute;left:0;bottom:0;width:100%;height:auto}
+.sv.locked{border-style:dashed}
+.stamp{position:absolute;right:-6px;top:-6px;width:30px;height:30px;background:#131211;color:#EDE7DC;display:flex;align-items:center;justify-content:center;font-family:'M';font-size:10px}
+.kt{font-weight:600;font-size:13px;margin-top:7px}
+.ky{font-family:'M';font-size:9.5px;letter-spacing:.14em;color:rgba(0,0,0,.45);margin-top:2px}
+.h1{font-weight:800;font-size:32px;line-height:34px;letter-spacing:-.025em;padding:6px 24px 0}
+.hint{font-family:'M';font-size:10px;letter-spacing:.14em;color:rgba(0,0,0,.45);padding:8px 24px 0}
+/* A. лента */
+.strip-a{position:absolute;left:0;right:0;bottom:0;height:46px;display:flex;align-items:center;gap:11px;padding:0 18px 2px;border-top:1px solid rgba(0,0,0,.16);background:#EDE7DC}
+.strip-a img{width:28px;height:28px;object-fit:cover;border:1px solid rgba(0,0,0,.2)}
+.strip-a .st{font-weight:600;font-size:12px}
+.strip-a .ss{font-family:'M';font-size:8.5px;letter-spacing:.14em;color:rgba(0,0,0,.45);margin-top:2px}
+.strip-a .sp{margin-left:auto;width:34px;height:34px;display:flex;align-items:center;justify-content:center}
+.strip-a .line{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(0,0,0,.10)}
+.strip-a .line i{position:absolute;left:0;top:0;height:2px;background:#8C5334;width:34%}
+.ticks{position:absolute;left:0;right:0;bottom:0;height:3px;display:flex;gap:6px;padding:0 18px;opacity:.25}
+.ticks span{width:2px;height:3px;background:currentColor}
+/* B. торец */
+.strip-b{position:absolute;left:0;right:0;bottom:0;height:58px;display:flex;align-items:center;gap:12px;padding:0 18px;border-top:1px solid rgba(0,0,0,.18);background:#E4DDD0}
+.strip-b .cass{width:40px;height:26px;border:1px solid rgba(0,0,0,.35);border-radius:3px;position:relative;display:flex;align-items:center;justify-content:space-around}
+.strip-b .cass .r{width:9px;height:9px;border-radius:9px;border:1px solid rgba(0,0,0,.45)}
+.strip-b .cass .r.on{background:#8C5334;border-color:#8C5334}
+.strip-b .st{font-weight:600;font-size:12px}
+.strip-b .ss{font-family:'M';font-size:8.5px;letter-spacing:.14em;color:rgba(0,0,0,.45);margin-top:2px}
+.strip-b .sp{margin-left:auto;width:34px;height:34px;display:flex;align-items:center;justify-content:center}
+.strip-b .line{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(0,0,0,.10)}
+.strip-b .line i{position:absolute;left:0;top:0;height:2px;background:#8C5334;width:34%}
+/* C. тихий */
+.quiet{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:40px}
+.quiet .now{display:flex;align-items:center;gap:9px}
+.quiet .dot{width:6px;height:6px;border-radius:6px;background:#8C5334}
+.quiet .sp{width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+.qline{height:2px;margin:0 24px;background:rgba(0,0,0,.12);position:relative}
+.qline i{position:absolute;left:0;top:0;height:2px;width:34%;background:#8C5334}
+</style></head><body>
+<div class="cell"><div class="cap">A · «Лента» · 46 px</div><div class="screen"><div class="status" style="color:#0E0E0F"><span>16:34</span><span class="sb"><svg width="18" height="12" viewBox="0 0 18 12" fill="#0E0E0F"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1" opacity=".4"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="#0E0E0F" stroke-width="1.5" stroke-linecap="round"><path d="M1.5 4.2a11 11 0 0 1 14 0"/><path d="M4 6.8a7.4 7.4 0 0 1 9 0"/><path d="M6.6 9.3a3.8 3.8 0 0 1 3.8 0"/></svg><svg width="26" height="13" viewBox="0 0 26 13" fill="none" stroke="#0E0E0F" stroke-width="1.2"><rect x="0.6" y="1.6" width="20" height="9.8" rx="2.6"/><rect x="2.2" y="3.2" width="14" height="6.6" rx="1.6" fill="#0E0E0F" stroke="none"/><path d="M23 5v3" stroke-width="2" stroke-linecap="round"/></svg></span></div><div class="top"><span class="mono">КИШЛАК</span><span style="display:flex;align-items:center;gap:12px"><span class="mono">12 / 28</span><span class="me-btn">Р</span></span></div>
+  <div class="h1">КАТАЛОГ</div><div class="hint">ПРОЯВЛЯЕТСЯ ПО МЕРЕ ПРОСЛУШИВАНИЯ</div>
+  <div class="grid"><div><div class="sv"><img class="" src="assets/real/vdps.jpg"><span class="stamp">01</span></div><div class="kt">ВДПС</div><div class="ky">2026 · 11/11</div></div><div><div class="sv"><img class="gray" src="assets/real/shiz2.jpg"><div class="fill" style="height:62%"><img src="assets/real/shiz2.jpg"></div></div><div class="kt">СХИК2</div><div class="ky">2023 · 6/11</div></div><div><div class="sv"><img class="gray" src="assets/real/boleyu.jpg"><div class="fill" style="height:36%"><img src="assets/real/boleyu.jpg"></div></div><div class="kt">Болею тобой</div><div class="ky">2023 · 3/11</div></div><div><div class="sv"><img class="gray" src="assets/real/apnoe.jpg"><div class="fill" style="height:12%"><img src="assets/real/apnoe.jpg"></div></div><div class="kt">Апноэ</div><div class="ky">2023 · 1/11</div></div><div><div class="sv locked"><img class="gray" src="assets/real/stigmata.jpg"></div><div class="kt">STIGMATA</div><div class="ky">2024 · 0/11</div></div><div><div class="sv locked"><img class="gray" src="assets/real/lava.jpg"></div><div class="kt">lava</div><div class="ky">2021 · 0/11</div></div></div><div class="grain"></div><div class="strip-a">
+  <img src="assets/real/vdps.jpg">
+  <div><div class="st">ВДПС</div><div class="ss">КИШЛАК · 0:42 / 2:12</div></div>
+  <span class="sp"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5.5" width="3.4" height="13" rx="1"/><rect x="13.6" y="5.5" width="3.4" height="13" rx="1"/></svg></span>
+  <div class="line"><i></i></div>
+</div></div><div class="notes"><b>1</b> тонкая полоса, не панель<br><b>2</b> по низу ползёт лента-прогресс<br><b>3</b> тап — открыть кассету</div></div><div class="cell"><div class="cap">B · «Торец кассеты» · 58 px</div><div class="screen"><div class="status" style="color:#0E0E0F"><span>16:34</span><span class="sb"><svg width="18" height="12" viewBox="0 0 18 12" fill="#0E0E0F"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1" opacity=".4"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="#0E0E0F" stroke-width="1.5" stroke-linecap="round"><path d="M1.5 4.2a11 11 0 0 1 14 0"/><path d="M4 6.8a7.4 7.4 0 0 1 9 0"/><path d="M6.6 9.3a3.8 3.8 0 0 1 3.8 0"/></svg><svg width="26" height="13" viewBox="0 0 26 13" fill="none" stroke="#0E0E0F" stroke-width="1.2"><rect x="0.6" y="1.6" width="20" height="9.8" rx="2.6"/><rect x="2.2" y="3.2" width="14" height="6.6" rx="1.6" fill="#0E0E0F" stroke="none"/><path d="M23 5v3" stroke-width="2" stroke-linecap="round"/></svg></span></div><div class="top"><span class="mono">КИШЛАК</span><span style="display:flex;align-items:center;gap:12px"><span class="mono">12 / 28</span><span class="me-btn">Р</span></span></div>
+  <div class="h1">КАТАЛОГ</div><div class="hint">ПРОЯВЛЯЕТСЯ ПО МЕРЕ ПРОСЛУШИВАНИЯ</div>
+  <div class="grid"><div><div class="sv"><img class="" src="assets/real/vdps.jpg"><span class="stamp">01</span></div><div class="kt">ВДПС</div><div class="ky">2026 · 11/11</div></div><div><div class="sv"><img class="gray" src="assets/real/shiz2.jpg"><div class="fill" style="height:62%"><img src="assets/real/shiz2.jpg"></div></div><div class="kt">СХИК2</div><div class="ky">2023 · 6/11</div></div><div><div class="sv"><img class="gray" src="assets/real/boleyu.jpg"><div class="fill" style="height:36%"><img src="assets/real/boleyu.jpg"></div></div><div class="kt">Болею тобой</div><div class="ky">2023 · 3/11</div></div><div><div class="sv"><img class="gray" src="assets/real/apnoe.jpg"><div class="fill" style="height:12%"><img src="assets/real/apnoe.jpg"></div></div><div class="kt">Апноэ</div><div class="ky">2023 · 1/11</div></div><div><div class="sv locked"><img class="gray" src="assets/real/stigmata.jpg"></div><div class="kt">STIGMATA</div><div class="ky">2024 · 0/11</div></div><div><div class="sv locked"><img class="gray" src="assets/real/lava.jpg"></div><div class="kt">lava</div><div class="ky">2021 · 0/11</div></div></div><div class="grain"></div><div class="strip-b">
+  <div class="cass"><span class="r on"></span><span class="r"></span></div>
+  <div><div class="st">ВДПС</div><div class="ss">КИШЛАК · 0:42 / 2:12</div></div>
+  <span class="sp"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5.5" width="3.4" height="13" rx="1"/><rect x="13.6" y="5.5" width="3.4" height="13" rx="1"/></svg></span>
+  <div class="line"><i></i></div>
+</div></div><div class="notes"><b>1</b> мини-кассета слева, катушки крутятся<br><b>2</b> ближе к предмету, но тяжелее<br><b>3</b> занимает место у сетки</div></div><div class="cell"><div class="cap">C · «Тихий» · без плашки</div><div class="screen"><div class="status" style="color:#0E0E0F"><span>16:34</span><span class="sb"><svg width="18" height="12" viewBox="0 0 18 12" fill="#0E0E0F"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1" opacity=".4"/></svg><svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="#0E0E0F" stroke-width="1.5" stroke-linecap="round"><path d="M1.5 4.2a11 11 0 0 1 14 0"/><path d="M4 6.8a7.4 7.4 0 0 1 9 0"/><path d="M6.6 9.3a3.8 3.8 0 0 1 3.8 0"/></svg><svg width="26" height="13" viewBox="0 0 26 13" fill="none" stroke="#0E0E0F" stroke-width="1.2"><rect x="0.6" y="1.6" width="20" height="9.8" rx="2.6"/><rect x="2.2" y="3.2" width="14" height="6.6" rx="1.6" fill="#0E0E0F" stroke="none"/><path d="M23 5v3" stroke-width="2" stroke-linecap="round"/></svg></span></div><div class="quiet">
+      <span class="now"><span class="dot"></span><span class="mono">ВДПС · 0:42</span></span>
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="sp"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5.5" width="3.4" height="13" rx="1"/><rect x="13.6" y="5.5" width="3.4" height="13" rx="1"/></svg></span>
+        <span class="me-btn">Р</span>
+      </span>
+    </div><div class="qline"><i></i></div>
+  <div class="h1">КАТАЛОГ</div><div class="hint">ПРОЯВЛЯЕТСЯ ПО МЕРЕ ПРОСЛУШИВАНИЯ</div>
+  <div class="grid"><div><div class="sv"><img class="" src="assets/real/vdps.jpg"><span class="stamp">01</span></div><div class="kt">ВДПС</div><div class="ky">2026 · 11/11</div></div><div><div class="sv"><img class="gray" src="assets/real/shiz2.jpg"><div class="fill" style="height:62%"><img src="assets/real/shiz2.jpg"></div></div><div class="kt">СХИК2</div><div class="ky">2023 · 6/11</div></div><div><div class="sv"><img class="gray" src="assets/real/boleyu.jpg"><div class="fill" style="height:36%"><img src="assets/real/boleyu.jpg"></div></div><div class="kt">Болею тобой</div><div class="ky">2023 · 3/11</div></div><div><div class="sv"><img class="gray" src="assets/real/apnoe.jpg"><div class="fill" style="height:12%"><img src="assets/real/apnoe.jpg"></div></div><div class="kt">Апноэ</div><div class="ky">2023 · 1/11</div></div><div><div class="sv locked"><img class="gray" src="assets/real/stigmata.jpg"></div><div class="kt">STIGMATA</div><div class="ky">2024 · 0/11</div></div><div><div class="sv locked"><img class="gray" src="assets/real/lava.jpg"></div><div class="kt">lava</div><div class="ky">2021 · 0/11</div></div></div><div class="grain"></div></div><div class="notes"><b>1</b> играющее живёт в шапке<br><b>2</b> прогресс — линия под шапкой<br><b>3</b> ничего не закрывает контент</div></div>
+</body></html>
