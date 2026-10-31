@@ -5,6 +5,7 @@ import type { Catalog, Release } from '@/data/types'
 import { useAudioStore } from '@/audio/store'
 import { Sleeve, SleeveSkeleton } from '@/ui/Sleeve'
 import { ReleaseFrame } from './ReleaseFrame'
+import { ProfileScreen } from '@/features/fan/ProfileScreen'
 
 type Load =
   | { status: 'loading' }
@@ -42,6 +43,7 @@ type Props = { onOpenPlayer: () => void }
 export function CatalogScreen({ onOpenPlayer }: Props) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
   const [activeRelease, setActiveRelease] = useState<Release | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const track = useAudioStore((s) => s.track)
   const status = useAudioStore((s) => s.status)
@@ -105,7 +107,7 @@ export function CatalogScreen({ onOpenPlayer }: Props) {
               >
                 {playing ? '⏸' : '▶'}
               </button>
-              <ProfileButton />
+              <ProfileButton onOpen={() => setProfileOpen(true)} />
             </div>
           </>
         ) : (
@@ -114,7 +116,7 @@ export function CatalogScreen({ onOpenPlayer }: Props) {
             <span className="font-mono text-mono-label uppercase text-ink shrink-0">КИШЛАК</span>
             <div className="flex items-center gap-2 shrink-0">
               <span className="font-mono text-mono-num text-dim">{pluralRelease(completedCount)}</span>
-              <ProfileButton />
+              <ProfileButton onOpen={() => setProfileOpen(true)} />
             </div>
           </>
         )}
@@ -207,13 +209,16 @@ export function CatalogScreen({ onOpenPlayer }: Props) {
           }}
         />
       )}
+
+      {profileOpen && <ProfileScreen onClose={() => setProfileOpen(false)} />}
     </div>
   )
 }
 
-function ProfileButton() {
+function ProfileButton({ onOpen }: { onOpen: () => void }) {
   return (
     <button
+      onClick={onOpen}
       className="w-[30px] h-[30px] rounded-full border border-line flex items-center justify-center font-mono text-mono-label text-ink"
       aria-label="Профиль"
     >

@@ -1,9 +1,8 @@
-// Заглушка фан-слоя (docs/spec/fan-layer.md). Реальный учёт прослушиваний — фаза 5.
+import { getCachedProgress } from '@/features/fan/trackListen'
 
 export const FanRepo = {
-  /** Доля прослушанных треков релиза, 0…1. */
+  /** Доля прослушанных треков релиза, 0…1 (из кэша trackListen). */
   releaseProgress(releaseId: string): number {
-    void releaseId
-    return 0
+    return getCachedProgress(releaseId)
   },
 }

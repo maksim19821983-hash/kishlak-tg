@@ -88,9 +88,11 @@ export function PlayerScreen({ onClose }: Props) {
   const activeIdx = lyrics ? getActiveLineIndex(textLines, currentTime) : -1
   const prevLine = activeIdx > 0 ? textLines[activeIdx - 1] ?? null : null
   const activeLine = activeIdx >= 0 ? textLines[activeIdx] ?? null : null
-  // до первой строки: показываем первую непустую как «следующую»
+  // до первой строки: первая непустая как активная, вторая как следующая
+  const nonBlank = textLines.filter((l) => !l.isBlank)
+  const displayActive = activeLine ?? nonBlank[0] ?? null
   const nextLine = activeIdx === -1
-    ? (textLines.find((l) => !l.isBlank) ?? null)
+    ? (nonBlank[1] ?? null)
     : (activeIdx < textLines.length - 1 ? textLines[activeIdx + 1] ?? null : null)
   const hasLyrics = lyrics !== null && textLines.length > 0
 
@@ -216,7 +218,7 @@ export function PlayerScreen({ onClose }: Props) {
             )}
             {!prevLine && <p className="font-mono text-lyric text-dim line-clamp-1 opacity-0">·</p>}
             <p className="font-display text-lyric-active text-[var(--accent-text)] line-clamp-1">
-              {activeLine && !activeLine.isBlank ? activeLine.text : '···'}
+              {displayActive && !displayActive.isBlank ? displayActive.text : ''}
             </p>
             {nextLine && !nextLine.isBlank && (
               <p className="font-mono text-lyric text-dim line-clamp-1">{nextLine.text}</p>
