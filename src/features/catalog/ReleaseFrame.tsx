@@ -1,0 +1,131 @@
+import { useEffect, useRef, useState } from 'react'
+import type { Release } from '@/data/types'
+import { useAudioStore } from '@/audio/store'
+import { back } from '@/app/router'
+import { disableVerticalSwipes } from '@/app/telegram'
+
+const SCRIM = 'linear-gradient(to bottom, rgba(0,0,0,.5), transparent 22%, rgba(0,0,0,.4) 55%, rgba(0,0,0,.94) 90%)'
+
+type Props = {
+  release: Release
+  listenedCount: number
+  onClose: () => void
+  onPlay: () => void
+}
+
+function fmtDuration(sec: number): string {
+  const h = Math.floor(sec / 3600)
+  const m = Math.floor((sec % 3600) / 60)
+  const s = sec % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+export function ReleaseFrame({ release, listenedCount, onClose, onPlay }: Props) {
+  const touchStartY = useRef<number | null>(null)
+  const [offset, setOffset] = useState(0)
+  const [closing, setClosing] = useState(false)
+  const totalDuration = release.tracks.reduce((a, t) => a + t.duration, 0)
+  const progress = release.tracks.length > 0 ? listenedCount / release.tracks.length : 0
+
+  // BackButton Telegram
+  useEffect(() => {
+    disableVerticalSwipes()
+    return () => {}
+  }, [])
+
+  const close = () => {
+    setClosing(true)
+    setTimeout(() => { onClose(); back() }, 300)
+  }
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0]?.clientY ?? null
+  }
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return
+    const dy = (e.touches[0]?.clientY ?? 0) - touchStartY.current
+    if (dy > 0) setOffset(dy)
+  }
+  const onTouchEnd = () => {
+    if (offset > 120) { close() } else { setOffset(0) }
+    touchStartY.current = null
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50"
+      style={{
+        transform: `translateY(${offset}px)`,
+        transition: offset === 0 && !closing ? 'transform 300ms ease' : closing ? 'transform 300ms ease' : 'none',
+        opacity: closing ? 0 : 1,
+      }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* обложка на весь экран */}
+      <img
+        src={release.cover}
+        alt={release.title}
+        className="absolute inset-0 w-full h-full object-cover"
+        draggable={false}
+      />
+
+      {/* скрим */}
+      <div className="absolute inset-0" style={{ background: SCRIM }} />
+
+      {/* контент */}
+      <div
+        className="absolute inset-0 flex flex-col justify-end"
+        style={{
+          paddingBottom: 'calc(32px + env(safe-area-inset-bottom))',
+          paddingLeft: 24, paddingRight: 24,
+        }}
+      >
+        <p className="font-mono text-mono-label uppercase text-[#F1EDE6] mb-1">
+          РЕЛИЗ · {release.year}
+        </p>
+        <p className="font-display text-display-frame text-[#F1EDE6] mb-2 line-clamp-2 leading-tight">
+          {release.title}
+        </p>
+        <p className="font-mono text-mono-num text-[rgba(241,237,230,.7)] mb-4">
+          {release.tracks.length} ТРЕКОВ · {listenedCount} ПРОСЛУШАНО · {fmtDuration(totalDuration)}
+        </p>
+
+        {/* линия прогресса */}
+        <div className="h-0.5 w-full bg-[rgba(241,237,230,.2)] rounded-full mb-6">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${progress * 100}%`, background: 'var(--accent)' }}
+          />
+        </div>
+
+        {/* кнопка СЛУШАТЬ */}
+        <button
+          onClick={onPlay}
+          className="w-full h-[54px] rounded-pill bg-[#F1EDE6] font-mono text-mono-label uppercase text-[#131211] tracking-widest min-h-[44px]"
+        >
+          СЛУШАТЬ
+        </button>
+      </div>
+
+      {/* кнопка закрыть */}
+      <button
+        onClick={close}
+        className="absolute top-0 left-0 right-0 h-16 flex items-start justify-start"
+        style={{ paddingTop: 'calc(16px + env(safe-area-inset-top))', paddingLeft: 24 }}
+        aria-label="Закрыть кадр релиза"
+      >
+        <span className="font-mono text-mono-label uppercase text-[rgba(241,237,230,.7)]">← назад</span>
+      </button>
+    </div>
+  )
+}
+
+export function useCurrentTrackMeta() {
+  const track = useAudioStore((s) => s.track)
+  const status = useAudioStore((s) => s.status)
+  const currentTime = useAudioStore((s) => s.currentTime)
+  return { track, status, currentTime }
+}

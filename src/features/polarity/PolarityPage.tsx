@@ -43,7 +43,7 @@ export function PolarityPage() {
     <div className="p-6 font-mono">
       <p className="font-display text-h1 uppercase mb-6">Полярность</p>
 
-      <div className="grid grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-2 gap-3 mb-8">
         {covers.map((cover, idx) => (
           <button
             key={cover.url}
@@ -94,10 +94,12 @@ export function PolarityPage() {
 
 function Row({ label, value, children }: { label: string; value: string; children?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-dim w-28 shrink-0">{label}</span>
-      <span className="tabular-nums">{value}</span>
-      {children}
+    <div className="flex flex-col gap-0.5">
+      <span className="text-mono-label uppercase text-dim">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="tabular-nums break-all">{value}</span>
+        {children}
+      </div>
     </div>
   )
 }
