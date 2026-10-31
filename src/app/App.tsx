@@ -5,13 +5,8 @@ import { usePolarity } from '@/features/polarity/usePolarity'
 export function App() {
   usePolarity()
   return (
-    <div
-      className="min-h-[100dvh] bg-bg px-screen text-ink transition-colors duration-theme"
-      style={{
-        paddingTop: 'calc(var(--screen-pad) + env(safe-area-inset-top))',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}
-    >
+    // Каждый экран управляет своими отступами сам — App не добавляет padding
+    <div className="min-h-[100dvh] bg-bg text-ink transition-colors duration-theme">
       <Routes />
       <Grain />
     </div>

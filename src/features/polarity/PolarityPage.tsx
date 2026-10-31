@@ -40,7 +40,9 @@ export function PolarityPage() {
   const p = activeCover?.palette ?? null
 
   return (
-    <div className="p-6 font-mono">
+    <div className="p-6 font-mono overflow-x-hidden min-h-[100dvh] bg-bg"
+      style={{ paddingTop: 'calc(24px + env(safe-area-inset-top))' }}
+    >
       <p className="font-display text-h1 uppercase mb-6">Полярность</p>
 
       <div className="grid grid-cols-2 gap-3 mb-8">
