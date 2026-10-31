@@ -250,6 +250,7 @@ class WebAudioEngine implements AudioPort {
   }
 
   private startRaf(): void {
+    if (this.rafId) return // защита от второго цикла: stopRaf отменит только последний id
     const tick = () => {
       this.rafId = requestAnimationFrame(tick)
       const ct = this.el.currentTime
