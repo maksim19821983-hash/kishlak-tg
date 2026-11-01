@@ -123,46 +123,43 @@ function handleEnded(track: Track, duration: number): void {
 
 // ── обработчик обновлений state ──────────────────────────────────────────────
 
-function handleTrackChange(next: PlaybackState): void {
-  const prevTrackId = prevState?.track?.id ?? null
+function handleTrackChange(prev: PlaybackState | null, next: PlaybackState): void {
+  const prevTrackId = prev?.track?.id ?? null
   const nextTrackId = next.track?.id ?? null
 
   if (prevTrackId && prevTrackId !== nextTrackId) {
     flushSession()
-    if (prevState && (prevState.status === 'playing' || prevState.status === 'paused')) {
+    if (prev && (prev.status === 'playing' || prev.status === 'paused')) {
       pushSession({
         at: Date.now(),
         withLyrics: lyricsOpenedThisSession,
         trackId: prevTrackId,
-        trackTitle: prevState.track?.title,
+        trackTitle: prev.track?.title,
       })
     }
   }
 
-  if (nextTrackId && (nextTrackId !== sessionTrackId || prevState?.status === 'idle')) {
+  if (nextTrackId && (nextTrackId !== sessionTrackId || prev?.status === 'idle')) {
     resetSession(nextTrackId, next.track?.title ?? '')
   }
 }
 
 export function handleStateUpdate(next: PlaybackState): void {
   const prev = prevState
-  prevState = next
+  prevState = next   // обновляем после захвата prev
 
   if (!next.track) return
 
   const trackId = next.track.id
 
-  handleTrackChange(next)
+  handleTrackChange(prev, next)
 
   // play начался
   if (!sessionStarted && next.status === 'playing') {
     sessionStarted = true
-    // если это новый трек (не resume после паузы на том же треке) — plays+1
     if (prev?.track?.id !== trackId || prev?.status === 'idle') {
       recordPlay(trackId)
     } else if (prev?.status !== 'playing') {
-      // resume после паузы на том же треке — тоже plays+1 только если ещё не было
-      // (sessionStarted был false — значит это первый play в этой сессии)
       recordPlay(trackId)
     }
   }
@@ -239,17 +236,17 @@ export function initTrackListener(): () => void {
   const unsub = engine.subscribe(handleStateUpdate)
   const unsubEnded = engine.subscribeEnded(handleEnded)
 
-  const onVisibility = () => {
-    if (document.hidden) {
-      flushSession()
-      scheduleSave(true)
-    }
-  }
-  document.addEventListener('visibilitychange', onVisibility)
+  const saveNow = () => { flushSession(); scheduleSave(true) }
+
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow() })
+  window.addEventListener('pagehide', saveNow)
+  window.addEventListener('beforeunload', saveNow)
 
   return () => {
     unsub()
     unsubEnded()
-    document.removeEventListener('visibilitychange', onVisibility)
+    document.removeEventListener('visibilitychange', saveNow)
+    window.removeEventListener('pagehide', saveNow)
+    window.removeEventListener('beforeunload', saveNow)
   }
 }
