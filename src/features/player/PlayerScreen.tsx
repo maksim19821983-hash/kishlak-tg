@@ -9,6 +9,7 @@ import type { Lyrics } from '@/features/lyrics/parseLrc'
 import { InsertScreen } from '@/features/lyrics/InsertScreen'
 import { shareTrack } from '@/features/telegram/share'
 import { SupportSheet } from '@/features/telegram/SupportSheet'
+import { IconPrev, IconNext, IconPlay, IconPause } from '@/ui/icons'
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60), s = Math.floor(sec % 60)
@@ -37,11 +38,8 @@ export function PlayerScreen({ onClose }: Props) {
   const seek    = useAudioStore((s) => s.seek)
 
   const [release, setRelease] = useState<Release | null>(null)
-  const [side, setSide] = useState<'A' | 'B'>('A')
   const [dragging, setDragging] = useState(false)
   const [dragTime, setDragTime] = useState(0)
-  const [flipDeg, setFlipDeg] = useState(0)
-  const [flipping, setFlipping] = useState(false)
   const [insertOpen, setInsertOpen] = useState(false)
   const [supportOpen, setSupportOpen] = useState(false)
   const [lyrics, setLyrics] = useState<Lyrics | null>(null)
@@ -104,17 +102,6 @@ export function PlayerScreen({ onClose }: Props) {
     toggle()
   }
 
-  const handleFlip = () => {
-    if (flipping) return
-    setFlipping(true)
-    setFlipDeg((d) => d + 180)
-    setTimeout(() => {
-      setSide((s) => s === 'A' ? 'B' : 'A')
-      setFlipping(false)
-    }, 600)
-    haptic('medium')
-  }
-
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (duration <= 0) return
     const rect = e.currentTarget.getBoundingClientRect()
@@ -175,27 +162,18 @@ export function PlayerScreen({ onClose }: Props) {
         <span className="font-mono text-mono-label uppercase text-ink">КИШЛАК</span>
       </div>
 
-      {/* кассета с 3D-флипом */}
+      {/* кассета */}
       <div
         className="px-screen shrink-0 mt-4"
-        style={{ perspective: '600px' }}
         onTouchStart={handleCassetteTouchStart}
         onTouchEnd={handleCassetteTouchEnd}
       >
-        <div
-          style={{
-            transform: `rotateY(${flipDeg}deg)`,
-            transition: flipping ? 'transform var(--dur-tape)' : 'none',
-            transformStyle: 'preserve-3d',
-          }}
-        >
           <Cassette
-            side={side}
+            side="A"
             onTap={handleTap}
-            releaseTitle={release?.title}
+            releaseYear={release?.year}
             polarity={polarity}
           />
-        </div>
       </div>
 
       {/* название */}
@@ -289,39 +267,28 @@ export function PlayerScreen({ onClose }: Props) {
       {/* транспорт */}
       <div className="px-screen pb-2 flex items-center justify-between shrink-0">
         <button
-          onClick={() => prevFn()}
+          onClick={() => { prevFn(); haptic('light') }}
           className="w-11 h-11 flex items-center justify-center text-ink"
           aria-label="Предыдущий трек"
-          style={{ fontSize: 20 }}
         >
-          ⏮
+          <IconPrev />
         </button>
 
         <button
           onClick={handleTap}
           className="rounded-full flex items-center justify-center text-bg"
-          style={{ width: 58, height: 58, background: 'var(--ink)', fontSize: 22 }}
+          style={{ width: 58, height: 58, background: 'var(--ink)' }}
           aria-label={playing ? 'Пауза' : 'Воспроизвести'}
         >
-          {playing ? '⏸' : '▶'}
+          {playing ? <IconPause /> : <IconPlay />}
         </button>
 
         <button
-          onClick={() => nextFn('user')}
+          onClick={() => { nextFn('user'); haptic('light') }}
           className="w-11 h-11 flex items-center justify-center text-ink"
           aria-label="Следующий трек"
-          style={{ fontSize: 20 }}
         >
-          ⏭
-        </button>
-
-        <button
-          onClick={handleFlip}
-          className="font-mono text-mono-label uppercase border border-line px-3 h-[34px] rounded-pill text-ink"
-          aria-label="Перевернуть кассету"
-          disabled={flipping}
-        >
-          ПЕРЕВЕРНУТЬ
+          <IconNext />
         </button>
       </div>
 

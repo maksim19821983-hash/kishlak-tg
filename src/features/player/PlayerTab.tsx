@@ -10,6 +10,7 @@ import { InsertScreen } from '@/features/lyrics/InsertScreen'
 import { shareTrack } from '@/features/telegram/share'
 import { SupportSheet } from '@/features/telegram/SupportSheet'
 import { getWebEngine } from '@/audio/webEngine'
+import { IconPrev, IconNext, IconPlay, IconPause, IconStar } from '@/ui/icons'
 import { getState } from '@/features/fan/state'
 
 function fmt(sec: number): string {
@@ -59,11 +60,8 @@ export function PlayerTab() {
   const seek    = useAudioStore((s) => s.seek)
 
   const [release, setRelease] = useState<Release | null>(null)
-  const [side, setSide] = useState<'A' | 'B'>('A')
   const [dragging, setDragging] = useState(false)
   const [dragTime, setDragTime] = useState(0)
-  const [flipDeg, setFlipDeg] = useState(0)
-  const [flipping, setFlipping] = useState(false)
   const [insertOpen, setInsertOpen] = useState(false)
   const [supportOpen, setSupportOpen] = useState(false)
   const [lyrics, setLyrics] = useState<Lyrics | null>(null)
@@ -139,14 +137,6 @@ export function PlayerTab() {
 
   const handleTap = () => { haptic('medium'); toggle() }
 
-  const handleFlip = () => {
-    if (flipping) return
-    setFlipping(true)
-    setFlipDeg((d) => d + 180)
-    setTimeout(() => { setSide((s) => s === 'A' ? 'B' : 'A'); setFlipping(false) }, 600)
-    haptic('medium')
-  }
-
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (duration <= 0) return
     const rect = e.currentTarget.getBoundingClientRect()
@@ -208,19 +198,16 @@ export function PlayerTab() {
       {/* кассета */}
       <div
         className="px-screen shrink-0 mt-2"
-        style={{ perspective: '600px' }}
         onTouchStart={handleCassetteTouchStart}
         onTouchEnd={handleCassetteTouchEnd}
       >
-        <div
-          style={{
-            transform: `rotateY(${flipDeg}deg)`,
-            transition: flipping ? 'transform var(--dur-tape)' : 'none',
-            transformStyle: 'preserve-3d',
-          }}
-        >
-          <Cassette side={side} onTap={handleTap} releaseTitle={release?.title} polarity={polarity} />
-        </div>
+        <Cassette
+          side="A"
+          onTap={handleTap}
+          trackTitle={track?.title}
+          releaseYear={release?.year}
+          polarity={polarity}
+        />
       </div>
 
       {/* название */}
@@ -289,23 +276,19 @@ export function PlayerTab() {
 
       {/* транспорт */}
       <div className="px-screen py-2 flex items-center justify-between shrink-0">
-        <button onClick={() => prevFn()} className="w-11 h-11 flex items-center justify-center text-ink" aria-label="Предыдущий" style={{ fontSize: 20 }}>⏮</button>
+        <button onClick={() => { prevFn(); haptic('light') }} className="w-11 h-11 flex items-center justify-center text-ink" aria-label="Предыдущий трек">
+          <IconPrev />
+        </button>
         <button
           onClick={handleTap}
           className="rounded-full flex items-center justify-center text-bg"
-          style={{ width: 52, height: 52, background: 'var(--ink)', fontSize: 20 }}
+          style={{ width: 52, height: 52, background: 'var(--ink)' }}
           aria-label={playing ? 'Пауза' : 'Воспроизвести'}
         >
-          {playing ? '⏸' : '▶'}
+          {playing ? <IconPause /> : <IconPlay />}
         </button>
-        <button onClick={() => nextFn('user')} className="w-11 h-11 flex items-center justify-center text-ink" aria-label="Следующий" style={{ fontSize: 20 }}>⏭</button>
-        <button
-          onClick={handleFlip}
-          className="font-mono text-mono-label uppercase border border-line px-3 h-[34px] rounded-pill text-ink"
-          aria-label="Перевернуть"
-          disabled={flipping}
-        >
-          ПЕРЕВЕРНУТЬ
+        <button onClick={() => { nextFn('user'); haptic('light') }} className="w-11 h-11 flex items-center justify-center text-ink" aria-label="Следующий трек">
+          <IconNext />
         </button>
       </div>
 
@@ -320,9 +303,9 @@ export function PlayerTab() {
         </button>
         <button
           onClick={() => setSupportOpen(true)}
-          className="flex-1 font-mono text-mono-label uppercase border border-line h-[34px] rounded-pill text-ink"
+          className="flex-1 font-mono text-mono-label uppercase border border-line h-[34px] rounded-pill text-ink flex items-center justify-center gap-1.5"
         >
-          ПОДДЕРЖАТЬ ⭐
+          ПОДДЕРЖАТЬ <IconStar size={18} />
         </button>
       </div>
 
