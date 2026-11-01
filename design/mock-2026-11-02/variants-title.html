@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<style>
+  @font-face { font-family:'Unbounded'; src:url('../assets/unbounded.ttf'); font-weight:100 900; }
+  @font-face { font-family:'JB'; src:url('../assets/jbmono-regular.ttf'); }
+  :root{ --paper:#EDE7DC; --ink:#131211; --dim:rgba(19,18,17,.55);
+         --body:#1E1C1A; --bodyText:#F1EDE6; --bodyDim:rgba(241,237,230,.5);
+         --copper:#8C5334; --accent:#B47F64; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0B0B0C;padding:56px 28px 28px;display:flex;gap:24px;justify-content:center;align-items:flex-start}
+  .wrap{display:flex;flex-direction:column;gap:10px;width:390px}
+  .cap{color:#8a8a8a;font:11px/1.35 'JB';letter-spacing:.14em;text-transform:uppercase}
+  .phone{background:var(--paper);color:var(--ink);padding-top:12px}
+  .hdr{display:flex;justify-content:space-between;align-items:center;padding:0 24px 12px}
+  .word{font:600 11px/1 'JB';letter-spacing:.16em}
+  .num{font:400 11px/1 'JB';color:var(--dim);letter-spacing:.1em}
+  .cass{margin:0 24px 22px;background:var(--body);border-radius:10px;padding:13px 14px;color:var(--bodyText)}
+  .row{display:flex;justify-content:space-between;align-items:center}
+  .mono{font:600 9px/1 'JB';letter-spacing:.18em;text-transform:uppercase}
+  .monoDim{font:400 9px/1 'JB';color:var(--bodyDim);letter-spacing:.18em}
+  .win{height:78px;background:rgba(0,0,0,.45);border-radius:6px;display:flex;align-items:center;gap:13px;padding:0 16px;margin:10px 0 0}
+  .full{width:52px;height:52px;border-radius:50%;background:var(--copper);display:grid;place-items:center}
+  .empty{width:26px;height:26px;border-radius:50%;border:2px solid var(--copper)}
+  .hub{width:14px;height:14px;border-radius:50%;background:#1E1C1A}
+  .tape{flex:1;height:2px;background:var(--copper)}
+  .insert{margin-top:10px;background:var(--paper);border-radius:4px;padding:9px 11px 8px;color:var(--ink)}
+  .insert .t{font:700 15px/1.12 'Unbounded';text-transform:uppercase;letter-spacing:-.01em}
+  .insert .m{font:400 8px/1 'JB';letter-spacing:.16em;color:rgba(19,18,17,.6);text-transform:uppercase;margin-top:7px}
+  .tech-title{font:600 13px/1.2 'JB';letter-spacing:.1em;text-transform:uppercase;margin:12px 0 0}
+  .accent-title{font:700 17px/1.15 'Unbounded';text-transform:uppercase;color:var(--accent);margin:12px 0 0;letter-spacing:-.005em}
+  .bar{margin:0 24px;height:3px;background:rgba(19,18,17,.14);position:relative}
+  .bar i{position:absolute;inset:0 auto 0 0;width:38%;background:var(--accent)}
+  .times{display:flex;justify-content:space-between;font:400 11px/1 'JB';color:var(--dim);padding:8px 24px 0}
+  .tr{display:flex;align-items:center;justify-content:space-between;padding:20px 40px 24px}
+  .pb{width:58px;height:58px;border-radius:50%;background:var(--ink);display:grid;place-items:center}
+  .tri{width:0;height:0;border-left:14px solid var(--paper);border-top:9px solid transparent;border-bottom:9px solid transparent;margin-left:4px}
+  .tb{font:700 14px/1 'JB'}
+</style></head><body>
+
+<!-- А: бумажная вставка -->
+<div class="wrap">
+  <div class="cap">А · бумажная вставка<br>как на настоящей кассете</div>
+  <div class="phone">
+    <div class="hdr"><span class="word">КИШЛАК</span><span class="num">03 / 116</span></div>
+    <div class="cass">
+      <div class="row"><span class="mono">КИШЛАК</span><span class="monoDim">№0341</span></div>
+      <div class="win"><div class="full"><div class="hub"></div></div><div class="tape"></div><div class="empty"></div></div>
+      <div class="insert">
+        <div class="t">Лягушачий блюз</div>
+        <div class="m">11:11 · 2020 &nbsp;·&nbsp; C-60</div>
+      </div>
+    </div>
+    <div class="bar"><i></i></div>
+    <div class="times"><span>0:44</span><span>-1:15</span></div>
+    <div class="tr"><span class="tb">◀◀</span><div class="pb"><div class="tri"></div></div><span class="tb">▶▶</span></div>
+  </div>
+</div>
+
+<!-- Б: техническая подпись -->
+<div class="wrap">
+  <div class="cap">Б · техническая подпись<br>моно, с разрядкой</div>
+  <div class="phone">
+    <div class="hdr"><span class="word">КИШЛАК</span><span class="num">03 / 116</span></div>
+    <div class="cass">
+      <div class="row"><span class="mono">КИШЛАК</span><span class="monoDim">№0341</span></div>
+      <div class="tech-title">Лягушачий блюз</div>
+      <div class="win"><div class="full"><div class="hub"></div></div><div class="tape"></div><div class="empty"></div></div>
+      <div class="row" style="margin-top:12px"><span class="mono">11:11 · 2020</span><span class="monoDim">C-60</span></div>
+    </div>
+    <div class="bar"><i></i></div>
+    <div class="times"><span>0:44</span><span>-1:15</span></div>
+    <div class="tr"><span class="tb">◀◀</span><div class="pb"><div class="tri"></div></div><span class="tb">▶▶</span></div>
+  </div>
+</div>
+
+<!-- В: акцентная печать -->
+<div class="wrap">
+  <div class="cap">В · печать акцентом<br>медь по чёрному</div>
+  <div class="phone">
+    <div class="hdr"><span class="word">КИШЛАК</span><span class="num">03 / 116</span></div>
+    <div class="cass">
+      <div class="row"><span class="mono">КИШЛАК</span><span class="monoDim">№0341</span></div>
+      <div class="accent-title">Лягушачий блюз</div>
+      <div class="win"><div class="full"><div class="hub"></div></div><div class="tape"></div><div class="empty"></div></div>
+      <div class="row" style="margin-top:12px"><span class="mono">11:11 · 2020</span><span class="monoDim">C-60</span></div>
+    </div>
+    <div class="bar"><i></i></div>
+    <div class="times"><span>0:44</span><span>-1:15</span></div>
+    <div class="tr"><span class="tb">◀◀</span><div class="pb"><div class="tri"></div></div><span class="tb">▶▶</span></div>
+  </div>
+</div>
+
+</body></html>
