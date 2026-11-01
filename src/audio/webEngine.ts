@@ -41,9 +41,11 @@ class WebAudioEngine implements AudioPort {
   private nearEndTimer = 0
   /** Конец текущего трека уже обработан (ended или фолбэк по pause). */
   private endHandled = false
+  /** Пользователь/очередь просили играть, но браузер не разрешил — повторим на canplay. */
+  private pendingAutoplay = false
 
   // диагностика: счётчики событий
-  readonly diagCounters = { play: 0, pause: 0, ended: 0, loadedmetadata: 0, error: 0, nextEnded: 0, nextUser: 0 }
+  readonly diagCounters = { play: 0, pause: 0, ended: 0, loadedmetadata: 0, error: 0, nextEnded: 0, nextUser: 0, playRejected: 0 }
 
   getDiag() {
     const el = this.el
@@ -96,9 +98,11 @@ class WebAudioEngine implements AudioPort {
       const name = err instanceof DOMException ? err.name : ''
       // AbortError — load() прервал предыдущий play(); не ошибка, игнорируем
       if (name === 'AbortError') return
+      this.diagCounters.playRejected++
       if (name !== 'NotAllowedError') {
         this.patch({ status: 'error', error: 'Трек недоступен' })
       } else {
+        this.pendingAutoplay = true
         this.patch({ status: 'paused' })
       }
     })
@@ -216,6 +220,7 @@ class WebAudioEngine implements AudioPort {
 
     const wasPlaying = autoplay
     this.endHandled = false
+    this.pendingAutoplay = autoplay
     this.el.src = track.audio
     this.el.load()
     this.applyMetadata(track)
@@ -229,7 +234,8 @@ class WebAudioEngine implements AudioPort {
     this.endHandled = true
     this.diagCounters.ended++
     const track = this.state.track
-    const duration = this.state.duration
+    const el_dur = this.el.duration
+    const duration = isFinite(el_dur) && el_dur > 0 ? el_dur : this.state.duration
     this.stopRaf()
     if (track) this.endedSubs.forEach((fn) => fn(track, duration))
     this.next('ended')
@@ -276,6 +282,11 @@ class WebAudioEngine implements AudioPort {
     el.addEventListener('canplay', () => {
       if (this.state.status === 'loading' || this.state.status === 'buffering') {
         this.patch({ status: el.paused ? 'paused' : 'playing' })
+      }
+      // браузер отклонил автоплей ранее — как только данные готовы, пробуем ещё раз
+      if (this.pendingAutoplay && el.paused) {
+        this.pendingAutoplay = false
+        void el.play().catch(() => { /* останется на паузе, пользователь нажмёт сам */ })
       }
     })
 

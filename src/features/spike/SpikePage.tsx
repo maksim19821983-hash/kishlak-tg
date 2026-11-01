@@ -3,7 +3,7 @@ import { useTelegramStatus } from '@/app/telegram'
 import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import { getWebEngine } from '@/audio/webEngine'
-import { getSessionDiag } from '@/features/fan/trackListen'
+import { getSessionDiag, subscribeProgress, getCachedProgress } from '@/features/fan/trackListen'
 import { getState } from '@/features/fan/state'
 
 function fmt(s: number): string {
@@ -44,6 +44,7 @@ type DiagSnapshot = {
   errorMsg: string | null
   cPlay: number; cPause: number; cEnded: number; cMeta: number; cError: number
   cNextEnded: number; cNextUser: number
+  cPlayRejected: number
   sessionNaturalMax: number
   sessionSeconds: number
   listens: number
@@ -74,6 +75,7 @@ function snapshot(): DiagSnapshot {
     errorMsg: d.errorMsg,
     cPlay: c.play, cPause: c.pause, cEnded: c.ended, cMeta: c.loadedmetadata, cError: c.error,
     cNextEnded: c.nextEnded, cNextUser: c.nextUser,
+    cPlayRejected: c.playRejected,
     sessionNaturalMax,
     sessionSeconds,
     listens,
@@ -130,8 +132,13 @@ export function SpikePage() {
       prevStatus = st.status
     })
     const unsubEnded = eng.subscribeEnded((t) => push(`ENDED «${t.title}»`))
+    const unsubProgress = subscribeProgress(() => {
+      const rel = getState().releases
+      const parts = Object.keys(rel).map((id) => `${id}: ${Math.round(getCachedProgress(id) * 100)}%`)
+      if (parts.length > 0) push(`прогресс ${parts.join(', ')}`)
+    })
     push('журнал запущен')
-    return () => { unsub(); unsubEnded() }
+    return () => { unsub(); unsubEnded(); unsubProgress() }
   }, [])
 
   // живая диагностика 4 раза/сек
@@ -236,6 +243,7 @@ export function SpikePage() {
         <Row label="error"         value={diag.cError} />
         <Row label="next(ended)"   value={diag.cNextEnded} />
         <Row label="next(user)"    value={diag.cNextUser} />
+        <Row label="play rejected" value={diag.cPlayRejected} />
 
         <p className="text-mono-label uppercase text-dim mt-3 mb-1">фан-сессия</p>
         <Row label="sessionNaturalMax" value={fmtN(diag.sessionNaturalMax)} />
