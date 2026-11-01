@@ -50,6 +50,7 @@ def build() -> dict:
             "title": data["title"],
             "artistId": data.get("artistId", ARTIST["id"]),
             "year": data.get("year"),
+            **({"releasedAt": data["releasedAt"]} if data.get("releasedAt") else {}),
             "type": data.get("type", "single"),
             "palette": data.get("palette", {"mode": "paper", "accent": "#8C5334"}),
             "cover": copy(cover, PUBLIC / "covers" / f"{rid}.jpg") if cover.exists() else None,

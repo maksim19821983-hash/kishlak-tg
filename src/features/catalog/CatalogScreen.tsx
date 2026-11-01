@@ -5,6 +5,7 @@ import { subscribeFan } from '@/features/fan/trackListen'
 import type { Catalog, Release } from '@/data/types'
 import { Sleeve, SleeveSkeleton } from '@/ui/Sleeve'
 import { ReleaseFrame } from './ReleaseFrame'
+import { sortReleases } from './sort'
 import { NowPlayingBar } from '@/ui/NowPlayingBar'
 import { IconTheme } from '@/ui/icons'
 import { SearchField } from '@/ui/SearchField'
@@ -61,7 +62,7 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
   useEffect(() => { fetchCatalog() }, [])
 
   const catalog = load.status === 'ready' ? load.catalog : null
-  const releases = catalog?.releases ?? []
+  const releases = sortReleases(catalog?.releases ?? [])
   const q = query.trim().toLowerCase()
   const matches = (value: string): boolean => value.toLowerCase().includes(q)
   const filteredReleases = q === '' ? releases : releases.filter((r) => matches(r.title))

@@ -245,6 +245,7 @@ def main():
     ap.add_argument("--id", required=True, help="id релиза, латиницей: vdps-2026")
     ap.add_argument("--title", required=True, help="название релиза")
     ap.add_argument("--year", type=int, default=None)
+    ap.add_argument("--date", default=None, help="дата выхода YYYY-MM-DD — по ней сортируется каталог")
     ap.add_argument("--type", default="single", choices=["album", "ep", "single"])
     ap.add_argument("--artist-id", default="kishlak")
     ap.add_argument("--out", type=Path, default=Path("content/releases"))
@@ -341,6 +342,7 @@ def main():
         "title": args.title,
         "artistId": args.artist_id,
         "year": args.year,
+        **({"releasedAt": args.date} if args.date else {}),
         "type": args.type,
         "cover": "cover.jpg",
         "coverSmall": "cover-400.jpg",

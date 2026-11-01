@@ -24,6 +24,8 @@ export type Release = {
   title: string
   artistId: string
   year: number
+  /** Точная дата выхода (ISO), если известна — для сортировки каталога */
+  releasedAt?: string
   type: ReleaseType
   palette: { mode: Polarity; accent: string }
   cover: string

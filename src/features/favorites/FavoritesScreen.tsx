@@ -12,6 +12,7 @@ import { SearchField } from '@/ui/SearchField'
 import { IconMore, IconPlay } from '@/ui/icons'
 import { HeartButton } from '@/ui/HeartButton'
 import { releaseProgress } from '@/features/fan/derive'
+import { sortReleases } from '@/features/catalog/sort'
 import { getState } from '@/features/fan/state'
 
 function fmt(sec: number): string {
@@ -46,7 +47,7 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
   const q = query.trim().toLowerCase()
   const matches = (value: string): boolean => value.toLowerCase().includes(q)
   const visibleTracks = q === '' ? tracks : tracks.filter((t) => matches(t.title))
-  const visibleReleases = q === '' ? releases : releases.filter((r) => matches(r.title))
+  const visibleReleases = sortReleases(q === '' ? releases : releases.filter((r) => matches(r.title)))
 
   const startQueue = (list: Track[], index: number) => {
     if (list.length === 0) return

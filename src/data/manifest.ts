@@ -89,6 +89,7 @@ function parseRelease(v: unknown, i: number, artistId: string): Release {
     title: str(o, 'title', p),
     artistId: relArtist,
     year: num(o, 'year', p),
+    ...(typeof o.releasedAt === 'string' ? { releasedAt: o.releasedAt } : {}),
     type: oneOf(o, 'type', p, RELEASE_TYPES),
     palette: {
       mode: oneOf(palette, 'mode', `${p}.palette`, ['paper', 'dark'] as const),
