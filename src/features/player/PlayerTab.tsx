@@ -36,16 +36,6 @@ function buildFlat(releases: Release[]): FlatTrack[] {
   return result
 }
 
-function firstUnlistenedIndex(release: Release): number {
-  const fanState = getState()
-  for (let i = 0; i < release.tracks.length; i++) {
-    const t = release.tracks[i]!
-    const stat = fanState.tracks[t.id]
-    if (!stat || stat.listens === 0) return i
-  }
-  return 0
-}
-
 export function PlayerTab() {
   const track       = useAudioStore((s) => s.track)
   const queue       = useAudioStore((s) => s.queue)
@@ -72,18 +62,23 @@ export function PlayerTab() {
   const cassetteTouchStartY = useRef<number | null>(null)
   const playingRowRef = useRef<HTMLDivElement>(null)
 
-  // начальная загрузка: первый непрослушанный трек первого релиза
+  // начальная загрузка: первый непрослушанный трек всего каталога
   useEffect(() => {
     CatalogRepo.load().then((cat) => {
-      setFlatTracks(buildFlat(cat.releases))
+      const flat = buildFlat(cat.releases)
+      setFlatTracks(flat)
+      const allTracks = flat.map((f) => f.track)
 
-      // загрузить трек без автоплея если ничего не загружено
       const engine = getWebEngine()
       if (engine.getState().track) return
-      const firstRelease = cat.releases[0]
-      if (!firstRelease || firstRelease.tracks.length === 0) return
-      const startIdx = firstUnlistenedIndex(firstRelease)
-      engine.load(firstRelease.tracks, startIdx)
+
+      const fanState = getState()
+      let startIdx = 0
+      for (let i = 0; i < flat.length; i++) {
+        const stat = fanState.tracks[flat[i]!.track.id]
+        if (!stat || stat.listens === 0) { startIdx = i; break }
+      }
+      engine.load(allTracks, startIdx)
     }).catch(() => {})
   }, [])
 
@@ -158,9 +153,9 @@ export function PlayerTab() {
     }
   }
 
-  const handleTrackTap = (ft: FlatTrack) => {
+  const handleTrackTap = (globalIdx: number) => {
     const engine = getWebEngine()
-    engine.load(ft.release.tracks, ft.indexInRelease)
+    engine.load(flatTracks.map((f) => f.track), globalIdx)
     engine.play()
     haptic('light')
   }
@@ -321,7 +316,7 @@ export function PlayerTab() {
             <div
               key={ft.track.id}
               ref={isPlaying ? playingRowRef : undefined}
-              onClick={() => handleTrackTap(ft)}
+              onClick={() => handleTrackTap(globalIdx)}
               className="flex items-center gap-3 px-screen py-2 border-b border-line last:border-0 active:bg-surface"
               style={{ minHeight: 44, cursor: 'pointer' }}
             >

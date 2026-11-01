@@ -9,7 +9,8 @@ import { initTrackListener } from '@/features/fan/trackListen'
 import { applyDeepLink } from './deepLink'
 import { getWebEngine } from '@/audio/webEngine'
 import { getState } from '@/features/fan/state'
-import type { Release } from '@/data/types'
+import type { Release, Track } from '@/data/types'
+import { CatalogRepo } from '@/data/CatalogRepo'
 import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 
@@ -47,10 +48,14 @@ export function App() {
 
   const handlePlayRelease = (release: Release) => {
     if (release.tracks.length === 0) return
-    const startIdx = firstUnlistenedIndex(release)
-    const engine = getWebEngine()
-    engine.load(release.tracks, startIdx)
-    engine.play()
+    CatalogRepo.load().then((cat) => {
+      const allTracks: Track[] = cat.releases.flatMap((r) => r.tracks)
+      const firstTrackId = release.tracks[firstUnlistenedIndex(release)]?.id
+      const startIdx = Math.max(0, allTracks.findIndex((t) => t.id === firstTrackId))
+      const engine = getWebEngine()
+      engine.load(allTracks, startIdx)
+      engine.play()
+    }).catch(() => {})
     setActiveTab('player')
   }
 
