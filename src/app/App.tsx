@@ -3,7 +3,7 @@ import { Grain } from '@/ui/Grain'
 import { usePolarity } from '@/features/polarity/usePolarity'
 import { PlayerTab } from '@/features/player/PlayerTab'
 import { CatalogScreen } from '@/features/catalog/CatalogScreen'
-import { ProfileScreen } from '@/features/fan/ProfileScreen'
+import { ProfileSoon } from '@/features/fan/ProfileSoon'
 import { FavoritesScreen } from '@/features/favorites/FavoritesScreen'
 import { TabBar, type Tab } from '@/ui/TabBar'
 import { initTrackListener } from '@/features/fan/trackListen'
@@ -95,7 +95,7 @@ export function App() {
           <FavoritesScreen onOpenPlayer={() => setActiveTab('player')} />
         </div>
         <div className="absolute inset-0 overflow-y-auto overscroll-contain tab-pane" data-active={activeTab === 'profile'}>
-          <ProfileScreen asTab onOpenPlayer={() => setActiveTab('player')} />
+          <ProfileSoon onOpenPlayer={() => setActiveTab('player')} />
         </div>
       </div>
 
