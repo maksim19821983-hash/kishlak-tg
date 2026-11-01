@@ -4,6 +4,7 @@ import { FanRepo } from '@/data/FanRepo'
 import type { Catalog, Release } from '@/data/types'
 import { Sleeve, SleeveSkeleton } from '@/ui/Sleeve'
 import { ReleaseFrame } from './ReleaseFrame'
+import { NowPlayingBar } from '@/ui/NowPlayingBar'
 
 type Load =
   | { status: 'loading' }
@@ -23,9 +24,9 @@ function getProgress(releaseId: string): number {
   return dev !== null ? dev : FanRepo.releaseProgress(releaseId)
 }
 
-type Props = { onPlayRelease: (release: Release) => void }
+type Props = { onPlayRelease: (release: Release) => void; onOpenPlayer: () => void }
 
-export function CatalogScreen({ onPlayRelease }: Props) {
+export function CatalogScreen({ onPlayRelease, onOpenPlayer }: Props) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
   const [activeRelease, setActiveRelease] = useState<Release | null>(null)
 
@@ -60,6 +61,8 @@ export function CatalogScreen({ onPlayRelease }: Props) {
           {releases.length > 0 ? `${releases.filter((r) => getProgress(r.id) >= 1).length} СОБРАНО` : ''}
         </span>
       </header>
+
+      <NowPlayingBar onOpen={onOpenPlayer} />
 
       {load.status === 'offline' && (
         <div className="h-10 bg-surface flex items-center px-screen shrink-0">

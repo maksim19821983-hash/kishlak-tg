@@ -4,6 +4,7 @@ import { maybeUpdateTitle, formatSince, type FanStats } from './title'
 import { computeStats, getCachedProgress } from './trackListen'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Release } from '@/data/types'
+import { NowPlayingBar } from '@/ui/NowPlayingBar'
 
 function fmtMinutes(totalSeconds: number): string {
   const mins = Math.floor(totalSeconds / 60)
@@ -26,9 +27,9 @@ function fmtDate(ts: number): string {
     .replace('.', '')
 }
 
-type Props = { onClose?: () => void; asTab?: boolean }
+type Props = { onClose?: () => void; asTab?: boolean; onOpenPlayer?: () => void }
 
-export function ProfileScreen({ onClose, asTab }: Props) {
+export function ProfileScreen({ onClose, asTab, onOpenPlayer }: Props) {
   const [stats, setStats] = useState<FanStats | null>(null)
   const [topRelease, setTopRelease] = useState<Release | null>(null)
 
@@ -100,6 +101,8 @@ export function ProfileScreen({ onClose, asTab }: Props) {
           : <span style={{ width: 48 }} />
         }
       </div>
+
+      {asTab && onOpenPlayer && <NowPlayingBar onOpen={onOpenPlayer} />}
 
       {/* пустое состояние */}
       {!hasData && (

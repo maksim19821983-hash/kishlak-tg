@@ -26,7 +26,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-AUDIO_EXT = {".mp3", ".m4a", ".aac", ".wav", ".flac", ".aiff", ".aif", ".ogg"}
+AUDIO_EXT = {".mp3", ".m4a", ".aac", ".acc", ".wav", ".flac", ".aiff", ".aif", ".ogg"}
 
 TRANSLIT = {
     "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "e",
@@ -105,7 +105,7 @@ def extract_cover(path: Path):
             for tag in tags.values():
                 if tag.FrameID == "APIC":
                     return bytes(tag.data)
-        elif suffix in (".m4a", ".aac"):
+        elif suffix in (".m4a", ".aac", ".acc"):
             f = MP4(path)
             covers = f.tags.get("covr") if f.tags else None
             if covers:
@@ -257,11 +257,17 @@ def main():
     if not folder.is_dir():
         sys.exit(f"нет такой папки: {folder}")
 
-    files = sorted([p for p in folder.iterdir() if p.suffix.lower() in AUDIO_EXT], key=natural_key)
+    all_audio = sorted([p for p in folder.iterdir() if p.suffix.lower() in AUDIO_EXT], key=natural_key)
+    zero_size = [p for p in all_audio if p.stat().st_size == 0]
+    files = [p for p in all_audio if p.stat().st_size > 0]
     title_map = {}
     if args.titles and args.titles.exists():
         title_map = json.loads(args.titles.read_text(encoding="utf-8"))
         print(f"названий из {args.titles.name}: {len(title_map)}")
+    if zero_size:
+        print("⚠ файлы нулевого размера (пропущены):")
+        for z in zero_size:
+            print(f"  • {z.name}")
     if not files:
         sys.exit("в папке нет аудиофайлов")
 

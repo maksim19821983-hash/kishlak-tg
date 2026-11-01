@@ -72,13 +72,13 @@ export function App() {
           className="absolute inset-0 overflow-y-auto overscroll-contain"
           style={{ display: activeTab === 'catalog' ? undefined : 'none' }}
         >
-          <CatalogScreen onPlayRelease={handlePlayRelease} />
+          <CatalogScreen onPlayRelease={handlePlayRelease} onOpenPlayer={() => setActiveTab('player')} />
         </div>
         <div
           className="absolute inset-0 overflow-y-auto overscroll-contain"
           style={{ display: activeTab === 'profile' ? undefined : 'none' }}
         >
-          <ProfileScreen asTab />
+          <ProfileScreen asTab onOpenPlayer={() => setActiveTab('player')} />
         </div>
       </div>
 
