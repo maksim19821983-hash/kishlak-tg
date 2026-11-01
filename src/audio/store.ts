@@ -11,6 +11,7 @@ type AudioStore = PlaybackState & {
   seek(sec: number): void
   next(reason?: 'ended' | 'user'): void
   prev(): void
+  playNext(track: Track): void
   setShuffle(on: boolean): void
   setRepeat(mode: PlaybackState['repeat']): void
   setVolume(v: number): void
@@ -33,6 +34,7 @@ export const useAudioStore = create<AudioStore>((set) => {
     seek: (sec) => engine.seek(sec),
     next: (reason) => engine.next(reason),
     prev: () => engine.prev(),
+    playNext: (track) => engine.playNext(track),
     setShuffle: (on) => engine.setShuffle(on),
     setRepeat: (mode) => engine.setRepeat(mode),
     setVolume: (v) => engine.setVolume(v),

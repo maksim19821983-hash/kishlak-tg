@@ -153,6 +153,22 @@ class WebAudioEngine implements AudioPort {
     this.goToPos(true)
   }
 
+  /** Поставить трек сразу после текущего (трек уже есть в общей очереди). */
+  playNext(track: Track): void {
+    const { queue, index } = this.state
+    const target = queue.findIndex((t) => t.id === track.id)
+    if (target === -1 || target === index || this.order.length === 0) return
+
+    const order = this.order.filter((i) => i !== target)
+    const currentAt = order.indexOf(index)
+    if (currentAt === -1) return
+    order.splice(currentAt + 1, 0, target)
+    this.order = order
+    // текущая позиция не меняется, если трек вставляли после неё
+    const newCurrentAt = order.indexOf(index)
+    this.pos = newCurrentAt === -1 ? this.pos : newCurrentAt
+  }
+
   prev(): void {
     const { queue } = this.state
     if (queue.length === 0) return

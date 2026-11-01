@@ -4,6 +4,7 @@ import { usePolarity } from '@/features/polarity/usePolarity'
 import { PlayerTab } from '@/features/player/PlayerTab'
 import { CatalogScreen } from '@/features/catalog/CatalogScreen'
 import { ProfileScreen } from '@/features/fan/ProfileScreen'
+import { FavoritesScreen } from '@/features/favorites/FavoritesScreen'
 import { TabBar, type Tab } from '@/ui/TabBar'
 import { initTrackListener } from '@/features/fan/trackListen'
 import { applyDeepLink } from './deepLink'
@@ -28,6 +29,7 @@ function firstUnlistenedIndex(release: Release): number {
 export function App() {
   usePolarity()
   const [activeTab, setActiveTab] = useState<Tab>('player')
+  const [pendingRelease, setPendingRelease] = useState<string | null>(null)
 
   useEffect(() => {
     const cleanup = initTrackListener()
@@ -69,13 +71,24 @@ export function App() {
           className="absolute inset-0"
           style={{ display: activeTab === 'player' ? undefined : 'none' }}
         >
-          <PlayerTab />
+          <PlayerTab onOpenRelease={(id) => { setPendingRelease(id); setActiveTab('catalog') }} />
         </div>
         <div
           className="absolute inset-0 overflow-y-auto overscroll-contain"
           style={{ display: activeTab === 'catalog' ? undefined : 'none' }}
         >
-          <CatalogScreen onPlayRelease={handlePlayRelease} onOpenPlayer={() => setActiveTab('player')} />
+          <CatalogScreen
+            onPlayRelease={handlePlayRelease}
+            onOpenPlayer={() => setActiveTab('player')}
+            openReleaseId={pendingRelease}
+            onReleaseOpened={() => setPendingRelease(null)}
+          />
+        </div>
+        <div
+          className="absolute inset-0 overflow-y-auto overscroll-contain"
+          style={{ display: activeTab === 'favorites' ? undefined : 'none' }}
+        >
+          <FavoritesScreen onOpenPlayer={() => setActiveTab('player')} />
         </div>
         <div
           className="absolute inset-0 overflow-y-auto overscroll-contain"

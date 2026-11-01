@@ -1,8 +1,9 @@
-export type Tab = 'player' | 'catalog' | 'profile'
+export type Tab = 'player' | 'catalog' | 'favorites' | 'profile'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'player',  label: 'ПЛЕЕР'   },
   { id: 'catalog', label: 'КАТАЛОГ' },
+  { id: 'favorites', label: 'ЛЮБИМОЕ' },
   { id: 'profile', label: 'ПРОФИЛЬ' },
 ]
 

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Release } from '@/data/types'
 import { useAudioStore } from '@/audio/store'
-import { showBackButton, hideBackButton, disableVerticalSwipes } from '@/app/telegram'
+import { showBackButton, hideBackButton, disableVerticalSwipes, haptic } from '@/app/telegram'
+import { useFavorites } from '@/features/favorites/store'
+import { IconHeart } from '@/ui/icons'
 
 const SCRIM = 'linear-gradient(to bottom, rgba(0,0,0,.5), transparent 22%, rgba(0,0,0,.4) 55%, rgba(0,0,0,.94) 90%)'
 
@@ -24,6 +26,8 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay }: Props)
   const touchStartY = useRef<number | null>(null)
   const [offset, setOffset] = useState(0)
   const [closing, setClosing] = useState(false)
+  const isFavorite = useFavorites((st) => st.releases.includes(release.id))
+  const toggleRelease = useFavorites((st) => st.toggleRelease)
   const totalDuration = release.tracks.reduce((a, t) => a + t.duration, 0)
   const progress = release.tracks.length > 0 ? listenedCount / release.tracks.length : 0
 
@@ -101,13 +105,29 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay }: Props)
           />
         </div>
 
-        {/* кнопка СЛУШАТЬ */}
-        <button
-          onClick={onPlay}
-          className="w-full h-[54px] rounded-pill bg-[#F1EDE6] font-mono text-mono-label uppercase text-[#131211] tracking-widest min-h-[44px]"
-        >
-          СЛУШАТЬ
-        </button>
+        {/* СЛУШАТЬ + сердце */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onPlay}
+            className="flex-1 h-[54px] rounded-pill bg-[#F1EDE6] font-mono text-mono-label uppercase text-[#131211] tracking-widest min-h-[44px]"
+          >
+            СЛУШАТЬ
+          </button>
+          <button
+            onClick={() => { toggleRelease(release.id); haptic('light') }}
+            className="flex items-center justify-center rounded-full"
+            style={{
+              width: 54,
+              height: 54,
+              border: '1px solid rgba(241,237,230,.35)',
+              color: isFavorite ? 'var(--accent)' : 'rgba(241,237,230,.75)',
+            }}
+            aria-label={isFavorite ? 'Убрать из любимого' : 'В любимое'}
+            aria-pressed={isFavorite}
+          >
+            <IconHeart size={22} filled={isFavorite} />
+          </button>
+        </div>
       </div>
 
       {/* кнопка закрыть */}

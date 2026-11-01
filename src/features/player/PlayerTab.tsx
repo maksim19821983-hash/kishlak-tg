@@ -3,7 +3,9 @@ import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Release, Track } from '@/data/types'
 import { Cassette } from './Cassette'
-import { IconShuffle, IconRepeat } from '@/ui/icons'
+import { IconShuffle, IconRepeat, IconMore } from '@/ui/icons'
+import { TrackMenu } from '@/ui/TrackMenu'
+import { useFavorites } from '@/features/favorites/store'
 import { haptic } from '@/app/telegram'
 import { parseLrc, getActiveLineIndex } from '@/features/lyrics/parseLrc'
 import type { Lyrics } from '@/features/lyrics/parseLrc'
@@ -38,7 +40,9 @@ function buildFlat(releases: Release[]): FlatTrack[] {
   return result
 }
 
-export function PlayerTab() {
+type PlayerTabProps = { onOpenRelease?: (releaseId: string) => void }
+
+export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
   const track       = useAudioStore((s) => s.track)
   const queue       = useAudioStore((s) => s.queue)
   const index       = useAudioStore((s) => s.index)
@@ -68,6 +72,10 @@ export function PlayerTab() {
   const [lyrics, setLyrics] = useState<Lyrics | null>(null)
   const polarity = useCurrentPolarity()
   const [flatTracks, setFlatTracks] = useState<FlatTrack[]>([])
+  const [menuTrackId, setMenuTrackId] = useState<string | null>(null)
+  const favoriteTracks = useFavorites((st) => st.tracks)
+  const toggleFavorite = useFavorites((st) => st.toggleTrack)
+  const playNext = useAudioStore((st) => st.playNext)
 
   const cassetteTouchStartY = useRef<number | null>(null)
   const playingRowRef = useRef<HTMLDivElement>(null)
@@ -432,6 +440,14 @@ export function PlayerTab() {
               <span className="font-mono text-mono-num tabular-nums text-dim shrink-0">
                 {fmt(ft.track.duration)}
               </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); setMenuTrackId(ft.track.id); haptic('light') }}
+                className="flex items-center justify-center text-dim shrink-0 -mr-2"
+                style={{ width: 44, height: 44 }}
+                aria-label={`Действия: ${ft.track.title}`}
+              >
+                <IconMore size={18} />
+              </button>
             </div>
           )
         })}
@@ -450,6 +466,33 @@ export function PlayerTab() {
         />
       )}
       {supportOpen && <SupportSheet onClose={() => setSupportOpen(false)} />}
+
+      {(() => {
+        const menuTrack = menuTrackId ? flatTracks.find((f) => f.track.id === menuTrackId)?.track ?? null : null
+        const inFavorites = menuTrack ? favoriteTracks.includes(menuTrack.id) : false
+        return (
+          <TrackMenu
+            open={menuTrack !== null}
+            title={menuTrack?.title ?? ''}
+            onClose={() => setMenuTrackId(null)}
+            actions={menuTrack ? [
+              {
+                label: inFavorites ? 'Убрать из любимого' : 'В любимое',
+                onSelect: () => { toggleFavorite(menuTrack.id); haptic('light') },
+                accent: inFavorites,
+              },
+              {
+                label: 'Играть следующим',
+                onSelect: () => { playNext(menuTrack); haptic('light') },
+              },
+              {
+                label: 'Перейти к альбому',
+                onSelect: () => { onOpenRelease?.(menuTrack.releaseId) },
+              },
+            ] : []}
+          />
+        )
+      })()}
     </div>
   )
 }

@@ -30,9 +30,14 @@ function getProgress(releaseId: string, catalog: Catalog | null): number {
   return FanRepo.releaseProgress(releaseId, tracks)
 }
 
-type Props = { onPlayRelease: (release: Release) => void; onOpenPlayer: () => void }
+type Props = {
+  onPlayRelease: (release: Release) => void
+  onOpenPlayer: () => void
+  openReleaseId?: string | null
+  onReleaseOpened?: () => void
+}
 
-export function CatalogScreen({ onPlayRelease, onOpenPlayer }: Props) {
+export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onReleaseOpened }: Props) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
   const [activeRelease, setActiveRelease] = useState<Release | null>(null)
   const [, setFanTick] = useState(0)
@@ -54,6 +59,14 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer }: Props) {
 
   const catalog = load.status === 'ready' ? load.catalog : null
   const releases = catalog?.releases ?? []
+
+  // открытие кадра релиза извне (например, «перейти к альбому» из меню трека)
+  useEffect(() => {
+    if (!openReleaseId || releases.length === 0) return
+    const found = releases.find((r) => r.id === openReleaseId)
+    if (found) setActiveRelease(found)
+    onReleaseOpened?.()
+  }, [openReleaseId, releases.length])
 
   return (
     <div
