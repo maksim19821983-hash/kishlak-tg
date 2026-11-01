@@ -94,15 +94,8 @@ body {
   100% { transform: scale(1); }
 }
 
-@keyframes heart-ring {
-  0%   { transform: scale(.5); opacity: .55; }
-  70%  { opacity: .18; }
-  100% { transform: scale(2); opacity: 0; }
-}
-
 .heart-pop  { animation: heart-pop 420ms cubic-bezier(.3,1.4,.4,1); }
-.heart-ring { animation: heart-ring 520ms ease-out; }
 
 @media (prefers-reduced-motion: reduce) {
-  .heart-pop, .heart-ring { animation: none !important; }
+  .heart-pop { animation: none !important; }
 }

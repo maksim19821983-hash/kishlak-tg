@@ -146,7 +146,6 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
                 progress={getProgress(release.id, catalog)}
                 listenedCount={Math.round(getProgress(release.id, catalog) * release.tracks.length)}
                 onClick={() => setActiveRelease(release)}
-                onPlay={() => onPlayRelease(release)}
               />
             ))}
           </div>

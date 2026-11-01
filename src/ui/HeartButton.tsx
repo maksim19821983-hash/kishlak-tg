@@ -25,13 +25,6 @@ export function HeartButton({ active, onToggle, size = 20, label, color, inactiv
       aria-label={label}
       aria-pressed={active}
     >
-      {tick > 0 && active && (
-        <span
-          key={`ring-${tick}`}
-          className="absolute rounded-full heart-ring"
-          style={{ width: size + 12, height: size + 12, border: `1.5px solid var(--like)` }}
-        />
-      )}
       <span key={`icon-${tick}`} className={tick > 0 ? 'heart-pop' : undefined} style={{ display: 'flex' }}>
         <IconHeart size={size} filled={active} />
       </span>

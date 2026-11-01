@@ -4,6 +4,7 @@ import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Release, Track } from '@/data/types'
 import { Cassette } from './Cassette'
 import { IconShuffle, IconRepeat, IconMore } from '@/ui/icons'
+import { HeartButton } from '@/ui/HeartButton'
 import { TrackMenu } from '@/ui/TrackMenu'
 import { useFavorites } from '@/features/favorites/store'
 import { haptic } from '@/app/telegram'
@@ -440,6 +441,14 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
               <span className="font-mono text-mono-num tabular-nums text-dim shrink-0">
                 {fmt(ft.track.duration)}
               </span>
+              <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex' }}>
+                <HeartButton
+                  active={favoriteTracks.includes(ft.track.id)}
+                  onToggle={() => { toggleFavorite(ft.track.id); haptic('light') }}
+                  size={18}
+                  label={favoriteTracks.includes(ft.track.id) ? 'Убрать из любимого' : 'В любимое'}
+                />
+              </div>
               <button
                 onClick={(e) => { e.stopPropagation(); setMenuTrackId(ft.track.id); haptic('light') }}
                 className="flex items-center justify-center text-dim shrink-0 -mr-2"
