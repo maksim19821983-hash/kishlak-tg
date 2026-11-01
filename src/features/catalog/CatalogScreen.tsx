@@ -5,6 +5,9 @@ import type { Catalog, Release } from '@/data/types'
 import { Sleeve, SleeveSkeleton } from '@/ui/Sleeve'
 import { ReleaseFrame } from './ReleaseFrame'
 import { NowPlayingBar } from '@/ui/NowPlayingBar'
+import { IconTheme } from '@/ui/icons'
+import { toggleTheme } from '@/features/polarity/usePolarity'
+import { haptic } from '@/app/telegram'
 
 type Load =
   | { status: 'loading' }
@@ -57,9 +60,19 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer }: Props) {
         style={{ height: 40 }}
       >
         <span className="font-mono text-mono-label uppercase text-ink">КИШЛАК</span>
-        <span className="font-mono text-mono-num text-dim">
-          {releases.length > 0 ? `${releases.filter((r) => getProgress(r.id) >= 1).length} СОБРАНО` : ''}
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="font-mono text-mono-num text-dim">
+            {releases.length > 0 ? `${releases.filter((r) => getProgress(r.id) >= 1).length} СОБРАНО` : ''}
+          </span>
+          <button
+            onClick={() => { toggleTheme(); haptic('light') }}
+            className="flex items-center justify-center text-dim"
+            style={{ width: 44, height: 44 }}
+            aria-label="Переключить тему"
+          >
+            <IconTheme size={18} />
+          </button>
+        </div>
       </header>
 
       <NowPlayingBar onOpen={onOpenPlayer} />

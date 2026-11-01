@@ -10,8 +10,9 @@ import { InsertScreen } from '@/features/lyrics/InsertScreen'
 import { shareTrack } from '@/features/telegram/share'
 import { SupportSheet } from '@/features/telegram/SupportSheet'
 import { getWebEngine } from '@/audio/webEngine'
-import { IconPrev, IconNext, IconPlay, IconPause, IconStar } from '@/ui/icons'
+import { IconPrev, IconNext, IconPlay, IconPause, IconStar, IconTheme } from '@/ui/icons'
 import { getState } from '@/features/fan/state'
+import { toggleTheme, useCurrentPolarity } from '@/features/polarity/usePolarity'
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60), s = Math.floor(sec % 60)
@@ -65,23 +66,11 @@ export function PlayerTab() {
   const [insertOpen, setInsertOpen] = useState(false)
   const [supportOpen, setSupportOpen] = useState(false)
   const [lyrics, setLyrics] = useState<Lyrics | null>(null)
-  const [polarity, setPolarity] = useState<'paper' | 'dark'>('paper')
+  const polarity = useCurrentPolarity()
   const [flatTracks, setFlatTracks] = useState<FlatTrack[]>([])
 
   const cassetteTouchStartY = useRef<number | null>(null)
   const playingRowRef = useRef<HTMLDivElement>(null)
-
-  // полярность
-  useEffect(() => {
-    const pol = document.documentElement.dataset.polarity as 'paper' | 'dark' | undefined
-    setPolarity(pol ?? 'paper')
-    const observer = new MutationObserver(() => {
-      const p = document.documentElement.dataset.polarity as 'paper' | 'dark' | undefined
-      setPolarity(p ?? 'paper')
-    })
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-polarity'] })
-    return () => observer.disconnect()
-  }, [])
 
   // начальная загрузка: первый непрослушанный трек первого релиза
   useEffect(() => {
@@ -190,9 +179,19 @@ export function PlayerTab() {
         style={{ height: 40 }}
       >
         <span className="font-mono text-mono-label uppercase text-ink">КИШЛАК</span>
-        <span className="font-mono text-mono-num tabular-nums text-dim">
-          {track && totalCount > 0 ? `${String(globalIndex + 1).padStart(2, '0')} / ${String(totalCount).padStart(2, '0')}` : '—'}
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="font-mono text-mono-num tabular-nums text-dim">
+            {track && totalCount > 0 ? `${String(globalIndex + 1).padStart(2, '0')} / ${String(totalCount).padStart(2, '0')}` : '—'}
+          </span>
+          <button
+            onClick={() => { toggleTheme(); haptic('light') }}
+            className="flex items-center justify-center text-dim"
+            style={{ width: 44, height: 44 }}
+            aria-label="Переключить тему"
+          >
+            <IconTheme size={18} />
+          </button>
+        </div>
       </div>
 
       {/* кассета */}

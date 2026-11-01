@@ -5,6 +5,9 @@ import { computeStats, getCachedProgress } from './trackListen'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Release } from '@/data/types'
 import { NowPlayingBar } from '@/ui/NowPlayingBar'
+import { IconTheme } from '@/ui/icons'
+import { toggleTheme } from '@/features/polarity/usePolarity'
+import { haptic } from '@/app/telegram'
 
 function fmtMinutes(totalSeconds: number): string {
   const mins = Math.floor(totalSeconds / 60)
@@ -96,10 +99,20 @@ export function ProfileScreen({ onClose, asTab, onOpenPlayer }: Props) {
           <span className="font-mono text-mono-label uppercase text-ink">КИШЛАК</span>
         )}
         <span className="font-mono text-mono-label uppercase text-ink">ПРОФИЛЬ</span>
-        {since
-          ? <span className="font-mono text-mono-num text-dim">{since}</span>
-          : <span style={{ width: 48 }} />
-        }
+        <div className="flex items-center gap-0">
+          {since
+            ? <span className="font-mono text-mono-num text-dim">{since}</span>
+            : null
+          }
+          <button
+            onClick={() => { toggleTheme(); haptic('light') }}
+            className="flex items-center justify-center text-dim"
+            style={{ width: 44, height: 44 }}
+            aria-label="Переключить тему"
+          >
+            <IconTheme size={18} />
+          </button>
+        </div>
       </div>
 
       {asTab && onOpenPlayer && <NowPlayingBar onOpen={onOpenPlayer} />}
