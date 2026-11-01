@@ -75,8 +75,9 @@ class WebAudioEngine implements AudioPort {
   play(): void {
     if (!this.state.track) return
     void this.el.play().catch((err: unknown) => {
-      // NotAllowedError — нет жеста; прочие — контент недоступен
       const name = err instanceof DOMException ? err.name : ''
+      // AbortError — load() прервал предыдущий play(); не ошибка, игнорируем
+      if (name === 'AbortError') return
       if (name !== 'NotAllowedError') {
         this.patch({ status: 'error', error: 'Трек недоступен' })
       } else {
@@ -254,7 +255,9 @@ class WebAudioEngine implements AudioPort {
   }
 
   private startRaf(): void {
-    if (this.rafId) return // защита от второго цикла: stopRaf отменит только последний id
+    // всегда останавливаем старый цикл перед запуском нового — защита от рейса
+    // когда play нового трека приходит раньше pause старого
+    this.stopRaf()
     const tick = () => {
       this.rafId = requestAnimationFrame(tick)
       const ct = this.el.currentTime
