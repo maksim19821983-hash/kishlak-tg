@@ -20,7 +20,7 @@ export function parse(pathname: string): Route | null {
   if (head === 'release') return id === undefined ? null : { name: 'release', id: decodeURIComponent(id) }
   if (id !== undefined) return null
   if (head === 'player' || head === 'insert' || head === 'profile' || head === 'search') return { name: head }
-  if (head === 'spike' && import.meta.env.DEV) return { name: 'spike' }
+  if (head === 'spike') return { name: 'spike' }
   if (head === 'polarity' && import.meta.env.DEV) return { name: 'polarity' }
   return null
 }
