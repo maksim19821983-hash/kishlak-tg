@@ -268,42 +268,6 @@ export function PlayerTab() {
         </div>
       )}
 
-      {/* перемешка и повтор */}
-      <div className="px-screen mt-3 shrink-0 flex items-center justify-between">
-        <button
-          onClick={() => { setShuffle(!shuffle); haptic('light') }}
-          className="relative flex items-center justify-center"
-          style={{ width: 44, height: 44, color: shuffle ? 'var(--accent-text)' : 'var(--dim)' }}
-          aria-label={shuffle ? 'Выключить перемешивание' : 'Перемешать'}
-          aria-pressed={shuffle}
-        >
-          <IconShuffle />
-          {shuffle && (
-            <span className="absolute rounded-full" style={{ bottom: 6, width: 4, height: 4, background: 'var(--accent)' }} />
-          )}
-        </button>
-
-        <button
-          onClick={() => {
-            const order: Array<typeof repeat> = ['off', 'all', 'one']
-            const nextMode = order[(order.indexOf(repeat) + 1) % order.length] ?? 'off'
-            setRepeat(nextMode)
-            haptic('light')
-          }}
-          className="relative flex items-center justify-center"
-          style={{ width: 44, height: 44, color: repeat !== 'off' ? 'var(--accent-text)' : 'var(--dim)' }}
-          aria-label={`Повтор: ${repeat}`}
-        >
-          <IconRepeat />
-          {repeat !== 'off' && (
-            <span className="absolute rounded-full" style={{ bottom: 6, width: 4, height: 4, background: 'var(--accent)' }} />
-          )}
-          {repeat === 'one' && (
-            <span className="absolute font-mono" style={{ top: 6, right: 8, fontSize: 8, color: 'var(--accent-text)' }}>1</span>
-          )}
-        </button>
-      </div>
-
       {/* прогресс */}
       <div className="px-screen mt-2 shrink-0">
         {dragging && (
@@ -366,6 +330,20 @@ export function PlayerTab() {
         <button onClick={() => { prevFn(); haptic('light') }} className="w-11 h-11 flex items-center justify-center text-ink" aria-label="Предыдущий трек">
           <IconPrev />
         </button>
+
+        <button
+          onClick={() => { setShuffle(!shuffle); haptic('light') }}
+          className="relative flex items-center justify-center"
+          style={{ width: 44, height: 44, color: shuffle ? 'var(--accent-text)' : 'var(--dim)' }}
+          aria-label={shuffle ? 'Выключить перемешивание' : 'Перемешать'}
+          aria-pressed={shuffle}
+        >
+          <IconShuffle size={20} />
+          {shuffle && (
+            <span className="absolute rounded-full" style={{ bottom: 2, width: 4, height: 4, background: 'var(--accent)' }} />
+          )}
+        </button>
+
         <button
           onClick={handleTap}
           className="rounded-full flex items-center justify-center text-bg"
@@ -374,6 +352,26 @@ export function PlayerTab() {
         >
           {playing ? <IconPause /> : <IconPlay />}
         </button>
+        <button
+          onClick={() => {
+            const order: Array<typeof repeat> = ['off', 'all', 'one']
+            const nextMode = order[(order.indexOf(repeat) + 1) % order.length] ?? 'off'
+            setRepeat(nextMode)
+            haptic('light')
+          }}
+          className="relative flex items-center justify-center"
+          style={{ width: 44, height: 44, color: repeat !== 'off' ? 'var(--accent-text)' : 'var(--dim)' }}
+          aria-label={`Повтор: ${repeat}`}
+        >
+          <IconRepeat size={20} />
+          {repeat !== 'off' && (
+            <span className="absolute rounded-full" style={{ bottom: 2, width: 4, height: 4, background: 'var(--accent)' }} />
+          )}
+          {repeat === 'one' && (
+            <span className="absolute font-mono" style={{ top: 4, right: 6, fontSize: 8, color: 'var(--accent-text)' }}>1</span>
+          )}
+        </button>
+
         <button onClick={() => { nextFn('user'); haptic('light') }} className="w-11 h-11 flex items-center justify-center text-ink" aria-label="Следующий трек">
           <IconNext />
         </button>
