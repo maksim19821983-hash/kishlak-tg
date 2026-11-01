@@ -4,7 +4,7 @@ import { useAudioStore } from '@/audio/store'
 import type { Track } from '@/data/types'
 import { showBackButton, hideBackButton, disableVerticalSwipes, haptic } from '@/app/telegram'
 import { useFavorites } from '@/features/favorites/store'
-import { IconHeart } from '@/ui/icons'
+import { HeartButton } from '@/ui/HeartButton'
 
 const SCRIM = 'linear-gradient(to bottom, rgba(0,0,0,.5), transparent 22%, rgba(0,0,0,.4) 55%, rgba(0,0,0,.94) 90%)'
 
@@ -144,15 +144,13 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
                     {fmtDuration(track.duration)}
                   </span>
                 </button>
-                <button
-                  onClick={() => { toggleTrack(track.id); haptic('light') }}
-                  className="flex items-center justify-center press"
-                  style={{ width: 44, height: 44, color: isFav ? 'var(--accent)' : 'rgba(241,237,230,.45)' }}
-                  aria-label={isFav ? 'Убрать из любимого' : 'В любимое'}
-                  aria-pressed={isFav}
-                >
-                  <IconHeart size={16} filled={isFav} />
-                </button>
+                <HeartButton
+                  active={isFav}
+                  onToggle={() => { toggleTrack(track.id); haptic('light') }}
+                  size={16}
+                  label={isFav ? 'Убрать из любимого' : 'В любимое'}
+                  inactiveColor="rgba(241,237,230,.45)"
+                />
               </div>
             )
           })}
@@ -189,20 +187,18 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
             >
               СЛУШАТЬ
             </button>
-            <button
-              onClick={() => { toggleRelease(release.id); haptic('light') }}
-              className="flex items-center justify-center rounded-full press"
-              style={{
-                width: 54,
-                height: 54,
-                border: '1px solid rgba(241,237,230,.35)',
-                color: isFavorite ? 'var(--accent)' : 'rgba(241,237,230,.75)',
-              }}
-              aria-label={isFavorite ? 'Убрать из любимого' : 'В любимое'}
-              aria-pressed={isFavorite}
+            <div
+              className="rounded-full"
+              style={{ border: '1px solid rgba(241,237,230,.35)', width: 54, height: 54, display: 'grid', placeItems: 'center' }}
             >
-              <IconHeart size={22} filled={isFavorite} />
-            </button>
+              <HeartButton
+                active={isFavorite}
+                onToggle={() => { toggleRelease(release.id); haptic('light') }}
+                size={22}
+                label={isFavorite ? 'Убрать из любимого' : 'В любимое'}
+                inactiveColor="rgba(241,237,230,.75)"
+              />
+            </div>
           </div>
         </div>
       </div>

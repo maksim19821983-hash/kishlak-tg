@@ -68,6 +68,8 @@
 /* п. 1 — полярность: атрибут ставит стор, классы — для локальных вставок */
 [data-polarity='paper'],
 .paper {
+  --like: #c0392b;
+  --like-dim: rgba(192, 57, 43, .55);
   --bg: var(--paper-bg);
   --surface: var(--paper-surface);
   --ink: var(--paper-ink);
@@ -77,6 +79,8 @@
 
 [data-polarity='dark'],
 .dark {
+  --like: #e4574a;
+  --like-dim: rgba(228, 87, 74, .6);
   --bg: var(--dark-bg);
   --surface: var(--dark-surface);
   --ink: var(--dark-ink);

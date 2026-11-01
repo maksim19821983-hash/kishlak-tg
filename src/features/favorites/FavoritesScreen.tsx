@@ -8,7 +8,8 @@ import { haptic } from '@/app/telegram'
 import { Sleeve } from '@/ui/Sleeve'
 import { NowPlayingBar } from '@/ui/NowPlayingBar'
 import { TrackMenu } from '@/ui/TrackMenu'
-import { IconHeart, IconMore } from '@/ui/icons'
+import { IconMore } from '@/ui/icons'
+import { HeartButton } from '@/ui/HeartButton'
 import { releaseProgress } from '@/features/fan/derive'
 import { getState } from '@/features/fan/state'
 
@@ -136,21 +137,17 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
                   listenedCount={release.tracks.filter((t) => getState().tracks[t.id]?.completed).length}
                   onClick={() => playRelease(release.id)}
                 />
-                <button
-                  onClick={() => { toggleRelease(release.id); haptic('light') }}
-                  className="absolute rounded-full flex items-center justify-center"
-                  style={{
-                    top: 6,
-                    right: 6,
-                    width: 36,
-                    height: 36,
-                    color: 'var(--accent)',
-                    background: 'rgba(0,0,0,.35)',
-                  }}
-                  aria-label={`Убрать из любимого: ${release.title}`}
+                <div
+                  className="absolute rounded-full"
+                  style={{ top: 4, right: 4, background: 'rgba(0,0,0,.35)' }}
                 >
-                  <IconHeart size={18} filled />
-                </button>
+                  <HeartButton
+                    active
+                    onToggle={() => { toggleRelease(release.id); haptic('light') }}
+                    size={16}
+                    label={`Убрать из любимого: ${release.title}`}
+                  />
+                </div>
               </div>
             ))}
           </div>
