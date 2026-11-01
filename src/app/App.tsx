@@ -8,6 +8,7 @@ import { TabBar, type Tab } from '@/ui/TabBar'
 import { initTrackListener } from '@/features/fan/trackListen'
 import { applyDeepLink } from './deepLink'
 import { getWebEngine } from '@/audio/webEngine'
+import { isListened } from '@/features/fan/derive'
 import { getState } from '@/features/fan/state'
 import type { Release, Track } from '@/data/types'
 import { CatalogRepo } from '@/data/CatalogRepo'
@@ -19,7 +20,7 @@ function firstUnlistenedIndex(release: Release): number {
   for (let i = 0; i < release.tracks.length; i++) {
     const t = release.tracks[i]!
     const stat = fanState.tracks[t.id]
-    if (!stat || stat.listens === 0) return i
+    if (!stat || !isListened(stat)) return i
   }
   return 0
 }

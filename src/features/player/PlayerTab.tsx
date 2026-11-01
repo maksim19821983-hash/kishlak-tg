@@ -12,6 +12,7 @@ import { SupportSheet } from '@/features/telegram/SupportSheet'
 import { getWebEngine } from '@/audio/webEngine'
 import { IconPrev, IconNext, IconPlay, IconPause, IconStar, IconTheme } from '@/ui/icons'
 import { getState } from '@/features/fan/state'
+import { isListened } from '@/features/fan/derive'
 import { toggleTheme, useCurrentPolarity } from '@/features/polarity/usePolarity'
 
 function fmt(sec: number): string {
@@ -76,7 +77,7 @@ export function PlayerTab() {
       let startIdx = 0
       for (let i = 0; i < flat.length; i++) {
         const stat = fanState.tracks[flat[i]!.track.id]
-        if (!stat || stat.listens === 0) { startIdx = i; break }
+        if (!stat || !isListened(stat)) { startIdx = i; break }
       }
       engine.load(allTracks, startIdx)
     }).catch(() => {})

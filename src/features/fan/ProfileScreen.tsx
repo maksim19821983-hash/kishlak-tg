@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { getState, setState, scheduleSave } from './state'
 import { maybeUpdateTitle, formatSince, type FanStats } from './title'
-import { computeStats, getCachedProgress } from './trackListen'
+import { computeStats } from './trackListen'
+import { releaseProgress } from './derive'
 import { CatalogRepo } from '@/data/CatalogRepo'
-import type { Release } from '@/data/types'
+import type { Release, Track } from '@/data/types'
 import { NowPlayingBar } from '@/ui/NowPlayingBar'
 import { IconTheme } from '@/ui/icons'
 import { toggleTheme } from '@/features/polarity/usePolarity'
@@ -30,20 +31,26 @@ function fmtDate(ts: number): string {
     .replace('.', '')
 }
 
+function releaseSeconds(releaseId: string, tracks: Track[]): number {
+  const state = getState()
+  return tracks
+    .filter((t) => t.releaseId === releaseId)
+    .reduce((a, t) => a + (state.tracks[t.id]?.seconds ?? 0), 0)
+}
+
 type Props = { onClose?: () => void; asTab?: boolean; onOpenPlayer?: () => void }
 
 export function ProfileScreen({ onClose, asTab, onOpenPlayer }: Props) {
   const [stats, setStats] = useState<FanStats | null>(null)
   const [topRelease, setTopRelease] = useState<Release | null>(null)
+  const [allTracks, setAllTracks] = useState<Track[]>([])
 
   useEffect(() => {
     CatalogRepo.load().then((cat) => {
-      const totalCatalogTracks = cat.releases.reduce((a, r) => a + r.tracks.length, 0)
-      const totalCatalogReleases = cat.releases.length
-      const trackCount: Record<string, number> = {}
-      for (const r of cat.releases) trackCount[r.id] = r.tracks.length
+      const tracks = cat.releases.flatMap((r) => r.tracks)
+      setAllTracks(tracks)
 
-      const s = computeStats(trackCount, totalCatalogTracks, totalCatalogReleases)
+      const s = computeStats(tracks, cat.releases)
       setStats(s)
 
       const state = getState()
@@ -53,9 +60,9 @@ export function ProfileScreen({ onClose, asTab, onOpenPlayer }: Props) {
         scheduleSave(true)
       }
 
-      const fanState = getState()
-      const sorted = [...cat.releases].sort((a, b) =>
-        (fanState.releases[b.id]?.listenedTracks ?? 0) - (fanState.releases[a.id]?.listenedTracks ?? 0)
+      // топ-релиз по накопленным секундам
+      const sorted = [...cat.releases].sort(
+        (a, b) => releaseSeconds(b.id, tracks) - releaseSeconds(a.id, tracks)
       )
       setTopRelease(sorted[0] ?? null)
     }).catch(() => {})
@@ -65,8 +72,12 @@ export function ProfileScreen({ onClose, asTab, onOpenPlayer }: Props) {
   const title = fanState.title
   const since = title ? formatSince(title.since) : null
   const totalMinutes = stats ? Math.floor(stats.totalSeconds / 60) : 0
-  const topReleaseProgress = topRelease ? getCachedProgress(topRelease.id) : 0
-  const topReleaseListened = topRelease ? (fanState.releases[topRelease.id]?.listenedTracks ?? 0) : 0
+  const topReleaseProgress = topRelease
+    ? releaseProgress(topRelease.id, allTracks, fanState)
+    : 0
+  const topReleaseListened = topRelease
+    ? Math.round(topReleaseProgress * topRelease.tracks.length)
+    : 0
   const hasData = !!title || (!!stats && stats.listenedTracks >= 10)
 
   const recentSessions = [...fanState.sessions]

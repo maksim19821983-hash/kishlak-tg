@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import { FanRepo } from '@/data/FanRepo'
-import { subscribeProgress } from '@/features/fan/trackListen'
+import { subscribeFan } from '@/features/fan/trackListen'
 import type { Catalog, Release } from '@/data/types'
 import { Sleeve, SleeveSkeleton } from '@/ui/Sleeve'
 import { ReleaseFrame } from './ReleaseFrame'
@@ -23,9 +23,11 @@ function devProgress(): number | null {
   return isFinite(n) ? Math.max(0, Math.min(1, n)) : null
 }
 
-function getProgress(releaseId: string): number {
+function getProgress(releaseId: string, catalog: Catalog | null): number {
   const dev = devProgress()
-  return dev !== null ? dev : FanRepo.releaseProgress(releaseId)
+  if (dev !== null) return dev
+  const tracks = catalog?.releases.flatMap((r) => r.tracks) ?? []
+  return FanRepo.releaseProgress(releaseId, tracks)
 }
 
 type Props = { onPlayRelease: (release: Release) => void; onOpenPlayer: () => void }
@@ -35,7 +37,7 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer }: Props) {
   const [activeRelease, setActiveRelease] = useState<Release | null>(null)
   const [, setFanTick] = useState(0)
 
-  useEffect(() => subscribeProgress(() => setFanTick((n) => n + 1)), [])
+  useEffect(() => subscribeFan(() => setFanTick((n) => n + 1)), [])
 
   const fetchCatalog = () => {
     setLoad({ status: 'loading' })
@@ -66,7 +68,7 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer }: Props) {
         <span className="font-mono text-mono-label uppercase text-ink">КИШЛАК</span>
         <div className="flex items-center gap-1">
           <span className="font-mono text-mono-num text-dim">
-            {releases.length > 0 ? `${releases.filter((r) => getProgress(r.id) >= 1).length} СОБРАНО` : ''}
+            {releases.length > 0 ? `${releases.filter((r) => getProgress(r.id, catalog) >= 1).length} СОБРАНО` : ''}
           </span>
           <button
             onClick={() => { toggleTheme(); haptic('light') }}
@@ -127,8 +129,8 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer }: Props) {
               <Sleeve
                 key={release.id}
                 release={release}
-                progress={getProgress(release.id)}
-                listenedCount={Math.round(getProgress(release.id) * release.tracks.length)}
+                progress={getProgress(release.id, catalog)}
+                listenedCount={Math.round(getProgress(release.id, catalog) * release.tracks.length)}
                 onClick={() => setActiveRelease(release)}
                 onPlay={() => onPlayRelease(release)}
               />
@@ -140,7 +142,7 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer }: Props) {
       {activeRelease && (
         <ReleaseFrame
           release={activeRelease}
-          listenedCount={Math.round(getProgress(activeRelease.id) * activeRelease.tracks.length)}
+          listenedCount={Math.round(getProgress(activeRelease.id, catalog) * activeRelease.tracks.length)}
           onClose={() => setActiveRelease(null)}
           onPlay={() => {
             onPlayRelease(activeRelease)

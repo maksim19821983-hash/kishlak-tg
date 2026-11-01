@@ -46,6 +46,23 @@ function makeFakeAudio() {
   return el
 }
 
+
+describe('конец трека и переключение', () => {
+  it('подписчик ended, который сам вызывает next, не переключает трек дважды', () => {
+    const el = makeFakeAudio()
+    const engine = _createEngineForTest(el as unknown as HTMLAudioElement)
+    engine.load([makeTrack('a'), makeTrack('b'), makeTrack('c')], 0)
+    expect(engine.getState().index).toBe(0)
+
+    // имитируем фан-слой: на ended вызываем next('ended')
+    engine.subscribeEnded(() => engine.next('ended'))
+    el.emit('ended')
+
+    // переключение должно произойти ровно на один трек
+    expect(engine.getState().index).toBe(1)
+  })
+})
+
 describe('webEngine ended → next track', () => {
   beforeEach(() => {
     vi.useFakeTimers()
