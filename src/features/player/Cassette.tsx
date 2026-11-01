@@ -107,6 +107,7 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
         <span
           className="font-mono uppercase truncate"
           style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyInk }}
+          title={trackLabel}
         >
           {trackLabel}
         </span>
@@ -148,8 +149,14 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
           </div>
         </div>
 
-        {/* лента */}
-        <div style={{ flex: 1, height: 2, background: COPPER }} />
+        {/* лента — начинается на правом краю левого диска, кончается на левом краю правого */}
+        <div style={{
+          flex: 1,
+          height: 2,
+          background: COPPER,
+          marginLeft: leftR - REEL_SIZE / 2,
+          marginRight: rightR - REEL_SIZE / 2,
+        }} />
 
         {/* правая катушка — диск ленты по прогрессу */}
         <div

@@ -63,7 +63,7 @@ export function Sleeve({ release, progress, listenedCount, onClick, onPlay }: Pr
 
       <div>
         <div className="flex items-start justify-between gap-2">
-          <p className="font-display text-body-strong line-clamp-2 text-ink flex-1">{release.title}</p>
+          <p className="font-display text-body-strong line-clamp-2 text-ink flex-1" title={release.title}>{release.title}</p>
           {onPlay && (
             <button
               onClick={(e) => { e.stopPropagation(); onPlay() }}

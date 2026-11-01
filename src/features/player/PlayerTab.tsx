@@ -206,7 +206,7 @@ export function PlayerTab() {
 
       {/* название */}
       <div className="px-screen mt-3 shrink-0">
-        <p className="font-display text-display-l uppercase text-ink line-clamp-1">
+        <p className="font-display text-display-l uppercase text-ink line-clamp-2" title={track?.title ?? undefined}>
           {track?.title ?? '—'}
         </p>
         <p className="font-mono text-mono-label uppercase text-dim mt-0.5">
@@ -330,6 +330,7 @@ export function PlayerTab() {
                 <p
                   className="font-display text-body-strong line-clamp-1"
                   style={{ color: isPlaying ? 'var(--accent-text)' : 'var(--ink)' }}
+                  title={ft.track.title}
                 >
                   {ft.track.title}
                 </p>
