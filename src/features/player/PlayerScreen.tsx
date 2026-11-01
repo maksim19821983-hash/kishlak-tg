@@ -171,19 +171,10 @@ export function PlayerScreen({ onClose }: Props) {
           <Cassette
             side="A"
             onTap={handleTap}
+            releaseTitle={release?.title}
             releaseYear={release?.year}
             polarity={polarity}
           />
-      </div>
-
-      {/* название */}
-      <div className="px-screen mt-4 shrink-0">
-        <p className="font-display text-display-l uppercase text-ink line-clamp-2">
-          {track?.title ?? '—'}
-        </p>
-        <p className="font-mono text-mono-label uppercase text-dim mt-1">
-          КИШЛАК · {release?.title ?? '—'} · {release?.year ?? '—'}
-        </p>
       </div>
 
       {/* превью текста / кнопка вкладыша — только если есть LRC */}

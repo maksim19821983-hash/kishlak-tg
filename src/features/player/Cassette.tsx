@@ -18,11 +18,12 @@ type Props = {
   side: 'A' | 'B'
   onTap: () => void
   trackTitle?: string
+  releaseTitle?: string
   releaseYear?: number
   polarity?: 'paper' | 'dark'
 }
 
-export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Props) {
+export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, polarity }: Props) {
   const playing     = useAudioStore((s) => s.status === 'playing')
   const currentTime = useAudioStore((s) => s.currentTime)
   const duration    = useAudioStore((s) => s.duration)
@@ -71,8 +72,6 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
   const windowBg   = pol === 'paper' ? 'rgba(0,0,0,.45)'       : 'rgba(19,18,17,.12)'
   const hubColor   = pol === 'paper' ? '#0E0C0A'               : '#EDE7DB'
 
-  const trackLabel = trackTitle ? `КИШЛАК — ${trackTitle.toUpperCase()}` : 'КИШЛАК'
-
   return (
     <button
       onClick={onTap}
@@ -81,7 +80,6 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
       style={{
         borderRadius: 10,
         background: bodyBg,
-        // блик 1 px по верхней кромке
         boxShadow: `inset 0 1px 0 rgba(255,255,255,.08), 0 6px 16px rgba(0,0,0,.22)`,
         border: `1px solid ${bodyBorder}`,
         padding: '14px 16px',
@@ -102,28 +100,47 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
         />
       ))}
 
-      {/* лейбл */}
-      <div className="flex items-start justify-between gap-2">
+      {/* верхняя строка: артист слева, номер справа */}
+      <div className="flex items-center justify-between gap-2">
         <span
-          className="font-mono uppercase truncate"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyInk }}
-          title={trackLabel}
+          className="font-mono uppercase"
+          style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyInk }}
         >
-          {trackLabel}
+          КИШЛАК
         </span>
         <span
           className="font-mono uppercase shrink-0"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyDim }}
+          style={{ fontSize: 9, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyDim }}
         >
           №0341
         </span>
       </div>
 
+      {/* название трека */}
+      <p
+        className="font-mono uppercase"
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          letterSpacing: '0.1em',
+          lineHeight: 1.35,
+          color: bodyInk,
+          marginTop: 12,
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          minHeight: '2.7em',
+        }}
+      >
+        {trackTitle ?? '—'}
+      </p>
+
       {/* окно с катушками */}
       <div
         className="relative flex items-center justify-center overflow-hidden"
         style={{
-          height: 92,
+          height: 78,
           marginTop: 10,
           borderRadius: 6,
           background: windowBg,
@@ -177,19 +194,19 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
         </div>
       </div>
 
-      {/* нижняя подпись */}
-      <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
+      {/* нижняя строка: релиз · год слева, C-60 справа */}
+      <div className="flex items-center justify-between" style={{ marginTop: 12 }}>
         <span
-          className="font-mono uppercase"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyInk }}
+          className="font-mono uppercase truncate"
+          style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1, color: bodyInk }}
         >
-          СТОРОНА {side}
+          {releaseTitle ? `${releaseTitle} · ${releaseYear ?? '—'}` : `СТОРОНА ${side}`}
         </span>
         <span
-          className="font-mono uppercase"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyDim }}
+          className="font-mono uppercase shrink-0"
+          style={{ fontSize: 9, letterSpacing: '0.18em', lineHeight: 1, color: bodyDim, marginLeft: 8 }}
         >
-          C-60 · {releaseYear ?? 2026}
+          C-60
         </span>
       </div>
     </button>

@@ -109,21 +109,14 @@ export function ProfileScreen({ onClose, asTab, onOpenPlayer }: Props) {
         ) : (
           <span className="font-mono text-mono-label uppercase text-ink">КИШЛАК</span>
         )}
-        <span className="font-mono text-mono-label uppercase text-ink">ПРОФИЛЬ</span>
-        <div className="flex items-center gap-0">
-          {since
-            ? <span className="font-mono text-mono-num text-dim">{since}</span>
-            : null
-          }
-          <button
-            onClick={() => { toggleTheme(); haptic('light') }}
-            className="flex items-center justify-center text-dim"
-            style={{ width: 44, height: 44 }}
-            aria-label="Переключить тему"
-          >
-            <IconTheme size={18} />
-          </button>
-        </div>
+        <button
+          onClick={() => { toggleTheme(); haptic('light') }}
+          className="flex items-center justify-center text-dim"
+          style={{ width: 44, height: 44 }}
+          aria-label="Переключить тему"
+        >
+          <IconTheme size={18} />
+        </button>
       </div>
 
       {/* пустое состояние */}
@@ -142,9 +135,14 @@ export function ProfileScreen({ onClose, asTab, onOpenPlayer }: Props) {
 
           {/* титул */}
           <div className="mb-4">
-            <h1 className="font-display text-display-l uppercase text-ink">
-              {title?.id ?? 'СЛУШАТЕЛЬ'}
-            </h1>
+            <div className="flex items-baseline gap-3">
+              <h1 className="font-display text-display-l uppercase text-ink">
+                {title?.id ?? 'СЛУШАТЕЛЬ'}
+              </h1>
+              {since && (
+                <span className="font-mono text-mono-num text-dim shrink-0">{since}</span>
+              )}
+            </div>
             {topRelease && stats && stats.topReleaseTimeShare > 0 ? (
               <p className="font-mono text-mono-label uppercase text-dim mt-1">
                 {topRelease.title.toUpperCase()} — {Math.round(stats.topReleaseTimeShare * 100)}%{' '}

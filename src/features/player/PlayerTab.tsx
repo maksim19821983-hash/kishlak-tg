@@ -200,19 +200,10 @@ export function PlayerTab() {
           side="A"
           onTap={handleTap}
           trackTitle={track?.title}
+          releaseTitle={release?.title}
           releaseYear={release?.year}
           polarity={polarity}
         />
-      </div>
-
-      {/* название */}
-      <div className="px-screen mt-3 shrink-0">
-        <p className="font-display text-display-l uppercase text-ink line-clamp-2" title={track?.title ?? undefined}>
-          {track?.title ?? '—'}
-        </p>
-        <p className="font-mono text-mono-label uppercase text-dim mt-0.5">
-          КИШЛАК · {release?.title ?? '—'} · {release?.year ?? '—'}
-        </p>
       </div>
 
       {/* превью текста */}
