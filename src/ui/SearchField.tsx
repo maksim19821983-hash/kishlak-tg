@@ -8,24 +8,35 @@ type Props = {
 
 export function SearchField({ value, onChange, placeholder }: Props) {
   return (
-    <div
-      className="flex items-center gap-2 px-screen border-b border-line"
-      style={{ height: 44 }}
-    >
-      <span className="text-dim flex items-center"><IconSearch size={16} /></span>
+    <div className="search-field flex items-center gap-2 px-screen" style={{ height: 48 }}>
+      <span className="flex items-center" style={{ color: 'var(--dim)' }}>
+        <IconSearch size={16} />
+      </span>
+
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 min-w-0 bg-transparent outline-none font-mono text-mono-label uppercase text-ink placeholder:text-dim"
-        style={{ border: 0 }}
+        className="flex-1 min-w-0 bg-transparent"
+        style={{
+          border: 0,
+          outline: 'none',
+          boxShadow: 'none',
+          // 16 px — иначе iOS зумит страницу при фокусе
+          fontSize: 16,
+          fontFamily: 'var(--font-mono)',
+          letterSpacing: '0.02em',
+          color: 'var(--ink)',
+          caretColor: 'var(--accent)',
+        }}
         aria-label={placeholder}
       />
+
       {value !== '' && (
         <button
           onClick={() => onChange('')}
-          className="flex items-center justify-center text-dim"
-          style={{ width: 32, height: 32 }}
+          className="flex items-center justify-center press"
+          style={{ width: 32, height: 32, color: 'var(--dim)' }}
           aria-label="Очистить поиск"
         >
           <IconClose size={14} />

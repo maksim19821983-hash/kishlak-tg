@@ -99,3 +99,16 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .heart-pop { animation: none !important; }
 }
+
+/* ── поле поиска ─────────────────────────────────────────────────────────── */
+
+.search-field {
+  border-bottom: 1px solid var(--line);
+  transition: border-color 160ms ease;
+}
+.search-field:focus-within {
+  border-bottom-color: var(--accent);
+}
+.search-field input::placeholder {
+  color: var(--dim);
+}
