@@ -44,7 +44,7 @@ export const initialPlaybackState: PlaybackState = {
   volume: 1,
   muted: false,
   shuffle: false,
-  repeat: 'off',
+  repeat: 'all',
   error: null,
 }
 

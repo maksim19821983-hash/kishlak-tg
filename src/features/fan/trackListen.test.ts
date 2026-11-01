@@ -2,20 +2,24 @@ import { describe, it, expect } from 'vitest'
 import { shouldCountListen, isForwardSeek } from './trackListen'
 
 describe('shouldCountListen', () => {
-  it('79% не засчитывается', () => {
-    expect(shouldCountListen(79, 100)).toBe(false)
+  it('49% не засчитывается', () => {
+    expect(shouldCountListen(49, 100)).toBe(false)
   })
 
-  it('79.9% не засчитывается', () => {
-    expect(shouldCountListen(79.9, 100)).toBe(false)
+  it('49.9% не засчитывается', () => {
+    expect(shouldCountListen(49.9, 100)).toBe(false)
   })
 
-  it('80% засчитывается', () => {
+  it('50% засчитывается', () => {
+    expect(shouldCountListen(50, 100)).toBe(true)
+  })
+
+  it('51% засчитывается', () => {
+    expect(shouldCountListen(51, 100)).toBe(true)
+  })
+
+  it('80% засчитывается (старый порог тоже проходит)', () => {
     expect(shouldCountListen(80, 100)).toBe(true)
-  })
-
-  it('81% засчитывается', () => {
-    expect(shouldCountListen(81, 100)).toBe(true)
   })
 
   it('100% засчитывается', () => {

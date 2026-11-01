@@ -14,7 +14,8 @@ const FORWARD_SEEK_THRESHOLD = 3.0
 
 export function shouldCountListen(maxPosition: number, duration: number): boolean {
   if (duration <= 0) return false
-  return maxPosition / duration >= 0.8
+  // порог смягчён: на iOS конец трека иногда не доходит до 100% из-за буферизации
+  return maxPosition / duration >= 0.5
 }
 
 export function isForwardSeek(prevTime: number, nextTime: number, prevStatus: string): boolean {
@@ -28,6 +29,7 @@ let prevState: PlaybackState | null = null
 let sessionTrackId: string | null = null
 let sessionNaturalMax = 0
 let sessionSeconds = 0
+let sessionDuration = 0
 let sessionStarted = false
 let lyricsOpenedThisSession = false
 
@@ -61,6 +63,7 @@ export function getCachedProgress(releaseId: string): number {
 
 function flushSession(): void {
   if (!sessionTrackId) return
+  maybeRecordListen()
   const state = getState()
   const tstat = getOrCreateTrackStat(sessionTrackId)
   setState({
@@ -81,6 +84,7 @@ function flushSession(): void {
 function resetSession(trackId: string, _trackTitle: string): void {
   sessionTrackId = trackId
   sessionNaturalMax = 0
+  sessionDuration = 0
   sessionSeconds = 0
   sessionStarted = false
   lyricsOpenedThisSession = false
@@ -93,6 +97,22 @@ function recordPlay(trackId: string): void {
     ...state,
     tracks: { ...state.tracks, [trackId]: { ...tstat, plays: tstat.plays + 1, lastAt: Date.now() } },
   })
+}
+
+/**
+ * Засчитать прослушивание по накопленному натуральному времени.
+ * Вызывается и на ended, и на любом flush (пауза, сворачивание, смена трека) —
+ * потому что на iOS конец трека не всегда приходит событием.
+ */
+function maybeRecordListen(): void {
+  if (!sessionTrackId || sessionDuration <= 0) return
+  if (!shouldCountListen(sessionNaturalMax, sessionDuration)) return
+  const st = getWebEngine().getState()
+  const track = st.queue.find((t) => t.id === sessionTrackId) ?? st.track
+  const releaseId = track?.releaseId
+  if (!releaseId) return
+  const totalTracks = st.queue.filter((t) => t.releaseId === releaseId).length || 1
+  recordListen(sessionTrackId, releaseId, totalTracks)
 }
 
 function recordListen(trackId: string, releaseId: string, totalTracks: number): void {
@@ -177,6 +197,9 @@ export function handleStateUpdate(next: PlaybackState): void {
       recordPlay(trackId)
     }
   }
+
+  // длительность текущего трека — нужна для порога прослушивания
+  if (next.duration > 0) sessionDuration = next.duration
 
   // натуральное накопление позиции
   if (next.status === 'playing' && prev !== null) {

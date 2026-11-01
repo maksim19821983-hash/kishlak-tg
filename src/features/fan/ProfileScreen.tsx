@@ -115,8 +115,6 @@ export function ProfileScreen({ onClose, asTab, onOpenPlayer }: Props) {
         </div>
       </div>
 
-      {asTab && onOpenPlayer && <NowPlayingBar onOpen={onOpenPlayer} />}
-
       {/* пустое состояние */}
       {!hasData && (
         <div className="flex-1 flex items-center justify-center px-screen">
@@ -129,6 +127,7 @@ export function ProfileScreen({ onClose, asTab, onOpenPlayer }: Props) {
       {/* основной контент */}
       {hasData && (
         <div className="flex-1 overflow-y-auto overscroll-contain px-screen py-4">
+          {asTab && onOpenPlayer && <NowPlayingBar onOpen={onOpenPlayer} />}
 
           {/* титул */}
           <div className="mb-4">
