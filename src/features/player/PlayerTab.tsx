@@ -3,6 +3,7 @@ import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Release, Track } from '@/data/types'
 import { Cassette } from './Cassette'
+import { IconShuffle, IconRepeat } from '@/ui/icons'
 import { haptic } from '@/app/telegram'
 import { parseLrc, getActiveLineIndex } from '@/features/lyrics/parseLrc'
 import type { Lyrics } from '@/features/lyrics/parseLrc'
@@ -54,6 +55,14 @@ export function PlayerTab() {
   const [release, setRelease] = useState<Release | null>(null)
   const [dragging, setDragging] = useState(false)
   const [dragTime, setDragTime] = useState(0)
+  const draggingRef = useRef(false)
+  const sliderRef = useRef<HTMLDivElement>(null)
+  const suppressTapRef = useRef(false)
+  const touchStartRef = useRef<{ t: number; x: number; y: number } | null>(null)
+  const shuffle = useAudioStore((st) => st.shuffle)
+  const repeat = useAudioStore((st) => st.repeat)
+  const setShuffle = useAudioStore((st) => st.setShuffle)
+  const setRepeat = useAudioStore((st) => st.setRepeat)
   const [insertOpen, setInsertOpen] = useState(false)
   const [supportOpen, setSupportOpen] = useState(false)
   const [lyrics, setLyrics] = useState<Lyrics | null>(null)
@@ -120,37 +129,71 @@ export function PlayerTab() {
     : (activeIdx < textLines.length - 1 ? textLines[activeIdx + 1] ?? null : null)
   const hasLyrics = lyrics !== null && textLines.length > 0
 
-  const handleTap = () => { haptic('medium'); toggle() }
+  // тап по кассете: только короткое касание без смещения
+  const handleTap = () => {
+    if (suppressTapRef.current) { suppressTapRef.current = false; return }
+    haptic('medium')
+    toggle()
+  }
 
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  // ── ползунок: pointer events, зона касания 44 px ───────────────────────────
+  const timeAtClientX = (clientX: number): number => {
+    const el = sliderRef.current
+    if (!el || duration <= 0) return 0
+    const rect = el.getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    return ratio * duration
+  }
+
+  const handleSliderDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (duration <= 0) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    seek(((e.clientX - rect.left) / rect.width) * duration)
+    e.currentTarget.setPointerCapture(e.pointerId)
+    draggingRef.current = true
+    setDragging(true)
+    setDragTime(timeAtClientX(e.clientX))
     haptic('light')
   }
 
-  const handleProgressDragMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (duration <= 0) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    setDragTime(Math.max(0, Math.min(1, ((e.touches[0]?.clientX ?? 0) - rect.left) / rect.width)) * duration)
-    setDragging(true)
+  const handleSliderMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current) return
+    setDragTime(timeAtClientX(e.clientX))
   }
 
-  const handleProgressDragEnd = () => {
-    if (dragging) { seek(dragTime); haptic('light') }
+  const handleSliderUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current) return
+    draggingRef.current = false
+    const target = timeAtClientX(e.clientX)
+    seek(target)
+    setDragTime(target)
     setDragging(false)
+    haptic('light')
   }
 
   const handleCassetteTouchStart = (e: React.TouchEvent) => {
-    cassetteTouchStartY.current = e.touches[0]?.clientY ?? null
+    const t = e.touches[0]
+    cassetteTouchStartY.current = t?.clientY ?? null
+    touchStartRef.current = t ? { t: Date.now(), x: t.clientX, y: t.clientY } : null
   }
 
   const handleCassetteTouchEnd = (e: React.TouchEvent) => {
     const start = cassetteTouchStartY.current
     cassetteTouchStartY.current = null
-    const end = e.changedTouches[0]?.clientY
-    if (start !== null && end !== undefined && start - end > 60 && hasLyrics) {
+    const end = e.changedTouches[0]
+    const info = touchStartRef.current
+    touchStartRef.current = null
+    if (!end) return
+
+    // свайп вверх — открыть вкладыш
+    if (start !== null && start - end.clientY > 60 && hasLyrics) {
+      suppressTapRef.current = true
       setInsertOpen(true)
+      return
+    }
+    // долгое касание или смещение — это не тап, клик подавляем
+    if (info) {
+      const dt = Date.now() - info.t
+      const dist = Math.hypot(end.clientX - info.x, end.clientY - info.y)
+      if (dt >= 300 || dist >= 8) suppressTapRef.current = true
     }
   }
 
@@ -225,36 +268,94 @@ export function PlayerTab() {
         </div>
       )}
 
+      {/* перемешка и повтор */}
+      <div className="px-screen mt-3 shrink-0 flex items-center justify-between">
+        <button
+          onClick={() => { setShuffle(!shuffle); haptic('light') }}
+          className="relative flex items-center justify-center"
+          style={{ width: 44, height: 44, color: shuffle ? 'var(--accent-text)' : 'var(--dim)' }}
+          aria-label={shuffle ? 'Выключить перемешивание' : 'Перемешать'}
+          aria-pressed={shuffle}
+        >
+          <IconShuffle />
+          {shuffle && (
+            <span className="absolute rounded-full" style={{ bottom: 6, width: 4, height: 4, background: 'var(--accent)' }} />
+          )}
+        </button>
+
+        <button
+          onClick={() => {
+            const order: Array<typeof repeat> = ['off', 'all', 'one']
+            const nextMode = order[(order.indexOf(repeat) + 1) % order.length] ?? 'off'
+            setRepeat(nextMode)
+            haptic('light')
+          }}
+          className="relative flex items-center justify-center"
+          style={{ width: 44, height: 44, color: repeat !== 'off' ? 'var(--accent-text)' : 'var(--dim)' }}
+          aria-label={`Повтор: ${repeat}`}
+        >
+          <IconRepeat />
+          {repeat !== 'off' && (
+            <span className="absolute rounded-full" style={{ bottom: 6, width: 4, height: 4, background: 'var(--accent)' }} />
+          )}
+          {repeat === 'one' && (
+            <span className="absolute font-mono" style={{ top: 6, right: 8, fontSize: 8, color: 'var(--accent-text)' }}>1</span>
+          )}
+        </button>
+      </div>
+
       {/* прогресс */}
-      <div className="px-screen mt-3 shrink-0">
+      <div className="px-screen mt-2 shrink-0">
         {dragging && (
-          <div className="flex justify-center mb-1">
+          <div className="flex justify-center">
             <span className="font-mono text-mono-num tabular-nums text-ink bg-surface px-2 py-0.5 rounded">
               {fmt(dragTime)}
             </span>
           </div>
         )}
         <div
-          className="relative h-[3px] rounded-full cursor-pointer"
-          style={{ background: 'var(--line)' }}
-          onClick={handleProgressClick}
-          onTouchMove={handleProgressDragMove}
-          onTouchEnd={handleProgressDragEnd}
+          ref={sliderRef}
+          className="relative select-none"
+          style={{ height: 44, touchAction: 'none' }}
+          onPointerDown={handleSliderDown}
+          onPointerMove={handleSliderMove}
+          onPointerUp={handleSliderUp}
+          onPointerCancel={handleSliderUp}
           role="slider"
+          tabIndex={0}
           aria-label="Прогресс трека"
           aria-valuenow={Math.round(currentTime)}
           aria-valuemin={0}
           aria-valuemax={Math.round(duration)}
         >
           <div
-            className="absolute inset-y-0 left-0 rounded-full"
+            className="absolute left-0 right-0 rounded-full"
+            style={{ height: 3, top: '50%', transform: 'translateY(-50%)', background: 'var(--line)' }}
+          />
+          <div
+            className="absolute left-0 rounded-full"
             style={{
-              width: `${(dragging ? dragTime / duration : progress) * 100}%`,
+              height: 3,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: `${Math.max(0, Math.min(1, dragging ? (duration > 0 ? dragTime / duration : 0) : progress)) * 100}%`,
               background: 'var(--accent)',
             }}
           />
+          <div
+            className="absolute rounded-full"
+            style={{
+              width: dragging ? 20 : 12,
+              height: dragging ? 20 : 12,
+              left: `clamp(0px, calc(${Math.max(0, Math.min(1, dragging ? (duration > 0 ? dragTime / duration : 0) : progress)) * 100}% - ${dragging ? 10 : 6}px), calc(100% - ${dragging ? 20 : 12}px))`,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'var(--accent)',
+              transition: 'width .12s ease, height .12s ease',
+            }}
+          />
         </div>
-        <div className="flex justify-between mt-1">
+        <div className="flex justify-between" style={{ marginTop: -6 }}>
           <span className="font-mono text-mono-num tabular-nums text-dim">{fmt(currentTime)}</span>
           <span className="font-mono text-mono-num tabular-nums text-dim">{fmtRemaining(currentTime, duration)}</span>
         </div>

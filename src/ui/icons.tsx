@@ -49,3 +49,26 @@ export function IconTheme({ size = 20 }: { size?: number }) {
     </svg>
   )
 }
+
+export function IconShuffle({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3 6h4l10 12h4" />
+      <path d="M17 3l4 3-4 3" />
+      <path d="M3 18h4l2.5-3" />
+      <path d="M17 15l4 3-4 3" />
+      <path d="M13.5 9L15 7h2" />
+    </svg>
+  )
+}
+
+export function IconRepeat({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3 12a9 9 0 0 1 15.5-6.2" />
+      <path d="M18.5 3v4h-4" />
+      <path d="M21 12a9 9 0 0 1-15.5 6.2" />
+      <path d="M5.5 21v-4h4" />
+    </svg>
+  )
+}

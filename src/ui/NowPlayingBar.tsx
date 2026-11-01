@@ -49,11 +49,11 @@ export function NowPlayingBar({ onOpen }: Props) {
   return (
     <>
       <style>{MARQUEE_CSS}</style>
-      <div className="flex items-center gap-1 px-screen border-b border-line" style={{ minHeight: 44 }}>
+      <div className="flex items-center gap-1 px-screen border-b border-line" style={{ height: 40 }}>
         {/* тап по левой части — открыть плеер */}
         <button
           onClick={onOpen}
-          className="flex-1 min-w-0 flex items-center gap-2 py-2 text-left"
+          className="flex-1 min-w-0 flex items-center gap-2 text-left"
           aria-label="Открыть плеер"
         >
           <span className="font-mono text-mono-label shrink-0" style={{ color: 'var(--accent)' }}>●</span>
