@@ -7,6 +7,7 @@ import { Sleeve, SleeveSkeleton } from '@/ui/Sleeve'
 import { ReleaseFrame } from './ReleaseFrame'
 import { NowPlayingBar } from '@/ui/NowPlayingBar'
 import { IconTheme } from '@/ui/icons'
+import { SearchField } from '@/ui/SearchField'
 import { toggleTheme } from '@/features/polarity/usePolarity'
 import { haptic } from '@/app/telegram'
 
@@ -42,6 +43,7 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
   const [load, setLoad] = useState<Load>({ status: 'loading' })
   const [activeRelease, setActiveRelease] = useState<Release | null>(null)
   const [, setFanTick] = useState(0)
+  const [query, setQuery] = useState('')
 
   useEffect(() => subscribeFan(() => setFanTick((n) => n + 1)), [])
 
@@ -60,6 +62,12 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
 
   const catalog = load.status === 'ready' ? load.catalog : null
   const releases = catalog?.releases ?? []
+  const q = query.trim().toLowerCase()
+  const matches = (value: string): boolean => value.toLowerCase().includes(q)
+  const filteredReleases = q === '' ? releases : releases.filter((r) => matches(r.title))
+  const allTracks = releases.flatMap((r) => r.tracks)
+  const filteredTracks = q === '' ? [] : allTracks.filter((t) => matches(t.title))
+  const releaseTitleById = new Map(releases.map((r) => [r.id, r.title]))
 
   // открытие кадра релиза извне (например, «перейти к альбому» из меню трека)
   useEffect(() => {
@@ -109,6 +117,8 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
         </div>
       )}
 
+      <SearchField value={query} onChange={setQuery} placeholder="поиск: альбом или трек" />
+
       <main className="flex-1 px-screen" style={{ paddingTop: 24, paddingBottom: 32 }}>
         <h1 className="font-display text-h1 uppercase text-ink mb-1">Каталог</h1>
         <p className="font-mono text-mono-label uppercase text-dim mb-6">
@@ -133,13 +143,44 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
           </div>
         )}
 
+        {(load.status === 'ready' || load.status === 'offline') && filteredReleases.length === 0 && filteredTracks.length === 0 && q !== '' && (
+          <p className="font-mono text-mono-num text-dim">по запросу «{query.trim()}» ничего нет</p>
+        )}
+
         {(load.status === 'ready' || load.status === 'offline') && releases.length === 0 && (
           <p className="font-mono text-mono-num text-dim">Каталог ещё собирается</p>
         )}
 
-        {(load.status === 'ready' || load.status === 'offline') && releases.length > 0 && (
+        {(load.status === 'ready' || load.status === 'offline') && q !== '' && (
+          <div className="mb-6">
+            <p className="font-mono text-mono-label uppercase text-dim mb-2">треки</p>
+            {filteredTracks.length === 0 && (
+              <p className="font-mono text-mono-num text-dim">ничего не найдено</p>
+            )}
+            {filteredTracks.map((track) => (
+              <button
+                key={track.id}
+                onClick={() => onPlayTrack?.(track.id)}
+                className="w-full flex items-center gap-3 text-left border-b border-line"
+                style={{ minHeight: 52 }}
+              >
+                <span className="flex-1 min-w-0">
+                  <span className="block font-display text-body-strong line-clamp-1">{track.title}</span>
+                  <span className="block font-mono text-mono-label uppercase text-dim line-clamp-1">
+                    {releaseTitleById.get(track.releaseId) ?? ''}
+                  </span>
+                </span>
+                <span className="font-mono text-mono-num tabular-nums text-dim shrink-0">
+                  {Math.floor(track.duration / 60)}:{String(Math.round(track.duration % 60)).padStart(2, '0')}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {(load.status === 'ready' || load.status === 'offline') && filteredReleases.length > 0 && (
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-            {releases.map((release) => (
+            {filteredReleases.map((release) => (
               <Sleeve
                 key={release.id}
                 release={release}

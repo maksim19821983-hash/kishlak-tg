@@ -8,6 +8,7 @@ import { haptic } from '@/app/telegram'
 import { Sleeve } from '@/ui/Sleeve'
 import { NowPlayingBar } from '@/ui/NowPlayingBar'
 import { TrackMenu } from '@/ui/TrackMenu'
+import { SearchField } from '@/ui/SearchField'
 import { IconMore, IconPlay } from '@/ui/icons'
 import { HeartButton } from '@/ui/HeartButton'
 import { releaseProgress } from '@/features/fan/derive'
@@ -29,6 +30,7 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
   const playNext = useAudioStore((s) => s.playNext)
   const currentId = useAudioStore((s) => s.track?.id)
   const [menuTrack, setMenuTrack] = useState<Track | null>(null)
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     CatalogRepo.load().then(setCatalog).catch(() => {})
@@ -40,6 +42,11 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
 
   const tracks = favoriteTracks.map((id) => trackById.get(id)).filter((t): t is Track => Boolean(t))
   const releases = favoriteReleases.map((id) => releaseById.get(id)).filter((r): r is NonNullable<typeof r> => Boolean(r))
+
+  const q = query.trim().toLowerCase()
+  const matches = (value: string): boolean => value.toLowerCase().includes(q)
+  const visibleTracks = q === '' ? tracks : tracks.filter((t) => matches(t.title))
+  const visibleReleases = q === '' ? releases : releases.filter((r) => matches(r.title))
 
   const startQueue = (list: Track[], index: number) => {
     if (list.length === 0) return
@@ -73,6 +80,8 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
 
       <NowPlayingBar onOpen={onOpenPlayer} />
 
+      <SearchField value={query} onChange={setQuery} placeholder="поиск по любимому" />
+
       <div className="px-screen pt-4 pb-3">
         <h1 className="font-display text-h1 uppercase text-ink">Любимое</h1>
         <p className="font-mono text-mono-label uppercase text-dim mt-1">
@@ -80,7 +89,15 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
         </p>
       </div>
 
-      {tracks.length === 0 && releases.length === 0 && (
+      {q !== '' && visibleTracks.length === 0 && visibleReleases.length === 0 && (
+        <div className="flex-1 flex items-center justify-center px-screen">
+          <p className="font-mono text-mono-label uppercase text-dim text-center">
+            в любимом по запросу «{query.trim()}» ничего нет
+          </p>
+        </div>
+      )}
+
+      {q === '' && tracks.length === 0 && releases.length === 0 && (
         <div className="flex-1 flex items-center justify-center px-screen">
           <p className="font-mono text-mono-label uppercase text-dim text-center">
             Жми на сердце или три точки у трека — и он окажется здесь
@@ -88,7 +105,7 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
         </div>
       )}
 
-      {tracks.length > 0 && (
+      {visibleTracks.length > 0 && (
         <div className="px-screen pb-4 anim-fade-up">
           <button
             onClick={playFavorites}
@@ -102,7 +119,7 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
             </span>
           </button>
           <p className="font-mono text-mono-label uppercase text-dim mb-1">треки</p>
-          {tracks.map((track) => {
+          {visibleTracks.map((track) => {
             const isPlaying = track.id === currentId
             return (
               <div
@@ -143,11 +160,11 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
         </div>
       )}
 
-      {releases.length > 0 && (
+      {visibleReleases.length > 0 && (
         <div className="px-screen pb-4 anim-fade-up">
           <p className="font-mono text-mono-label uppercase text-dim mb-2">альбомы</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-5">
-            {releases.map((release) => (
+            {visibleReleases.map((release) => (
               <div key={release.id} className="relative">
                 <Sleeve
                   release={release}
