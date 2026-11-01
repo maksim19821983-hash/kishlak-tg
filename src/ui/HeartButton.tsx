@@ -5,12 +5,13 @@ type Props = {
   active: boolean
   onToggle: () => void
   size?: number
+  box?: number
   label: string
   color?: string
   inactiveColor?: string
 }
 
-export function HeartButton({ active, onToggle, size = 20, label, color, inactiveColor }: Props) {
+export function HeartButton({ active, onToggle, size = 20, box = 44, label, color, inactiveColor }: Props) {
   const [tick, setTick] = useState(0)
 
   return (
@@ -18,8 +19,8 @@ export function HeartButton({ active, onToggle, size = 20, label, color, inactiv
       onClick={() => { setTick((n) => n + 1); onToggle() }}
       className="relative flex items-center justify-center press"
       style={{
-        width: 44,
-        height: 44,
+        width: box,
+        height: box,
         color: active ? (color ?? 'var(--like)') : (inactiveColor ?? 'var(--dim)'),
       }}
       aria-label={label}

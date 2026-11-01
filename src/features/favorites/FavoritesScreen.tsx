@@ -8,7 +8,7 @@ import { haptic } from '@/app/telegram'
 import { Sleeve } from '@/ui/Sleeve'
 import { NowPlayingBar } from '@/ui/NowPlayingBar'
 import { TrackMenu } from '@/ui/TrackMenu'
-import { IconMore } from '@/ui/icons'
+import { IconMore, IconPlay } from '@/ui/icons'
 import { HeartButton } from '@/ui/HeartButton'
 import { releaseProgress } from '@/features/fan/derive'
 import { getState } from '@/features/fan/state'
@@ -41,21 +41,28 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
   const tracks = favoriteTracks.map((id) => trackById.get(id)).filter((t): t is Track => Boolean(t))
   const releases = favoriteReleases.map((id) => releaseById.get(id)).filter((r): r is NonNullable<typeof r> => Boolean(r))
 
-  const playTrack = (track: Track) => {
-    const idx = allTracks.findIndex((t) => t.id === track.id)
-    if (idx < 0) return
+  const startQueue = (list: Track[], index: number) => {
+    if (list.length === 0) return
     const engine = getWebEngine()
-    engine.load(allTracks, idx)
+    engine.load(list, Math.max(0, Math.min(index, list.length - 1)))
     engine.play()
     haptic('medium')
     onOpenPlayer()
   }
 
+  // включить только любимое: очередь = любимые треки
+  const playFavorites = () => startQueue(tracks, 0)
+
+  const playTrack = (track: Track) => {
+    const idx = tracks.findIndex((t) => t.id === track.id)
+    startQueue(tracks, idx < 0 ? 0 : idx)
+  }
+
   const playRelease = (releaseId: string) => {
     const release = releaseById.get(releaseId)
     if (!release || release.tracks.length === 0) return
-    const first = release.tracks[0]!
-    playTrack(first)
+    // альбом играет своими треками, а не всем каталогом
+    startQueue(release.tracks, 0)
   }
 
   return (
@@ -83,6 +90,17 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
 
       {tracks.length > 0 && (
         <div className="px-screen pb-4 anim-fade-up">
+          <button
+            onClick={playFavorites}
+            className="w-full flex items-center justify-center gap-2 rounded-pill border border-line press mb-4"
+            style={{ height: 52 }}
+            aria-label="Слушать любимое"
+          >
+            <IconPlay size={18} />
+            <span className="font-mono text-mono-label uppercase text-ink">
+              Слушать любимое · {tracks.length}
+            </span>
+          </button>
           <p className="font-mono text-mono-label uppercase text-dim mb-1">треки</p>
           {tracks.map((track) => {
             const isPlaying = track.id === currentId
@@ -145,6 +163,7 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
                     active
                     onToggle={() => { toggleRelease(release.id); haptic('light') }}
                     size={16}
+                    box={34}
                     label={`Убрать из любимого: ${release.title}`}
                   />
                 </div>
