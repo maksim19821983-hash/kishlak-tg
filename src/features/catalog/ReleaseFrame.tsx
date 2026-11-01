@@ -90,46 +90,30 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
         draggable={false}
       />
 
-      {/* скрим */}
+      {/* скрим снизу */}
       <div className="absolute inset-0" style={{ background: SCRIM }} />
-
-      {/* контент */}
+      {/* скрим сверху — под список треков, иначе светлые обложки съедают контраст */}
       <div
-        className="absolute inset-0 flex flex-col justify-end"
+        className="absolute inset-x-0 top-0"
         style={{
-          paddingBottom: 'calc(32px + env(safe-area-inset-bottom))',
+          height: '52%',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,.82), rgba(0,0,0,.55) 45%, transparent)',
+        }}
+      />
+
+      {/* контент: сверху треки, снизу название и кнопки */}
+      <div
+        className="absolute inset-0 flex flex-col"
+        style={{
+          paddingTop: 'calc(64px + env(safe-area-inset-top))',
+          paddingBottom: 'calc(28px + env(safe-area-inset-bottom))',
           paddingLeft: 24, paddingRight: 24,
         }}
       >
-        <p className="font-mono text-mono-label uppercase text-[#F1EDE6] mb-1">
-          РЕЛИЗ · {release.year}
-        </p>
-        <p
-          className="font-display text-[#F1EDE6] mb-2 line-clamp-2 leading-[0.95]"
-          style={{
-            // длинные названия не влезают в display-frame — подбираем кегль под длину
-            fontSize: `min(52px, ${Math.max(26, Math.round(300 / Math.max(4, release.title.length) * 1.5))}px)`,
-          }}
-        >
-          {release.title}
-        </p>
-        <p className="font-mono text-mono-num text-[rgba(241,237,230,.7)] mb-4">
-          {release.tracks.length} ТРЕКОВ · {listenedCount} ПРОСЛУШАНО · {fmtDuration(totalDuration)}
-        </p>
-
-        {/* линия прогресса */}
-        <div className="h-0.5 w-full bg-[rgba(241,237,230,.2)] rounded-full mb-6">
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${progress * 100}%`, background: 'var(--accent)' }}
-          />
-        </div>
-
-        {/* треки релиза */}
+        {/* треки релиза — занимают всё свободное место сверху */}
         <div
           data-scroll-tracks
-          className="overflow-y-auto overscroll-contain -mx-1 mb-3 anim-fade-up"
-          style={{ maxHeight: '38vh' }}
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain -mx-1 mb-4 anim-fade-up"
         >
           {release.tracks.map((track, i) => {
             const isCurrent = currentId === track.id
@@ -174,28 +158,52 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
           })}
         </div>
 
-        {/* СЛУШАТЬ + сердце */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onPlay}
-            className="flex-1 h-[54px] rounded-pill bg-[#F1EDE6] font-mono text-mono-label uppercase text-[#131211] tracking-widest min-h-[44px]"
-          >
-            СЛУШАТЬ
-          </button>
-          <button
-            onClick={() => { toggleRelease(release.id); haptic('light') }}
-            className="flex items-center justify-center rounded-full press"
+        {/* нижний блок: название, метаданные, прогресс, кнопки */}
+        <div className="shrink-0">
+          <p className="font-mono text-mono-label uppercase text-[#F1EDE6] mb-1">
+            РЕЛИЗ · {release.year}
+          </p>
+          <p
+            className="font-display text-[#F1EDE6] mb-2 line-clamp-1 leading-[0.95]"
             style={{
-              width: 54,
-              height: 54,
-              border: '1px solid rgba(241,237,230,.35)',
-              color: isFavorite ? 'var(--accent)' : 'rgba(241,237,230,.75)',
+              fontSize: `min(52px, ${Math.max(26, Math.round(300 / Math.max(4, release.title.length) * 1.5))}px)`,
             }}
-            aria-label={isFavorite ? 'Убрать из любимого' : 'В любимое'}
-            aria-pressed={isFavorite}
           >
-            <IconHeart size={22} filled={isFavorite} />
-          </button>
+            {release.title}
+          </p>
+          <p className="font-mono text-mono-num text-[rgba(241,237,230,.7)] mb-3">
+            {release.tracks.length} ТРЕКОВ · {listenedCount} ПРОСЛУШАНО · {fmtDuration(totalDuration)}
+          </p>
+
+          <div className="h-0.5 w-full bg-[rgba(241,237,230,.2)] rounded-full mb-4">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${progress * 100}%`, background: 'var(--accent)' }}
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onPlay}
+              className="flex-1 h-[54px] rounded-pill bg-[#F1EDE6] font-mono text-mono-label uppercase text-[#131211] tracking-widest min-h-[44px] press"
+            >
+              СЛУШАТЬ
+            </button>
+            <button
+              onClick={() => { toggleRelease(release.id); haptic('light') }}
+              className="flex items-center justify-center rounded-full press"
+              style={{
+                width: 54,
+                height: 54,
+                border: '1px solid rgba(241,237,230,.35)',
+                color: isFavorite ? 'var(--accent)' : 'rgba(241,237,230,.75)',
+              }}
+              aria-label={isFavorite ? 'Убрать из любимого' : 'В любимое'}
+              aria-pressed={isFavorite}
+            >
+              <IconHeart size={22} filled={isFavorite} />
+            </button>
+          </div>
         </div>
       </div>
 
