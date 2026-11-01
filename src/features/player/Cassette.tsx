@@ -120,10 +120,10 @@ export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, p
       <p
         className="font-mono uppercase"
         style={{
-          fontSize: 13,
-          fontWeight: 600,
-          letterSpacing: '0.1em',
-          lineHeight: 1.35,
+          fontSize: 16,
+          fontWeight: 700,
+          letterSpacing: '0.05em',
+          lineHeight: 1.25,
           color: bodyInk,
           marginTop: 12,
           display: '-webkit-box',
