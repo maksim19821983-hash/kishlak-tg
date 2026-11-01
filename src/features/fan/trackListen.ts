@@ -32,6 +32,16 @@ let sessionStarted = false
 let lyricsOpenedThisSession = false
 
 let _progressCache: Record<string, number> = {}
+const _progressSubs = new Set<() => void>()
+
+export function subscribeProgress(fn: () => void): () => void {
+  _progressSubs.add(fn)
+  return () => _progressSubs.delete(fn)
+}
+
+function notifyProgress(): void {
+  _progressSubs.forEach((fn) => fn())
+}
 
 // ── кэш прогресса ───────────────────────────────────────────────────────────
 
@@ -40,6 +50,7 @@ function rebuildProgressCache(releaseId: string, totalTracks: number): void {
   _progressCache[releaseId] = totalTracks > 0
     ? Math.min(1, rel.listenedTracks / totalTracks)
     : 0
+  notifyProgress()
 }
 
 export function getCachedProgress(releaseId: string): number {

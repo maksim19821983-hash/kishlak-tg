@@ -22,28 +22,26 @@ export function getWebEngine(): WebAudioEngine {
   return instance
 }
 
+export function _createEngineForTest(el: HTMLAudioElement): WebAudioEngine {
+  return new WebAudioEngine(el)
+}
+
 class WebAudioEngine implements AudioPort {
-  private el: HTMLAudioElement = createAudioElement()
+  private el: HTMLAudioElement
   private state: PlaybackState = { ...initialPlaybackState }
   private subs = new Set<(s: PlaybackState) => void>()
   private endedSubs = new Set<(track: Track, duration: number) => void>()
 
-  // shuffled order (индексы в queue)
   private order: number[] = []
-
-  // позиция в order
   private pos = -1
-
-  // троттлинг подписчиков: не чаще 4 раз/сек
   private lastNotify = 0
-
-  // RAF-цикл для currentTime
   private rafId = 0
-
-  // cleanup mediaSession
   private cleanupMs: (() => void) | null = null
+  // near-end fallback: если ended не пришёл — переключаем вручную через 500мс
+  private nearEndTimer = 0
 
-  constructor() {
+  constructor(el?: HTMLAudioElement) {
+    this.el = el ?? createAudioElement()
     this.bindAudioEvents()
     this.cleanupMs = setupMediaSession({
       play: () => this.play(),
@@ -51,7 +49,6 @@ class WebAudioEngine implements AudioPort {
       prev: () => this.prev(),
       next: () => this.next('user'),
     })
-    // RAF запускается только во время воспроизведения (см. bindAudioEvents)
   }
 
   // ─── AudioPort ────────────────────────────────────────────────────────────
@@ -255,13 +252,10 @@ class WebAudioEngine implements AudioPort {
   }
 
   private startRaf(): void {
-    // всегда останавливаем старый цикл перед запуском нового — защита от рейса
-    // когда play нового трека приходит раньше pause старого
     this.stopRaf()
     const tick = () => {
       this.rafId = requestAnimationFrame(tick)
       const ct = this.el.currentTime
-      // currentTime в state — точный, из RAF; подписчики — 4 раза/сек
       if (ct === this.state.currentTime) return
       const now = performance.now()
       const throttle = now - this.lastNotify >= 250
@@ -270,6 +264,25 @@ class WebAudioEngine implements AudioPort {
         this.lastNotify = now
         this.notify()
       }
+      // near-end fallback: если осталось < 0.3с и ended ещё не пришёл
+      const dur = this.el.duration
+      if (isFinite(dur) && dur > 0 && ct >= dur - 0.3 && this.state.status === 'playing') {
+        if (!this.nearEndTimer) {
+          this.nearEndTimer = window.setTimeout(() => {
+            this.nearEndTimer = 0
+            // перепроверяем — ended мог уже сработать и сменить трек
+            if (this.state.status === 'playing' && this.el.currentTime >= (this.el.duration || Infinity) - 0.3) {
+              const track = this.state.track
+              const duration = this.state.duration
+              if (track) this.endedSubs.forEach((fn) => fn(track, duration))
+              this.next('ended')
+            }
+          }, 500)
+        }
+      } else if (this.nearEndTimer) {
+        clearTimeout(this.nearEndTimer)
+        this.nearEndTimer = 0
+      }
     }
     this.rafId = requestAnimationFrame(tick)
   }
@@ -277,6 +290,10 @@ class WebAudioEngine implements AudioPort {
   private stopRaf(): void {
     if (this.rafId) cancelAnimationFrame(this.rafId)
     this.rafId = 0
+    if (this.nearEndTimer) {
+      clearTimeout(this.nearEndTimer)
+      this.nearEndTimer = 0
+    }
   }
 
   private patch(partial: Partial<PlaybackState>): void {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import { FanRepo } from '@/data/FanRepo'
+import { subscribeProgress } from '@/features/fan/trackListen'
 import type { Catalog, Release } from '@/data/types'
 import { Sleeve, SleeveSkeleton } from '@/ui/Sleeve'
 import { ReleaseFrame } from './ReleaseFrame'
@@ -32,6 +33,9 @@ type Props = { onPlayRelease: (release: Release) => void; onOpenPlayer: () => vo
 export function CatalogScreen({ onPlayRelease, onOpenPlayer }: Props) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
   const [activeRelease, setActiveRelease] = useState<Release | null>(null)
+  const [, setFanTick] = useState(0)
+
+  useEffect(() => subscribeProgress(() => setFanTick((n) => n + 1)), [])
 
   const fetchCatalog = () => {
     setLoad({ status: 'loading' })
