@@ -1,220 +1,176 @@
 import { getWebEngine } from '@/audio/webEngine'
 import type { PlaybackState } from '@/audio/port'
-import type { Track } from '@/data/types'
+import type { Track, Release } from '@/data/types'
 import {
-  getState, setState, getOrCreateTrackStat, getOrCreateReleaseStat,
-  pushSession, scheduleSave,
+  getState, setState, getOrCreateTrackFact, pushSession, scheduleSave,
 } from './state'
 import type { FanStats } from './title'
+import { listenedTracksCount, collectedReleases, isListened } from './derive'
 
-// Порог скачка currentTime, при котором считаем перемотку вперёд
-const FORWARD_SEEK_THRESHOLD = 3.0
+// ── LiveSession ───────────────────────────────────────────────────────────────
 
-// ── чистые хелперы (тестируются отдельно) ───────────────────────────────────
-
-export function shouldCountListen(maxPosition: number, duration: number): boolean {
-  if (duration <= 0) return false
-  // порог смягчён: на iOS конец трека иногда не доходит до 100% из-за буферизации
-  return maxPosition / duration >= 0.5
+type LiveSession = {
+  trackId: string
+  releaseId: string
+  duration: number
+  naturalMax: number
+  seconds: number
+  startedAt: number
+  withLyrics: boolean
+  finished: boolean
 }
 
-export function isForwardSeek(prevTime: number, nextTime: number, prevStatus: string): boolean {
-  if (prevStatus !== 'playing') return false
-  return nextTime - prevTime > FORWARD_SEEK_THRESHOLD
-}
-
-// ── внутреннее состояние сессии ──────────────────────────────────────────────
-
+let session: LiveSession | null = null
 let prevState: PlaybackState | null = null
-let sessionTrackId: string | null = null
-let sessionNaturalMax = 0
-let sessionSeconds = 0
-let sessionDuration = 0
-let sessionStarted = false
-let lyricsOpenedThisSession = false
 
-let _progressCache: Record<string, number> = {}
-const _progressSubs = new Set<() => void>()
+const _fanSubs = new Set<() => void>()
 
-export function subscribeProgress(fn: () => void): () => void {
-  _progressSubs.add(fn)
-  return () => _progressSubs.delete(fn)
+function notifyFan(): void {
+  _fanSubs.forEach((fn) => fn())
 }
 
-function notifyProgress(): void {
-  _progressSubs.forEach((fn) => fn())
+export function subscribeFan(fn: () => void): () => void {
+  _fanSubs.add(fn)
+  return () => _fanSubs.delete(fn)
 }
 
-// ── кэш прогресса ───────────────────────────────────────────────────────────
+// ── запись фактов ─────────────────────────────────────────────────────────────
 
-function rebuildProgressCache(releaseId: string, totalTracks: number): void {
-  const rel = getOrCreateReleaseStat(releaseId)
-  _progressCache[releaseId] = totalTracks > 0
-    ? Math.min(1, rel.listenedTracks / totalTracks)
-    : 0
-  notifyProgress()
-}
-
-export function getCachedProgress(releaseId: string): number {
-  return _progressCache[releaseId] ?? 0
-}
-
-// ── flush текущей сессии ────────────────────────────────────────────────────
-
-function flushSession(): void {
-  if (!sessionTrackId) return
-  maybeRecordListen()
-  const state = getState()
-  const tstat = getOrCreateTrackStat(sessionTrackId)
-  setState({
-    ...state,
-    tracks: {
-      ...state.tracks,
-      [sessionTrackId]: {
-        ...tstat,
-        maxPosition: Math.max(tstat.maxPosition, sessionNaturalMax),
-        seconds: tstat.seconds + sessionSeconds,
-      },
-    },
-    totalSeconds: state.totalSeconds + sessionSeconds,
-  })
-  sessionSeconds = 0
-}
-
-function resetSession(trackId: string, _trackTitle: string): void {
-  sessionTrackId = trackId
-  sessionNaturalMax = 0
-  sessionDuration = 0
-  sessionSeconds = 0
-  sessionStarted = false
-  lyricsOpenedThisSession = false
-}
-
-function recordPlay(trackId: string): void {
-  const state = getState()
-  const tstat = getOrCreateTrackStat(trackId)
-  setState({
-    ...state,
-    tracks: { ...state.tracks, [trackId]: { ...tstat, plays: tstat.plays + 1, lastAt: Date.now() } },
-  })
-}
-
-/**
- * Засчитать прослушивание по накопленному натуральному времени.
- * Вызывается и на ended, и на любом flush (пауза, сворачивание, смена трека) —
- * потому что на iOS конец трека не всегда приходит событием.
- */
-function maybeRecordListen(): void {
-  if (!sessionTrackId || sessionDuration <= 0) return
-  if (!shouldCountListen(sessionNaturalMax, sessionDuration)) return
-  const st = getWebEngine().getState()
-  const track = st.queue.find((t) => t.id === sessionTrackId) ?? st.track
-  const releaseId = track?.releaseId
-  if (!releaseId) return
-  const totalTracks = st.queue.filter((t) => t.releaseId === releaseId).length || 1
-  recordListen(sessionTrackId, releaseId, totalTracks)
-}
-
-function recordListen(trackId: string, releaseId: string, totalTracks: number): void {
-  const state = getState()
-  const tstat = getOrCreateTrackStat(trackId)
-  if (tstat.listens >= 1) return
-
-  const rstat = getOrCreateReleaseStat(releaseId)
-  setState({
-    ...state,
-    tracks: { ...state.tracks, [trackId]: { ...tstat, listens: 1 } },
-    releases: { ...state.releases, [releaseId]: { listenedTracks: rstat.listenedTracks + 1 } },
-  })
-  rebuildProgressCache(releaseId, totalTracks)
-}
-
-// ── обработчик ended (точный) ────────────────────────────────────────────────
-
-function handleEnded(track: Track, duration: number): void {
-  // duration из el может быть NaN/Infinity на некоторых устройствах — берём state как запасной
-  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0
-  // НЕ приравниваем sessionNaturalMax к safeDuration вслепую:
-  // обновляем только если реально накоплено больше
-  if (safeDuration > 0) {
-    sessionNaturalMax = Math.max(sessionNaturalMax, safeDuration)
+function flushFacts(completed: boolean): void {
+  if (!session) return
+  const fact = getOrCreateTrackFact(session.trackId)
+  const next = {
+    ...fact,
+    maxPosition: Math.max(fact.maxPosition, session.naturalMax),
+    duration: session.duration > 0 ? session.duration : fact.duration,
+    seconds: fact.seconds + session.seconds,
+    plays: fact.plays + (session.seconds > 0 || completed ? (fact.plays === 0 || session.startedAt > fact.lastAt ? 1 : 0) : 0),
+    lastAt: session.startedAt,
+    completed: fact.completed || completed,
   }
-  flushSession()
+  setState({ ...getState(), tracks: { ...getState().tracks, [session.trackId]: next } })
+  notifyFan()
+}
 
-  if (safeDuration > 0 && shouldCountListen(sessionNaturalMax, safeDuration)) {
-    const totalTracks = getWebEngine().getState().queue.filter((t) => t.releaseId === track.releaseId).length || 1
-    recordListen(track.id, track.releaseId, totalTracks)
-  }
-
+/** Единственная точка завершения трека. Идемпотентна. */
+function finishTrack(completed: boolean): void {
+  if (!session || session.finished) return
+  session.finished = true
+  flushFacts(completed)
   pushSession({
     at: Date.now(),
-    withLyrics: lyricsOpenedThisSession,
-    trackId: track.id,
-    trackTitle: track.title,
+    trackId: session.trackId,
+    trackTitle: getWebEngine().getState().track?.title ?? '',
+    releaseId: session.releaseId,
+    seconds: session.seconds,
+    withLyrics: session.withLyrics,
+    completed,
   })
   scheduleSave(true)
+  getWebEngine().next('ended')
 }
 
-// ── обработчик обновлений state ──────────────────────────────────────────────
+/** Экспорт для теста 9 — вызывает finishTrack с текущей сессией */
+export function _finishTrackForTest(completed: boolean): void {
+  finishTrack(completed)
+}
 
-function handleTrackChange(prev: PlaybackState | null, next: PlaybackState): void {
-  const prevTrackId = prev?.track?.id ?? null
-  const nextTrackId = next.track?.id ?? null
+// ── управление сессией ────────────────────────────────────────────────────────
 
-  if (prevTrackId && prevTrackId !== nextTrackId) {
-    flushSession()
-    if (prev && (prev.status === 'playing' || prev.status === 'paused')) {
-      pushSession({
-        at: Date.now(),
-        withLyrics: lyricsOpenedThisSession,
-        trackId: prevTrackId,
-        trackTitle: prev.track?.title,
-      })
-    }
-  }
-
-  if (nextTrackId && (nextTrackId !== sessionTrackId || prev?.status === 'idle')) {
-    resetSession(nextTrackId, next.track?.title ?? '')
+function openSession(trackId: string, releaseId: string): void {
+  session = {
+    trackId,
+    releaseId,
+    duration: 0,
+    naturalMax: 0,
+    seconds: 0,
+    startedAt: Date.now(),
+    withLyrics: false,
+    finished: false,
   }
 }
+
+function closeSessionWithoutNext(): void {
+  if (!session || session.finished) return
+  flushFacts(false)
+  pushSession({
+    at: Date.now(),
+    trackId: session.trackId,
+    trackTitle: getWebEngine().getState().track?.title ?? '',
+    releaseId: session.releaseId,
+    seconds: session.seconds,
+    withLyrics: session.withLyrics,
+    completed: false,
+  })
+  session = null
+}
+
+// ── обработчик состояния ──────────────────────────────────────────────────────
 
 export function handleStateUpdate(next: PlaybackState): void {
   const prev = prevState
-  prevState = next   // обновляем после захвата prev
+  prevState = next
 
   if (!next.track) return
 
   const trackId = next.track.id
+  const releaseId = next.track.releaseId
 
-  handleTrackChange(prev, next)
+  // смена трека
+  const prevTrackId = prev?.track?.id ?? null
+  if (prevTrackId && prevTrackId !== trackId) {
+    closeSessionWithoutNext()
+  }
 
-  // play начался
-  if (!sessionStarted && next.status === 'playing') {
-    sessionStarted = true
-    if (prev?.track?.id !== trackId || prev?.status === 'idle') {
-      recordPlay(trackId)
-    } else if (prev?.status !== 'playing') {
-      recordPlay(trackId)
+  // инициализация сессии для нового трека
+  if (!session || session.trackId !== trackId) {
+    openSession(trackId, releaseId)
+  }
+
+  // длительность из движка
+  if (next.duration > 0 && session) {
+    session.duration = next.duration
+  }
+
+  // накопление натуральной позиции
+  if (next.status === 'playing' && prev !== null && session) {
+    const dt = next.currentTime - prev.currentTime
+    if (dt > 0 && dt < 3.0) {
+      session.naturalMax = Math.max(session.naturalMax, next.currentTime)
+      session.seconds += dt
     }
   }
 
-  // длительность текущего трека — нужна для порога прослушивания
-  if (next.duration > 0) sessionDuration = next.duration
+  // plays — считаем при первом переходе в playing
+  if (next.status === 'playing' && prev?.status !== 'playing' && session) {
+    const fact = getOrCreateTrackFact(trackId)
+    setState({
+      ...getState(),
+      tracks: {
+        ...getState().tracks,
+        [trackId]: { ...fact, plays: fact.plays + 1, lastAt: Date.now() },
+      },
+    })
+    notifyFan()
+  }
 
-  // натуральное накопление позиции
-  if (next.status === 'playing' && prev !== null) {
-    const prevTime = prev.currentTime
-    const nextTime = next.currentTime
-    const dt = nextTime - prevTime
-    if (!isForwardSeek(prevTime, nextTime, prev.status) && dt > 0 && dt < FORWARD_SEEK_THRESHOLD) {
-      sessionNaturalMax = Math.max(sessionNaturalMax, nextTime)
-      sessionSeconds += dt
+  // watchdog: playing и у самого конца
+  if (next.status === 'playing' && session && session.duration > 0) {
+    if (next.currentTime >= session.duration - 0.4) {
+      finishTrack(true)
+      return
     }
   }
 
-  // pause → flush + save
-  if (next.status === 'paused' && prev?.status === 'playing') {
-    flushSession()
+  // pause у конца
+  if (next.status === 'paused' && prev?.status === 'playing' && session) {
+    const dur = session.duration > 0 ? session.duration : next.duration
+    if (dur > 0 && next.currentTime >= dur - 0.5) {
+      finishTrack(true)
+      return
+    }
+    // обычная пауза
+    flushFacts(false)
     scheduleSave(true)
   } else {
     scheduleSave()
@@ -223,47 +179,50 @@ export function handleStateUpdate(next: PlaybackState): void {
 
 // ── публичный API ─────────────────────────────────────────────────────────────
 
-export function getSessionDiag(): { sessionNaturalMax: number; sessionSeconds: number; sessionTrackId: string | null } {
-  return { sessionNaturalMax, sessionSeconds, sessionTrackId }
-}
-
 export function markLyricsOpened(): void {
-  lyricsOpenedThisSession = true
+  if (session) session.withLyrics = true
 }
 
-export function computeStats(
-  trackCount: Record<string, number>,
-  totalCatalogTracks: number,
-  totalCatalogReleases: number,
-): FanStats {
+export function getSessionDiag() {
+  return {
+    sessionTrackId: session?.trackId ?? null,
+    sessionNaturalMax: session?.naturalMax ?? 0,
+    sessionSeconds: session?.seconds ?? 0,
+    sessionFinished: session?.finished ?? false,
+  }
+}
+
+export function computeStats(allTracks: Track[], releases: Release[]): FanStats {
   const state = getState()
 
-  const totalListened = Object.values(state.releases).reduce((a, r) => a + r.listenedTracks, 0)
-  let topReleaseTimeShare = 0
-  if (totalListened > 0) {
-    const max = Math.max(...Object.values(state.releases).map((r) => r.listenedTracks))
-    topReleaseTimeShare = max / Math.max(totalListened, 1)
+  const totalSeconds = Object.values(state.tracks).reduce((a, f) => a + f.seconds, 0)
+
+  // seconds per release
+  const releaseSeconds: Record<string, number> = {}
+  for (const t of allTracks) {
+    const fact = state.tracks[t.id]
+    if (fact) {
+      releaseSeconds[t.releaseId] = (releaseSeconds[t.releaseId] ?? 0) + fact.seconds
+    }
   }
+  const maxReleaseSeconds = Object.values(releaseSeconds).reduce((a, v) => Math.max(a, v), 0)
+  const topReleaseTimeShare = totalSeconds > 0 ? maxReleaseSeconds / totalSeconds : 0
 
   const sessions = state.sessions
   const nightCount = sessions.filter((s) => { const h = new Date(s.at).getHours(); return h >= 23 || h < 6 }).length
   const nightShare = sessions.length > 0 ? nightCount / sessions.length : 0
   const lyricsShare = sessions.length > 0 ? sessions.filter((s) => s.withLyrics).length / sessions.length : 0
 
-  const listenedTracks = Object.values(state.tracks).filter((t) => t.listens >= 1).length
+  const listenedTracks = listenedTracksCount(state)
   const maxTrackPlays = Object.values(state.tracks).reduce((a, t) => Math.max(a, t.plays), 0)
-
-  const fullReleasesListened = Object.entries(state.releases).filter(([releaseId, rstat]) => {
-    const total = trackCount[releaseId] ?? 0
-    return total > 0 && rstat.listenedTracks >= total
-  }).length
+  const fullReleasesListened = collectedReleases(releases, state)
 
   return {
     listenedTracks,
-    totalCatalogTracks,
-    totalCatalogReleases,
+    totalCatalogTracks: allTracks.length,
+    totalCatalogReleases: releases.length,
     fullReleasesListened,
-    totalSeconds: state.totalSeconds,
+    totalSeconds,
     topReleaseTimeShare,
     nightShare,
     lyricsShare,
@@ -275,19 +234,31 @@ export function computeStats(
 export function initTrackListener(): () => void {
   const engine = getWebEngine()
   const unsub = engine.subscribe(handleStateUpdate)
-  const unsubEnded = engine.subscribeEnded(handleEnded)
+  const unsubEnded = engine.subscribeEnded((track, duration) => {
+    if (session && session.trackId === track.id) {
+      if (session.duration <= 0 && duration > 0) session.duration = duration
+      finishTrack(true)
+    }
+  })
 
-  const saveNow = () => { flushSession(); scheduleSave(true) }
+  const saveNow = () => {
+    if (session) flushFacts(false)
+    scheduleSave(true)
+  }
 
-  document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow() })
+  const onVisibility = () => { if (document.hidden) saveNow() }
+  document.addEventListener('visibilitychange', onVisibility)
   window.addEventListener('pagehide', saveNow)
   window.addEventListener('beforeunload', saveNow)
 
   return () => {
     unsub()
     unsubEnded()
-    document.removeEventListener('visibilitychange', saveNow)
+    document.removeEventListener('visibilitychange', onVisibility)
     window.removeEventListener('pagehide', saveNow)
     window.removeEventListener('beforeunload', saveNow)
   }
 }
+
+// ── совместимость: isListened реэкспортируется для тестов ─────────────────────
+export { isListened }

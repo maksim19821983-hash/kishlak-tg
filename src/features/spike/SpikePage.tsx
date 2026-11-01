@@ -3,8 +3,9 @@ import { useTelegramStatus } from '@/app/telegram'
 import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import { getWebEngine } from '@/audio/webEngine'
-import { getSessionDiag, subscribeProgress, getCachedProgress } from '@/features/fan/trackListen'
+import { getSessionDiag, subscribeFan } from '@/features/fan/trackListen'
 import { getState } from '@/features/fan/state'
+import { isListened, releaseProgress } from '@/features/fan/derive'
 
 function fmt(s: number): string {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
@@ -61,7 +62,7 @@ function snapshot(): DiagSnapshot {
   const c = eng.diagCounters
   const { sessionNaturalMax, sessionSeconds } = getSessionDiag()
   const fanState = getState()
-  const listens = st.track ? (fanState.tracks[st.track.id]?.listens ?? 0) : 0
+  const listens = st.track ? (isListened(fanState.tracks[st.track.id] ?? { maxPosition: 0, duration: 0, seconds: 0, plays: 0, lastAt: 0, completed: false }) ? 1 : 0) : 0
   return {
     status: st.status,
     trackId: st.track?.id ?? '—',
@@ -132,9 +133,11 @@ export function SpikePage() {
       prevStatus = st.status
     })
     const unsubEnded = eng.subscribeEnded((t) => push(`ENDED «${t.title}»`))
-    const unsubProgress = subscribeProgress(() => {
-      const rel = getState().releases
-      const parts = Object.keys(rel).map((id) => `${id}: ${Math.round(getCachedProgress(id) * 100)}%`)
+    const unsubProgress = subscribeFan(() => {
+      const state = getState()
+      const allTracks = getWebEngine().getState().queue
+      const releaseIds = [...new Set(allTracks.map((t) => t.releaseId))]
+      const parts = releaseIds.map((id) => `${id}: ${Math.round(releaseProgress(id, allTracks, state) * 100)}%`)
       if (parts.length > 0) push(`прогресс ${parts.join(', ')}`)
     })
     push('журнал запущен')

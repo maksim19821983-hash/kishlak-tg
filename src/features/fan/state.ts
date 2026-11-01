@@ -1,73 +1,130 @@
-export type TrackStat = {
-  listens: number        // 0 или 1: слышал ли трек до конца (≥80%)
-  plays: number          // сколько раз запускал
-  lastAt: number         // timestamp последнего запуска
-  maxPosition: number    // максимальная достигнутая позиция натуральным воспроизведением
-  seconds: number        // суммарное время прослушивания в секундах
-}
-
-export type ReleaseStat = {
-  listenedTracks: number  // сколько треков релиза прослушано до конца
+export type TrackFact = {
+  maxPosition: number   // макс натуральная позиция, сек
+  duration: number      // длительность из аудио
+  seconds: number       // суммарно прослушано
+  plays: number         // запусков
+  lastAt: number        // timestamp последнего запуска
+  completed: boolean    // трек дошёл до конца
 }
 
 export type Session = {
+  at: number
+  trackId: string
+  trackTitle: string
+  releaseId: string
+  seconds: number
+  withLyrics: boolean
+  completed: boolean
+}
+
+export type FanState = {
+  version: 3
+  tracks: Record<string, TrackFact>
+  sessions: Session[]
+  title: { id: string; since: number } | null
+  titleComputedAt: number
+}
+
+const STORAGE_KEY = 'kishlak:fan:v3'
+const LEGACY_KEY = 'kishlak:fan:v1'
+const MAX_SESSIONS = 500
+const SAVE_THROTTLE_MS = 10_000
+
+export function emptyState(): FanState {
+  return { version: 3, tracks: {}, sessions: [], title: null, titleComputedAt: 0 }
+}
+
+function isValidV3(v: unknown): v is FanState {
+  return (
+    typeof v === 'object' &&
+    v !== null &&
+    (v as FanState).version === 3 &&
+    typeof (v as FanState).tracks === 'object'
+  )
+}
+
+// ── миграция из v1 ───────────────────────────────────────────────────────────
+
+type LegacyTrackStat = {
+  listens: number
+  plays: number
+  lastAt: number
+  maxPosition: number
+  seconds: number
+}
+
+type LegacySession = {
   at: number
   withLyrics: boolean
   trackId?: string
   trackTitle?: string
 }
 
-export type FanState = {
+type LegacyState = {
   version: 1
-  tracks: Record<string, TrackStat>
-  releases: Record<string, ReleaseStat>
-  totalSeconds: number
-  sessions: Session[]
-  title: { id: string; since: number } | null
-  titleComputedAt: number
+  tracks: Record<string, LegacyTrackStat>
+  sessions: LegacySession[]
+  totalSeconds?: number
 }
 
-const STORAGE_KEY = 'kishlak:fan:v1'
-const MAX_SESSIONS = 500
-const SAVE_THROTTLE_MS = 10_000
-
-export function emptyState(): FanState {
-  return {
-    version: 1,
-    tracks: {},
-    releases: {},
-    totalSeconds: 0,
-    sessions: [],
-    title: null,
-    titleComputedAt: 0,
-  }
-}
-
-function isValidState(v: unknown): v is FanState {
+function isLegacyState(v: unknown): v is LegacyState {
   return (
     typeof v === 'object' &&
     v !== null &&
-    (v as FanState).version === 1 &&
-    typeof (v as FanState).tracks === 'object' &&
-    typeof (v as FanState).totalSeconds === 'number'
+    (v as LegacyState).version === 1 &&
+    typeof (v as LegacyState).tracks === 'object'
   )
+}
+
+function migrateFromV1(): FanState | null {
+  try {
+    const raw = localStorage.getItem(LEGACY_KEY)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    if (!isLegacyState(parsed)) return null
+
+    const tracks: Record<string, TrackFact> = {}
+    for (const [id, stat] of Object.entries(parsed.tracks)) {
+      tracks[id] = {
+        maxPosition: stat.maxPosition,
+        duration: 0,
+        seconds: stat.seconds,
+        plays: stat.plays,
+        lastAt: stat.lastAt,
+        completed: stat.listens >= 1,
+      }
+    }
+
+    const sessions: Session[] = (parsed.sessions ?? []).map((s) => ({
+      at: s.at,
+      trackId: s.trackId ?? '',
+      trackTitle: s.trackTitle ?? '',
+      releaseId: '',
+      seconds: 0,
+      withLyrics: s.withLyrics,
+      completed: false,
+    }))
+
+    return { version: 3, tracks, sessions, title: null, titleComputedAt: 0 }
+  } catch {
+    return null
+  }
 }
 
 export function loadState(): FanState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return emptyState()
-    const parsed: unknown = JSON.parse(raw)
-    if (!isValidState(parsed)) return emptyState()
-    // нормализуем поля, которых могло не быть в старых версиях
-    return {
-      ...emptyState(),
-      ...parsed,
-      titleComputedAt: (parsed as FanState).titleComputedAt ?? 0,
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw)
+      if (isValidV3(parsed)) {
+        return { ...emptyState(), ...parsed }
+      }
     }
   } catch {
     return emptyState()
   }
+  // попробуем мигрировать из v1
+  return migrateFromV1() ?? emptyState()
 }
 
 let _state: FanState = loadState()
@@ -92,7 +149,10 @@ function persistNow(): void {
   }
 }
 
-/** Сохранить с троттлингом 10 с; force=true — немедленно */
+export function saveStateNow(): void {
+  persistNow()
+}
+
 export function scheduleSave(force = false): void {
   if (force) {
     if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null }
@@ -105,7 +165,6 @@ export function scheduleSave(force = false): void {
   _saveTimer = setTimeout(persistNow, delay)
 }
 
-/** Добавить сессию, обрезать до MAX_SESSIONS */
 export function pushSession(session: Session): void {
   _state = {
     ..._state,
@@ -113,12 +172,6 @@ export function pushSession(session: Session): void {
   }
 }
 
-/** Получить или создать запись трека */
-export function getOrCreateTrackStat(trackId: string): TrackStat {
-  return _state.tracks[trackId] ?? { listens: 0, plays: 0, lastAt: 0, maxPosition: 0, seconds: 0 }
-}
-
-/** Получить или создать запись релиза */
-export function getOrCreateReleaseStat(releaseId: string): ReleaseStat {
-  return _state.releases[releaseId] ?? { listenedTracks: 0 }
+export function getOrCreateTrackFact(trackId: string): TrackFact {
+  return _state.tracks[trackId] ?? { maxPosition: 0, duration: 0, seconds: 0, plays: 0, lastAt: 0, completed: false }
 }
