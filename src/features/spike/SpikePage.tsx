@@ -2,9 +2,16 @@ import { useEffect, useState } from 'react'
 import { useTelegramStatus } from '@/app/telegram'
 import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
+import { getWebEngine } from '@/audio/webEngine'
+import { getSessionDiag } from '@/features/fan/trackListen'
+import { getState } from '@/features/fan/state'
 
 function fmt(s: number): string {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+}
+
+function fmtN(n: number): string {
+  return Number.isFinite(n) ? n.toFixed(2) : String(n)
 }
 
 type MsMode = 'tracks' | 'withSeek' | 'all' | 'none'
@@ -13,6 +20,65 @@ const MS_ACTIONS = [
   'play', 'pause', 'previoustrack', 'nexttrack',
   'seekto', 'seekbackward', 'seekforward',
 ] as const
+
+// ── диагностическая строка ──────────────────────────────────────────────────
+function Row({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex justify-between gap-2 py-0.5 border-b border-line">
+      <span className="text-dim text-mono-label uppercase shrink-0">{label}</span>
+      <span className="text-ink text-mono-num tabular-nums text-right truncate">{String(value)}</span>
+    </div>
+  )
+}
+
+type DiagSnapshot = {
+  status: string
+  trackId: string
+  trackTitle: string
+  elDuration: number
+  elCurrentTime: number
+  readyState: number
+  paused: boolean
+  elEnded: boolean
+  errorCode: number | null
+  errorMsg: string | null
+  cPlay: number; cPause: number; cEnded: number; cMeta: number; cError: number
+  sessionNaturalMax: number
+  sessionSeconds: number
+  listens: number
+  queueLen: number
+  index: number
+  pos: number
+}
+
+function snapshot(): DiagSnapshot {
+  const eng = getWebEngine()
+  const st = eng.getState()
+  const d = eng.getDiag()
+  const c = eng.diagCounters
+  const { sessionNaturalMax, sessionSeconds } = getSessionDiag()
+  const fanState = getState()
+  const listens = st.track ? (fanState.tracks[st.track.id]?.listens ?? 0) : 0
+  return {
+    status: st.status,
+    trackId: st.track?.id ?? '—',
+    trackTitle: st.track?.title ?? '—',
+    elDuration: d.elDuration,
+    elCurrentTime: d.elCurrentTime,
+    readyState: d.readyState,
+    paused: d.paused,
+    elEnded: d.elEnded,
+    errorCode: d.errorCode,
+    errorMsg: d.errorMsg,
+    cPlay: c.play, cPause: c.pause, cEnded: c.ended, cMeta: c.loadedmetadata, cError: c.error,
+    sessionNaturalMax,
+    sessionSeconds,
+    listens,
+    queueLen: d.queueLen,
+    index: d.index,
+    pos: d.pos,
+  }
+}
 
 export function SpikePage() {
   const tgStatus = useTelegramStatus()
@@ -32,8 +98,14 @@ export function SpikePage() {
   const [msLog, setMsLog] = useState<string[]>([])
   const prev = useAudioStore((s) => s.prev)
 
-  // Эксперимент: перерегистрируем обработчики Media Session под выбранный режим.
-  // Нужно, чтобы понять, какие именно действия заставляют iOS заменить ⏮⏭ на ±10.
+  const [diag, setDiag] = useState<DiagSnapshot>(snapshot)
+
+  // живая диагностика 4 раза/сек
+  useEffect(() => {
+    const id = setInterval(() => setDiag(snapshot()), 250)
+    return () => clearInterval(id)
+  }, [])
+
   useEffect(() => {
     if (!('mediaSession' in navigator)) {
       setMsLog(['mediaSession недоступен'])
@@ -72,7 +144,6 @@ export function SpikePage() {
     setMsLog(log)
   }, [msMode, toggle, prev, next, seek, currentTime])
 
-  // Загружаем треки из каталога при маунте
   useEffect(() => {
     CatalogRepo.load()
       .then((catalog) => {
@@ -88,11 +159,11 @@ export function SpikePage() {
   }, [load])
 
   return (
-    <div className="p-6 font-mono">
-      <p className="font-display text-h1 uppercase mb-6">Спайк</p>
+    <div className="p-4 font-mono">
+      <p className="font-display text-h1 uppercase mb-4">Спайк</p>
 
       <span
-        className={`inline-block px-2 py-1 text-mono-label uppercase mb-6 ${
+        className={`inline-block px-2 py-1 text-mono-label uppercase mb-4 ${
           tgStatus === 'ready'
             ? 'bg-[var(--accent)] text-[var(--bg-base)]'
             : 'border border-line text-dim'
@@ -102,14 +173,48 @@ export function SpikePage() {
       </span>
 
       <p className="mb-2 text-mono-num text-dim">каталог: {catalogState}</p>
-
       {loadError !== null && (
         <p className="mb-4 text-mono-num text-[var(--accent-text)]">ошибка: {loadError}</p>
       )}
 
+      {/* ── ДИАГНОСТИКА ──────────────────────────────────────────── */}
+      <div className="mt-2 mb-4">
+        <p className="text-mono-label uppercase text-dim mb-1">состояние движка</p>
+        <Row label="status"   value={diag.status} />
+        <Row label="track.id" value={diag.trackId} />
+        <Row label="title"    value={diag.trackTitle} />
+
+        <p className="text-mono-label uppercase text-dim mt-3 mb-1">el.*</p>
+        <Row label="el.duration"    value={fmtN(diag.elDuration)} />
+        <Row label="el.currentTime" value={fmtN(diag.elCurrentTime)} />
+        <Row label="el.readyState"  value={diag.readyState} />
+        <Row label="el.paused"      value={String(diag.paused)} />
+        <Row label="el.ended"       value={String(diag.elEnded)} />
+        {diag.errorCode !== null && (
+          <Row label="el.error" value={`${diag.errorCode}: ${diag.errorMsg ?? ''}`} />
+        )}
+
+        <p className="text-mono-label uppercase text-dim mt-3 mb-1">события (кол-во)</p>
+        <Row label="play"          value={diag.cPlay} />
+        <Row label="pause"         value={diag.cPause} />
+        <Row label="ended"         value={diag.cEnded} />
+        <Row label="loadedmetadata" value={diag.cMeta} />
+        <Row label="error"         value={diag.cError} />
+
+        <p className="text-mono-label uppercase text-dim mt-3 mb-1">фан-сессия</p>
+        <Row label="sessionNaturalMax" value={fmtN(diag.sessionNaturalMax)} />
+        <Row label="sessionSeconds"    value={fmtN(diag.sessionSeconds)} />
+        <Row label="listens (трек)"    value={diag.listens} />
+
+        <p className="text-mono-label uppercase text-dim mt-3 mb-1">очередь</p>
+        <Row label="queue.length" value={diag.queueLen} />
+        <Row label="index"        value={diag.index} />
+        <Row label="pos"          value={diag.pos} />
+      </div>
+
       <div className="mb-2">
         <p className="text-mono-label uppercase text-dim">сейчас</p>
-        <p className="font-display text-body-strong">{track?.title ?? '—'}</p>
+        <p className="font-display text-body-strong truncate">{track?.title ?? '—'}</p>
         <p className="text-mono-label uppercase text-dim mt-1">{status}</p>
       </div>
 
@@ -128,7 +233,7 @@ export function SpikePage() {
         style={{ accentColor: 'var(--accent)' }}
       />
 
-      <div className="mt-8 border-t border-line pt-4">
+      <div className="mt-4 border-t border-line pt-4">
         <p className="text-mono-label uppercase text-dim mb-2">media session</p>
         <div className="flex flex-wrap gap-2 mb-3">
           {(['tracks', 'withSeek', 'all', 'none'] as MsMode[]).map((mode) => (

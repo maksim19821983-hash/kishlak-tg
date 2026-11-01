@@ -112,12 +112,16 @@ function recordListen(trackId: string, releaseId: string, totalTracks: number): 
 // ── обработчик ended (точный) ────────────────────────────────────────────────
 
 function handleEnded(track: Track, duration: number): void {
-  // засчитываем natmax до конца и flush
-  sessionNaturalMax = Math.max(sessionNaturalMax, duration)
+  // duration из el может быть NaN/Infinity на некоторых устройствах — берём state как запасной
+  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0
+  // НЕ приравниваем sessionNaturalMax к safeDuration вслепую:
+  // обновляем только если реально накоплено больше
+  if (safeDuration > 0) {
+    sessionNaturalMax = Math.max(sessionNaturalMax, safeDuration)
+  }
   flushSession()
 
-  // проверяем 80%
-  if (shouldCountListen(sessionNaturalMax, duration)) {
+  if (safeDuration > 0 && shouldCountListen(sessionNaturalMax, safeDuration)) {
     const totalTracks = getWebEngine().getState().queue.filter((t) => t.releaseId === track.releaseId).length || 1
     recordListen(track.id, track.releaseId, totalTracks)
   }
@@ -129,7 +133,6 @@ function handleEnded(track: Track, duration: number): void {
     trackTitle: track.title,
   })
   scheduleSave(true)
-  // НЕ сбрасываем sessionTrackId — следующий play этого же трека начнёт новую сессию через handleTrackStart
 }
 
 // ── обработчик обновлений state ──────────────────────────────────────────────
@@ -196,6 +199,10 @@ export function handleStateUpdate(next: PlaybackState): void {
 }
 
 // ── публичный API ─────────────────────────────────────────────────────────────
+
+export function getSessionDiag(): { sessionNaturalMax: number; sessionSeconds: number; sessionTrackId: string | null } {
+  return { sessionNaturalMax, sessionSeconds, sessionTrackId }
+}
 
 export function markLyricsOpened(): void {
   lyricsOpenedThisSession = true

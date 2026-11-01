@@ -40,6 +40,25 @@ class WebAudioEngine implements AudioPort {
   // near-end fallback: если ended не пришёл — переключаем вручную через 500мс
   private nearEndTimer = 0
 
+  // диагностика: счётчики событий
+  readonly diagCounters = { play: 0, pause: 0, ended: 0, loadedmetadata: 0, error: 0 }
+
+  getDiag() {
+    const el = this.el
+    return {
+      elDuration: el.duration,
+      elCurrentTime: el.currentTime,
+      readyState: el.readyState,
+      paused: el.paused,
+      elEnded: el.ended,
+      errorCode: el.error?.code ?? null,
+      errorMsg: el.error?.message ?? null,
+      queueLen: this.state.queue.length,
+      index: this.state.index,
+      pos: this.pos,
+    }
+  }
+
   constructor(el?: HTMLAudioElement) {
     this.el = el ?? createAudioElement()
     this.bindAudioEvents()
@@ -207,6 +226,7 @@ class WebAudioEngine implements AudioPort {
     const el = this.el
 
     el.addEventListener('play', () => {
+      this.diagCounters.play++
       this.startRaf()
       this.patch({ status: 'playing' })
       if ('mediaSession' in navigator) {
@@ -215,11 +235,16 @@ class WebAudioEngine implements AudioPort {
     })
 
     el.addEventListener('pause', () => {
+      this.diagCounters.pause++
       this.stopRaf()
       if (this.state.status !== 'error') this.patch({ status: 'paused' })
       if ('mediaSession' in navigator) {
         try { navigator.mediaSession.playbackState = 'paused' } catch {}
       }
+    })
+
+    el.addEventListener('loadedmetadata', () => {
+      this.diagCounters.loadedmetadata++
     })
 
     el.addEventListener('waiting', () => {
@@ -239,6 +264,7 @@ class WebAudioEngine implements AudioPort {
     })
 
     el.addEventListener('ended', () => {
+      this.diagCounters.ended++
       const track = this.state.track
       const duration = this.state.duration
       this.stopRaf()
@@ -247,6 +273,7 @@ class WebAudioEngine implements AudioPort {
     })
 
     el.addEventListener('error', () => {
+      this.diagCounters.error++
       this.patch({ status: 'error', error: 'Трек недоступен' })
     })
   }
