@@ -189,13 +189,22 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
             </button>
             <div
               className="rounded-full"
-              style={{ border: '1px solid rgba(241,237,230,.35)', width: 54, height: 54, display: 'grid', placeItems: 'center' }}
+              style={{
+                width: 54,
+                height: 54,
+                display: 'grid',
+                placeItems: 'center',
+                background: isFavorite ? 'var(--like)' : 'transparent',
+                border: `1px solid ${isFavorite ? 'var(--like)' : 'rgba(241,237,230,.35)'}`,
+                transition: 'background-color 180ms ease, border-color 180ms ease',
+              }}
             >
               <HeartButton
                 active={isFavorite}
                 onToggle={() => { toggleRelease(release.id); haptic('light') }}
                 size={22}
                 label={isFavorite ? 'Убрать из любимого' : 'В любимое'}
+                color="#F6F1E8"
                 inactiveColor="rgba(241,237,230,.75)"
               />
             </div>

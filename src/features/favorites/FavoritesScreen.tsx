@@ -174,13 +174,20 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
                 />
                 <div
                   className="absolute rounded-full"
-                  style={{ top: 4, right: 4, background: 'rgba(0,0,0,.35)' }}
+                  style={{
+                    top: 6,
+                    right: 6,
+                    background: 'var(--like)',
+                    border: '1px solid var(--like)',
+                    transition: 'background-color 180ms ease',
+                  }}
                 >
                   <HeartButton
                     active
                     onToggle={() => { toggleRelease(release.id); haptic('light') }}
-                    size={16}
-                    box={34}
+                    size={15}
+                    box={32}
+                    color="#F6F1E8"
                     label={`Убрать из любимого: ${release.title}`}
                   />
                 </div>
