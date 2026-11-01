@@ -39,12 +39,9 @@ export function App() {
     }).catch(() => {})
   }, [])
 
-  // dev-only route overrides
-  if (import.meta.env.DEV) {
-    const p = window.location.pathname
-    if (p === '/spike') return <SpikePage />
-    if (p === '/polarity') return <PolarityPage />
-  }
+  const p = window.location.pathname
+  if (p === '/spike') return <SpikePage />
+  if (import.meta.env.DEV && p === '/polarity') return <PolarityPage />
 
   const handlePlayRelease = (release: Release) => {
     if (release.tracks.length === 0) return
