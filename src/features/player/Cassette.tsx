@@ -70,8 +70,6 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
   const bodyBorder = pol === 'paper' ? 'rgba(241,237,230,.15)' : 'rgba(19,18,17,.15)'
   const windowBg   = pol === 'paper' ? 'rgba(0,0,0,.45)'       : 'rgba(19,18,17,.12)'
   const hubColor   = pol === 'paper' ? '#0E0C0A'               : '#EDE7DB'
-  // обод правой катушки (пустая сторона)
-  const rimColor   = pol === 'paper' ? 'rgba(241,237,230,.18)' : 'rgba(19,18,17,.18)'
 
   const trackLabel = trackTitle ? `КИШЛАК — ${trackTitle.toUpperCase()}` : 'КИШЛАК'
 
@@ -81,8 +79,6 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
       aria-label={playing ? 'Пауза' : 'Воспроизвести'}
       className="relative w-full select-none overflow-hidden"
       style={{
-        aspectRatio: '1.44',
-        maxHeight: 240,
         borderRadius: 10,
         background: bodyBg,
         // блик 1 px по верхней кромке
@@ -155,18 +151,14 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
         {/* лента */}
         <div style={{ flex: 1, height: 2, background: COPPER }} />
 
-        {/* правая катушка — пустая, только обод */}
+        {/* правая катушка — диск ленты по прогрессу */}
         <div
           className="relative flex items-center justify-center"
           style={{ width: REEL_SIZE, height: REEL_SIZE }}
         >
           <div
             className="absolute rounded-full"
-            style={{
-              width: rightR * 2, height: rightR * 2,
-              background: 'transparent',
-              border: rightR > TAPE_MIN + 1 ? `2px solid ${COPPER}` : `1px solid ${rimColor}`,
-            }}
+            style={{ width: rightR * 2, height: rightR * 2, background: COPPER }}
           />
           <div
             ref={rightHubRef}
