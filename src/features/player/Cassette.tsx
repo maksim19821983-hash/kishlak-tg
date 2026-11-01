@@ -125,12 +125,11 @@ export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, p
           letterSpacing: '0.04em',
           lineHeight: 1.2,
           color: bodyInk,
-          marginTop: 12,
+          marginTop: 8,
           display: '-webkit-box',
           WebkitLineClamp: 2,
           WebkitBoxOrient: 'vertical',
           overflow: 'hidden',
-          minHeight: '2.7em',
         }}
       >
         {trackTitle ?? '—'}
