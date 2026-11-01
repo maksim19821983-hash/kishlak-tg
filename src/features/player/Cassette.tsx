@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react'
 import { useAudioStore } from '@/audio/store'
 
 const COPPER = '#8C5334'
-const REEL_SIZE = 64   // px, total container
+const REEL_SIZE = 72   // px
 const TAPE_MIN = 10    // px, radius of empty disc
-const TAPE_MAX = 28    // px, radius of full disc
+const TAPE_MAX = 30    // px, radius of full disc
 const DEG_PER_MS = 360 / 2000
 
 function tapeRadius(progress: number, isLeft: boolean): number {
@@ -75,46 +75,54 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
     <button
       onClick={onTap}
       aria-label={playing ? 'Пауза' : 'Воспроизвести'}
-      className="relative w-full select-none flex flex-col"
+      className="relative w-full select-none"
       style={{
-        aspectRatio: '1.55',
+        aspectRatio: '1.44',
+        maxHeight: 240,
         borderRadius: 10,
         background: bodyBg,
         backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 18px, rgba(255,255,255,0.02) 18px, rgba(255,255,255,0.02) 19px)`,
         border: `1px solid ${bodyBorder}`,
-        padding: '10px 14px',
+        padding: '14px 16px',
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      {/* 4 винта */}
-      {(['top-2.5 left-2.5', 'top-2.5 right-2.5', 'bottom-2.5 left-2.5', 'bottom-2.5 right-2.5'] as const).map((cls, i) => (
+      {/* 4 винта — 8 px от углов */}
+      {[
+        { top: 8, left: 8 },
+        { top: 8, right: 8 },
+        { bottom: 8, left: 8 },
+        { bottom: 8, right: 8 },
+      ].map((pos, i) => (
         <div
           key={i}
-          className={`absolute ${cls} rounded-full`}
-          style={{ width: 5, height: 5, background: bodyDim }}
+          className="absolute rounded-full"
+          style={{ width: 5, height: 5, background: bodyDim, ...pos }}
         />
       ))}
 
-      {/* лейбл: название трека */}
+      {/* лейбл */}
       <div className="flex items-start justify-between gap-2">
         <span
           className="font-mono uppercase truncate"
-          style={{ fontSize: 8.5, letterSpacing: '0.16em', lineHeight: 1.3, color: bodyInk }}
+          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyInk }}
         >
           {trackLabel}
         </span>
         <span
           className="font-mono uppercase shrink-0"
-          style={{ fontSize: 8.5, letterSpacing: '0.16em', lineHeight: 1.3, color: bodyDim }}
+          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyDim }}
         >
           №0341
         </span>
       </div>
 
-      {/* окно с катушками — flex-1 растягивается между лейблом и нижней строкой */}
+      {/* окно с катушками — фиксированная высота 92 px */}
       <div
-        className="relative flex items-center justify-center overflow-hidden my-2 flex-1"
+        className="relative flex items-center justify-center overflow-hidden"
         style={{
+          height: 92,
+          marginTop: 10,
           borderRadius: 6,
           background: windowBg,
           border: `1px solid ${bodyBorder}`,
@@ -126,7 +134,7 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
           style={{ width: REEL_SIZE, height: REEL_SIZE }}
         >
           <div className="absolute rounded-full" style={{ width: leftR * 2, height: leftR * 2, background: COPPER }} />
-          <div ref={leftHubRef} className="absolute rounded-full" style={{ width: 20, height: 20, background: bodyBg }}>
+          <div ref={leftHubRef} className="absolute rounded-full" style={{ width: 16, height: 16, background: bodyBg }}>
             <Spokes color={bodyBg} />
           </div>
         </div>
@@ -140,23 +148,23 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
           style={{ width: REEL_SIZE, height: REEL_SIZE }}
         >
           <div className="absolute rounded-full" style={{ width: rightR * 2, height: rightR * 2, background: COPPER }} />
-          <div ref={rightHubRef} className="absolute rounded-full" style={{ width: 20, height: 20, background: bodyBg }}>
+          <div ref={rightHubRef} className="absolute rounded-full" style={{ width: 16, height: 16, background: bodyBg }}>
             <Spokes color={bodyBg} />
           </div>
         </div>
       </div>
 
       {/* нижняя подпись */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
         <span
           className="font-mono uppercase"
-          style={{ fontSize: 8.5, letterSpacing: '0.16em', lineHeight: 1, color: bodyInk }}
+          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyInk }}
         >
           СТОРОНА {side}
         </span>
         <span
           className="font-mono uppercase"
-          style={{ fontSize: 8.5, letterSpacing: '0.16em', lineHeight: 1, color: bodyDim }}
+          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyDim }}
         >
           C-60 · {releaseYear ?? 2026}
         </span>
@@ -170,7 +178,7 @@ function Spokes({ color }: { color: string }) {
     <>
       {[0, 60, 120].map((deg) => (
         <div key={deg} className="absolute inset-0 flex items-center justify-center">
-          <div style={{ width: 2, height: 14, background: color, borderRadius: 1, transform: `rotate(${deg}deg)` }} />
+          <div style={{ width: 2, height: 12, background: color, borderRadius: 1, transform: `rotate(${deg}deg)` }} />
         </div>
       ))}
     </>
