@@ -43,12 +43,14 @@ type DiagSnapshot = {
   errorCode: number | null
   errorMsg: string | null
   cPlay: number; cPause: number; cEnded: number; cMeta: number; cError: number
+  cNextEnded: number; cNextUser: number
   sessionNaturalMax: number
   sessionSeconds: number
   listens: number
   queueLen: number
   index: number
   pos: number
+  repeat: string
 }
 
 function snapshot(): DiagSnapshot {
@@ -71,12 +73,14 @@ function snapshot(): DiagSnapshot {
     errorCode: d.errorCode,
     errorMsg: d.errorMsg,
     cPlay: c.play, cPause: c.pause, cEnded: c.ended, cMeta: c.loadedmetadata, cError: c.error,
+    cNextEnded: c.nextEnded, cNextUser: c.nextUser,
     sessionNaturalMax,
     sessionSeconds,
     listens,
     queueLen: d.queueLen,
     index: d.index,
     pos: d.pos,
+    repeat: st.repeat,
   }
 }
 
@@ -99,6 +103,36 @@ export function SpikePage() {
   const prev = useAudioStore((s) => s.prev)
 
   const [diag, setDiag] = useState<DiagSnapshot>(snapshot)
+  const [journal, setJournal] = useState<string[]>([])
+
+  // журнал переходов: видно, что происходит после конца трека
+  useEffect(() => {
+    const eng = getWebEngine()
+    const stamp = (): string => {
+      const t = new Date()
+      return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}:${String(t.getSeconds()).padStart(2, '0')}`
+    }
+    const push = (line: string): void =>
+      setJournal((prevLog) => [`${stamp()} ${line}`, ...prevLog].slice(0, 16))
+
+    let prevTrackId: string | null = null
+    let prevPos: number | null = null
+    let prevStatus: string | null = null
+
+    const unsub = eng.subscribe((st) => {
+      const id = st.track?.id ?? null
+      if (prevTrackId !== null && id !== prevTrackId) push(`трек → ${st.track?.title ?? '—'}`)
+      const d = eng.getDiag()
+      if (prevPos !== null && d.pos !== prevPos) push(`pos ${prevPos} → ${d.pos}`)
+      if (prevStatus !== null && st.status !== prevStatus) push(`status ${prevStatus} → ${st.status}`)
+      prevTrackId = id
+      prevPos = d.pos
+      prevStatus = st.status
+    })
+    const unsubEnded = eng.subscribeEnded((t) => push(`ENDED «${t.title}»`))
+    push('журнал запущен')
+    return () => { unsub(); unsubEnded() }
+  }, [])
 
   // живая диагностика 4 раза/сек
   useEffect(() => {
@@ -200,6 +234,8 @@ export function SpikePage() {
         <Row label="ended"         value={diag.cEnded} />
         <Row label="loadedmetadata" value={diag.cMeta} />
         <Row label="error"         value={diag.cError} />
+        <Row label="next(ended)"   value={diag.cNextEnded} />
+        <Row label="next(user)"    value={diag.cNextUser} />
 
         <p className="text-mono-label uppercase text-dim mt-3 mb-1">фан-сессия</p>
         <Row label="sessionNaturalMax" value={fmtN(diag.sessionNaturalMax)} />
@@ -210,6 +246,15 @@ export function SpikePage() {
         <Row label="queue.length" value={diag.queueLen} />
         <Row label="index"        value={diag.index} />
         <Row label="pos"          value={diag.pos} />
+        <Row label="repeat"       value={diag.repeat} />
+
+        <p className="text-mono-label uppercase text-dim mt-3 mb-1">журнал</p>
+        <ul className="text-mono-num">
+          {journal.length === 0 && <li className="text-dim">пока пусто</li>}
+          {journal.map((line) => (
+            <li key={line} className="text-dim">{line}</li>
+          ))}
+        </ul>
       </div>
 
       <div className="mb-2">

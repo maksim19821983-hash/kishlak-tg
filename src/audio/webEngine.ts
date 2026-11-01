@@ -39,9 +39,11 @@ class WebAudioEngine implements AudioPort {
   private cleanupMs: (() => void) | null = null
   // near-end fallback: если ended не пришёл — переключаем вручную через 500мс
   private nearEndTimer = 0
+  /** Конец текущего трека уже обработан (ended или фолбэк по pause). */
+  private endHandled = false
 
   // диагностика: счётчики событий
-  readonly diagCounters = { play: 0, pause: 0, ended: 0, loadedmetadata: 0, error: 0 }
+  readonly diagCounters = { play: 0, pause: 0, ended: 0, loadedmetadata: 0, error: 0, nextEnded: 0, nextUser: 0 }
 
   getDiag() {
     const el = this.el
@@ -125,6 +127,8 @@ class WebAudioEngine implements AudioPort {
   }
 
   next(reason: 'ended' | 'user' = 'user'): void {
+    if (reason === 'ended') this.diagCounters.nextEnded++
+    else this.diagCounters.nextUser++
     const { queue, repeat } = this.state
     if (queue.length === 0) return
 
@@ -211,11 +215,24 @@ class WebAudioEngine implements AudioPort {
     if (!track) return
 
     const wasPlaying = autoplay
+    this.endHandled = false
     this.el.src = track.audio
     this.el.load()
     this.applyMetadata(track)
     this.patch({ track, index: trackIdx, status: 'loading', currentTime: 0, duration: 0, error: null })
     if (wasPlaying) this.play()
+  }
+
+  /** Обработка естественного окончания трека: ровно один раз на трек. */
+  private handleNaturalEnd(): void {
+    if (this.endHandled) return
+    this.endHandled = true
+    this.diagCounters.ended++
+    const track = this.state.track
+    const duration = this.state.duration
+    this.stopRaf()
+    if (track) this.endedSubs.forEach((fn) => fn(track, duration))
+    this.next('ended')
   }
 
   private applyMetadata(track: Track): void {
@@ -238,6 +255,11 @@ class WebAudioEngine implements AudioPort {
       this.diagCounters.pause++
       this.stopRaf()
       if (this.state.status !== 'error') this.patch({ status: 'paused' })
+      // iOS/WebView иногда не присылает ended: если встали у самого конца — это конец трека
+      const dur = el.duration
+      if (!this.endHandled && isFinite(dur) && dur > 0 && el.currentTime >= dur - 0.5) {
+        this.handleNaturalEnd()
+      }
       if ('mediaSession' in navigator) {
         try { navigator.mediaSession.playbackState = 'paused' } catch {}
       }
@@ -263,14 +285,7 @@ class WebAudioEngine implements AudioPort {
       updatePositionState(el)
     })
 
-    el.addEventListener('ended', () => {
-      this.diagCounters.ended++
-      const track = this.state.track
-      const duration = this.state.duration
-      this.stopRaf()
-      if (track) this.endedSubs.forEach((fn) => fn(track, duration))
-      this.next('ended')
-    })
+    el.addEventListener('ended', () => this.handleNaturalEnd())
 
     el.addEventListener('error', () => {
       this.diagCounters.error++
