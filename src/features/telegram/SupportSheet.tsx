@@ -17,12 +17,12 @@ export function SupportSheet({ onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end"
+      className="fixed inset-0 z-50 flex items-end anim-backdrop"
       style={{ background: 'rgba(0,0,0,.4)' }}
       onClick={onClose}
     >
       <div
-        className="w-full bg-bg"
+        className="w-full bg-bg anim-sheet"
         style={{
           borderRadius: '16px 16px 0 0',
           paddingBottom: 'env(safe-area-inset-bottom)',

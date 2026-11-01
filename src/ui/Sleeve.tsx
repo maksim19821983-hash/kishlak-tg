@@ -21,7 +21,7 @@ export function Sleeve({ release, progress, listenedCount, onClick, onPlay }: Pr
     <div className="flex flex-col gap-2">
       <button
         onClick={onClick}
-        className="relative w-full aspect-square rounded-sleeve overflow-hidden border border-line min-h-[44px]"
+        className="relative w-full aspect-square press rounded-sleeve overflow-hidden border border-line min-h-[44px]"
         style={{ WebkitTapHighlightColor: 'transparent' }}
         aria-label={`${release.title}, открыть кадр релиза`}
       >

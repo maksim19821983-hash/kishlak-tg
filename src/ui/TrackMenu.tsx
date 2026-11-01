@@ -16,13 +16,13 @@ export function TrackMenu({ open, title, actions, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-[60] flex flex-col justify-end" role="dialog" aria-modal>
       <button
-        className="absolute inset-0"
+        className="absolute inset-0 anim-backdrop"
         style={{ background: 'rgba(0,0,0,.55)' }}
         onClick={onClose}
         aria-label="Закрыть меню"
       />
       <div
-        className="relative bg-bg border-t border-line"
+        className="relative bg-bg border-t border-line anim-sheet"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="px-screen pt-3 pb-2 border-b border-line">

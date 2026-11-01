@@ -49,7 +49,7 @@ export function NowPlayingBar({ onOpen }: Props) {
   return (
     <>
       <style>{MARQUEE_CSS}</style>
-      <div className="flex items-center gap-1 px-screen border-b border-line" style={{ height: 40 }}>
+      <div className="flex items-center gap-1 px-screen border-b border-line anim-fade-up" style={{ height: 40 }}>
         {/* тап по левой части — открыть плеер */}
         <button
           onClick={onOpen}

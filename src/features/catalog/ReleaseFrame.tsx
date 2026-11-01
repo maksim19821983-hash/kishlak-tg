@@ -58,7 +58,7 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay }: Props)
 
   return (
     <div
-      className="fixed inset-0 z-50"
+      className="fixed inset-0 z-50 anim-frame"
       style={{
         transform: `translateY(${offset}px)`,
         transition: offset === 0 && !closing ? 'transform 300ms ease' : closing ? 'transform 300ms ease' : 'none',
@@ -115,7 +115,7 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay }: Props)
           </button>
           <button
             onClick={() => { toggleRelease(release.id); haptic('light') }}
-            className="flex items-center justify-center rounded-full"
+            className="flex items-center justify-center rounded-full press"
             style={{
               width: 54,
               height: 54,

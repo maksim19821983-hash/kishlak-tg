@@ -67,16 +67,10 @@ export function App() {
       <Grain />
 
       <div className="flex-1 min-h-0 relative">
-        <div
-          className="absolute inset-0"
-          style={{ display: activeTab === 'player' ? undefined : 'none' }}
-        >
+        <div className="absolute inset-0 tab-pane" data-active={activeTab === 'player'}>
           <PlayerTab onOpenRelease={(id) => { setPendingRelease(id); setActiveTab('catalog') }} />
         </div>
-        <div
-          className="absolute inset-0 overflow-y-auto overscroll-contain"
-          style={{ display: activeTab === 'catalog' ? undefined : 'none' }}
-        >
+        <div className="absolute inset-0 overflow-y-auto overscroll-contain tab-pane" data-active={activeTab === 'catalog'}>
           <CatalogScreen
             onPlayRelease={handlePlayRelease}
             onOpenPlayer={() => setActiveTab('player')}
@@ -84,16 +78,10 @@ export function App() {
             onReleaseOpened={() => setPendingRelease(null)}
           />
         </div>
-        <div
-          className="absolute inset-0 overflow-y-auto overscroll-contain"
-          style={{ display: activeTab === 'favorites' ? undefined : 'none' }}
-        >
+        <div className="absolute inset-0 overflow-y-auto overscroll-contain tab-pane" data-active={activeTab === 'favorites'}>
           <FavoritesScreen onOpenPlayer={() => setActiveTab('player')} />
         </div>
-        <div
-          className="absolute inset-0 overflow-y-auto overscroll-contain"
-          style={{ display: activeTab === 'profile' ? undefined : 'none' }}
-        >
+        <div className="absolute inset-0 overflow-y-auto overscroll-contain tab-pane" data-active={activeTab === 'profile'}>
           <ProfileScreen asTab onOpenPlayer={() => setActiveTab('player')} />
         </div>
       </div>

@@ -81,7 +81,7 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
       )}
 
       {tracks.length > 0 && (
-        <div className="px-screen pb-4">
+        <div className="px-screen pb-4 anim-fade-up">
           <p className="font-mono text-mono-label uppercase text-dim mb-1">треки</p>
           {tracks.map((track) => {
             const isPlaying = track.id === currentId
@@ -125,7 +125,7 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
       )}
 
       {releases.length > 0 && (
-        <div className="px-screen pb-4">
+        <div className="px-screen pb-4 anim-fade-up">
           <p className="font-mono text-mono-label uppercase text-dim mb-2">альбомы</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-5">
             {releases.map((release) => (

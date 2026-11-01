@@ -25,3 +25,61 @@ body {
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }
+
+/* ── анимации: листы, кадры, вкладки ───────────────────────────────────────── */
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes frame-in {
+  from { opacity: 0; transform: scale(1.02); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.anim-sheet    { animation: sheet-up var(--dur-slide, 260ms) cubic-bezier(.22,.8,.28,1); }
+.anim-backdrop { animation: backdrop-in var(--dur-fade, 180ms) ease-out; }
+.anim-frame    { animation: frame-in var(--dur-slide, 260ms) cubic-bezier(.22,.8,.28,1); }
+.anim-fade-up  { animation: fade-up 220ms cubic-bezier(.22,.8,.28,1); }
+
+/* вкладки: плавная смена без перемонтирования */
+.tab-pane {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+.tab-pane[data-active='false'] {
+  opacity: 0;
+  transform: translateY(6px);
+  visibility: hidden;
+  pointer-events: none;
+}
+.tab-pane[data-active='true'] {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+}
+
+/* нажимаемые поверхности: лёгкая реакция на касание */
+.press {
+  transition: transform 140ms cubic-bezier(.22,.8,.28,1), opacity 140ms ease;
+}
+.press:active { transform: scale(.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-sheet,
+  .anim-backdrop,
+  .anim-frame,
+  .anim-fade-up { animation: none !important; }
+  .tab-pane { transition: none !important; }
+  .press:active { transform: none; }
+}

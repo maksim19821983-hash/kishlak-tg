@@ -354,7 +354,7 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
 
         <button
           onClick={handleTap}
-          className="rounded-full flex items-center justify-center text-bg"
+          className="rounded-full flex items-center justify-center text-bg press"
           style={{ width: 52, height: 52, background: 'var(--ink)' }}
           aria-label={playing ? 'Пауза' : 'Воспроизвести'}
         >
