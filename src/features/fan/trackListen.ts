@@ -44,7 +44,7 @@ function flushFacts(completed: boolean): void {
     maxPosition: Math.max(fact.maxPosition, session.naturalMax),
     duration: session.duration > 0 ? session.duration : fact.duration,
     seconds: fact.seconds + session.seconds,
-    plays: fact.plays + (session.seconds > 0 || completed ? (fact.plays === 0 || session.startedAt > fact.lastAt ? 1 : 0) : 0),
+    plays: fact.plays,
     lastAt: session.startedAt,
     completed: fact.completed || completed,
   }
@@ -53,7 +53,7 @@ function flushFacts(completed: boolean): void {
 }
 
 /** Единственная точка завершения трека. Идемпотентна. */
-function finishTrack(completed: boolean): void {
+function finishTrack(completed: boolean, advance = true): void {
   if (!session || session.finished) return
   session.finished = true
   flushFacts(completed)
@@ -67,12 +67,13 @@ function finishTrack(completed: boolean): void {
     completed,
   })
   scheduleSave(true)
-  getWebEngine().next('ended')
+  // при вызове из ended-подписки движок переключает трек сам — второй вызов пропустил бы трек
+  if (advance) getWebEngine().next('ended')
 }
 
 /** Экспорт для теста 9 — вызывает finishTrack с текущей сессией */
-export function _finishTrackForTest(completed: boolean): void {
-  finishTrack(completed)
+export function _finishTrackForTest(completed: boolean, advance = true): void {
+  finishTrack(completed, advance)
 }
 
 // ── управление сессией ────────────────────────────────────────────────────────
@@ -237,7 +238,7 @@ export function initTrackListener(): () => void {
   const unsubEnded = engine.subscribeEnded((track, duration) => {
     if (session && session.trackId === track.id) {
       if (session.duration <= 0 && duration > 0) session.duration = duration
-      finishTrack(true)
+      finishTrack(true, false)
     }
   })
 

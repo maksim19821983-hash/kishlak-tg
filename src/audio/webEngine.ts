@@ -237,8 +237,10 @@ class WebAudioEngine implements AudioPort {
     const el_dur = this.el.duration
     const duration = isFinite(el_dur) && el_dur > 0 ? el_dur : this.state.duration
     this.stopRaf()
+    const before = this.state.track
     if (track) this.endedSubs.forEach((fn) => fn(track, duration))
-    this.next('ended')
+    // если подписчик уже переключил трек — второй раз не двигаемся
+    if (this.state.track === before) this.next('ended')
   }
 
   private applyMetadata(track: Track): void {
