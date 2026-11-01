@@ -46,6 +46,18 @@ export function App() {
   if (p === '/spike') return <SpikePage />
   if (import.meta.env.DEV && p === '/polarity') return <PolarityPage />
 
+  const handlePlayTrack = (trackId: string) => {
+    CatalogRepo.load().then((cat) => {
+      const allTracks: Track[] = cat.releases.flatMap((r) => r.tracks)
+      const idx = allTracks.findIndex((t) => t.id === trackId)
+      if (idx < 0) return
+      const engine = getWebEngine()
+      engine.load(allTracks, idx)
+      engine.play()
+      setActiveTab('player')
+    }).catch(() => {})
+  }
+
   const handlePlayRelease = (release: Release) => {
     if (release.tracks.length === 0) return
     CatalogRepo.load().then((cat) => {
@@ -76,6 +88,7 @@ export function App() {
             onOpenPlayer={() => setActiveTab('player')}
             openReleaseId={pendingRelease}
             onReleaseOpened={() => setPendingRelease(null)}
+            onPlayTrack={handlePlayTrack}
           />
         </div>
         <div className="absolute inset-0 overflow-y-auto overscroll-contain tab-pane" data-active={activeTab === 'favorites'}>

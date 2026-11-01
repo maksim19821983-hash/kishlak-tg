@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Release } from '@/data/types'
 import { useAudioStore } from '@/audio/store'
+import type { Track } from '@/data/types'
 import { showBackButton, hideBackButton, disableVerticalSwipes, haptic } from '@/app/telegram'
 import { useFavorites } from '@/features/favorites/store'
 import { IconHeart } from '@/ui/icons'
@@ -12,6 +13,7 @@ type Props = {
   listenedCount: number
   onClose: () => void
   onPlay: () => void
+  onPlayTrack?: (track: Track) => void
 }
 
 function fmtDuration(sec: number): string {
@@ -22,12 +24,15 @@ function fmtDuration(sec: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export function ReleaseFrame({ release, listenedCount, onClose, onPlay }: Props) {
+export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTrack }: Props) {
   const touchStartY = useRef<number | null>(null)
   const [offset, setOffset] = useState(0)
   const [closing, setClosing] = useState(false)
   const isFavorite = useFavorites((st) => st.releases.includes(release.id))
   const toggleRelease = useFavorites((st) => st.toggleRelease)
+  const favoriteTracks = useFavorites((st) => st.tracks)
+  const toggleTrack = useFavorites((st) => st.toggleTrack)
+  const currentId = useAudioStore((st) => st.track?.id)
   const totalDuration = release.tracks.reduce((a, t) => a + t.duration, 0)
   const progress = release.tracks.length > 0 ? listenedCount / release.tracks.length : 0
 
@@ -64,9 +69,18 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay }: Props)
         transition: offset === 0 && !closing ? 'transform 300ms ease' : closing ? 'transform 300ms ease' : 'none',
         opacity: closing ? 0 : 1,
       }}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
+      onTouchStart={(e) => {
+        if ((e.target as HTMLElement).closest('[data-scroll-tracks]')) return
+        onTouchStart(e)
+      }}
+      onTouchMove={(e) => {
+        if ((e.target as HTMLElement).closest('[data-scroll-tracks]')) return
+        onTouchMove(e)
+      }}
+      onTouchEnd={(e) => {
+        if ((e.target as HTMLElement).closest('[data-scroll-tracks]')) return
+        onTouchEnd()
+      }}
     >
       {/* обложка на весь экран */}
       <img
@@ -90,7 +104,13 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay }: Props)
         <p className="font-mono text-mono-label uppercase text-[#F1EDE6] mb-1">
           РЕЛИЗ · {release.year}
         </p>
-        <p className="font-display text-display-frame text-[#F1EDE6] mb-2 line-clamp-2 leading-tight">
+        <p
+          className="font-display text-[#F1EDE6] mb-2 line-clamp-2 leading-[0.95]"
+          style={{
+            // длинные названия не влезают в display-frame — подбираем кегль под длину
+            fontSize: `min(52px, ${Math.max(26, Math.round(300 / Math.max(4, release.title.length) * 1.5))}px)`,
+          }}
+        >
           {release.title}
         </p>
         <p className="font-mono text-mono-num text-[rgba(241,237,230,.7)] mb-4">
@@ -103,6 +123,55 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay }: Props)
             className="h-full rounded-full"
             style={{ width: `${progress * 100}%`, background: 'var(--accent)' }}
           />
+        </div>
+
+        {/* треки релиза */}
+        <div
+          data-scroll-tracks
+          className="overflow-y-auto overscroll-contain -mx-1 mb-3 anim-fade-up"
+          style={{ maxHeight: '38vh' }}
+        >
+          {release.tracks.map((track, i) => {
+            const isCurrent = currentId === track.id
+            const isFav = favoriteTracks.includes(track.id)
+            return (
+              <div
+                key={track.id}
+                className="flex items-center gap-2 border-b border-[rgba(241,237,230,.12)] last:border-0"
+                style={{ minHeight: 48 }}
+              >
+                <button
+                  onClick={() => (onPlayTrack ? onPlayTrack(track) : onPlay())}
+                  className="flex-1 min-w-0 flex items-center gap-3 text-left"
+                >
+                  <span
+                    className="font-mono text-mono-num tabular-nums shrink-0"
+                    style={{ width: 22, color: isCurrent ? 'var(--accent)' : 'rgba(241,237,230,.5)' }}
+                  >
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span
+                    className="font-display text-body-strong line-clamp-1 flex-1"
+                    style={{ color: isCurrent ? 'var(--accent)' : '#F1EDE6' }}
+                  >
+                    {track.title}
+                  </span>
+                  <span className="font-mono text-mono-num tabular-nums shrink-0" style={{ color: 'rgba(241,237,230,.5)' }}>
+                    {fmtDuration(track.duration)}
+                  </span>
+                </button>
+                <button
+                  onClick={() => { toggleTrack(track.id); haptic('light') }}
+                  className="flex items-center justify-center press"
+                  style={{ width: 44, height: 44, color: isFav ? 'var(--accent)' : 'rgba(241,237,230,.45)' }}
+                  aria-label={isFav ? 'Убрать из любимого' : 'В любимое'}
+                  aria-pressed={isFav}
+                >
+                  <IconHeart size={16} filled={isFav} />
+                </button>
+              </div>
+            )
+          })}
         </div>
 
         {/* СЛУШАТЬ + сердце */}

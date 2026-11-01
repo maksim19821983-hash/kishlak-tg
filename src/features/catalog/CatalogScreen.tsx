@@ -35,9 +35,10 @@ type Props = {
   onOpenPlayer: () => void
   openReleaseId?: string | null
   onReleaseOpened?: () => void
+  onPlayTrack?: (trackId: string) => void
 }
 
-export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onReleaseOpened }: Props) {
+export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onReleaseOpened, onPlayTrack }: Props) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
   const [activeRelease, setActiveRelease] = useState<Release | null>(null)
   const [, setFanTick] = useState(0)
@@ -160,6 +161,9 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
           onPlay={() => {
             onPlayRelease(activeRelease)
             setActiveRelease(null)
+          }}
+          onPlayTrack={(track) => {
+            onPlayTrack?.(track.id)
           }}
         />
       )}

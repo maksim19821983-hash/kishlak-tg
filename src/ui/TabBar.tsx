@@ -33,13 +33,11 @@ export function TabBar({ active, onSelect }: Props) {
             >
               {tab.label}
             </span>
-            <div
-              className="w-1 h-1 rounded-full transition-opacity"
-              style={{
-                background: 'var(--accent)',
-                opacity: isActive ? 1 : 0,
-              }}
-            />
+            <div className="flex items-center justify-center" style={{ height: 4 }}>
+              {isActive && (
+                <div className="rounded-full anim-fade-up" style={{ width: 4, height: 4, background: 'var(--accent)' }} />
+              )}
+            </div>
           </button>
         )
       })}
