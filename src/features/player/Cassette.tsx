@@ -76,7 +76,7 @@ export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, p
     <button
       onClick={onTap}
       aria-label={playing ? 'Пауза' : 'Воспроизвести'}
-      className="relative w-full select-none overflow-hidden"
+      className="relative w-full select-none overflow-hidden text-left"
       style={{
         borderRadius: 10,
         background: bodyBg,
