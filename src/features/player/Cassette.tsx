@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { useAudioStore } from '@/audio/store'
 
-const COPPER = '#8C5334'
-const REEL_SIZE = 72   // px
-const TAPE_MIN = 10    // px, radius of empty disc
-const TAPE_MAX = 30    // px, radius of full disc
+const COPPER       = '#8C5334'
+const COPPER_LIGHT = '#B07050'
+const COPPER_DARK  = '#5C3018'
+const REEL_SIZE = 72
+const TAPE_MIN  = 10
+const TAPE_MAX  = 30
 const DEG_PER_MS = 360 / 2000
 
 function tapeRadius(progress: number, isLeft: boolean): number {
@@ -31,11 +33,11 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
   const leftR  = tapeRadius(progress, true)
   const rightR = tapeRadius(progress, false)
 
-  const leftHubRef  = useRef<HTMLDivElement>(null)
-  const rightHubRef = useRef<HTMLDivElement>(null)
-  const angleRef    = useRef(0)
-  const lastTsRef   = useRef<number | null>(null)
-  const rafRef      = useRef(0)
+  const leftHubRef    = useRef<HTMLDivElement>(null)
+  const rightHubRef   = useRef<HTMLDivElement>(null)
+  const angleRef      = useRef(0)
+  const lastTsRef     = useRef<number | null>(null)
+  const rafRef        = useRef(0)
   const reducedMotion = useRef(
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
@@ -45,7 +47,7 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
     function tick(ts: number) {
       rafRef.current = requestAnimationFrame(tick)
       if (document.hidden || !playing) { lastTsRef.current = null; return }
-      if (lastTsRef.current === null) { lastTsRef.current = ts; return }
+      if (lastTsRef.current === null)  { lastTsRef.current = ts; return }
       const delta = ts - lastTsRef.current
       lastTsRef.current = ts
       angleRef.current = (angleRef.current + DEG_PER_MS * delta) % 360
@@ -63,113 +65,172 @@ export function Cassette({ side, onTap, trackTitle, releaseYear, polarity }: Pro
   }, [playing])
 
   const pol = polarity ?? (document.documentElement.dataset.polarity as 'paper' | 'dark' | undefined) ?? 'paper'
-  const bodyBg     = pol === 'paper' ? '#1E1C1A' : '#E4DED2'
-  const bodyInk    = pol === 'paper' ? '#F1EDE6' : '#131211'
-  const bodyDim    = pol === 'paper' ? 'rgba(241,237,230,.45)' : 'rgba(19,18,17,.45)'
-  const bodyBorder = pol === 'paper' ? 'rgba(241,237,230,.15)' : 'rgba(19,18,17,.15)'
-  const windowBg   = pol === 'paper' ? 'rgba(0,0,0,.45)' : 'rgba(19,18,17,.12)'
+
+  const bodyBg      = pol === 'paper' ? '#1E1C1A' : '#E4DED2'
+  // торец темнее на ~6%
+  const spineColor  = pol === 'paper' ? '#141210' : '#D5CFBD'
+  // фаска — светлее, имитирует бликующую кромку
+  const chamfer     = pol === 'paper' ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.5)'
+  const bodyInk     = pol === 'paper' ? '#F1EDE6' : '#131211'
+  const bodyDim     = pol === 'paper' ? 'rgba(241,237,230,.45)' : 'rgba(19,18,17,.45)'
+  const bodyBorder  = pol === 'paper' ? 'rgba(241,237,230,.15)' : 'rgba(19,18,17,.15)'
+  const windowBg    = pol === 'paper' ? 'rgba(0,0,0,.45)'       : 'rgba(19,18,17,.12)'
+  // ступица чуть темнее фона, чтобы спицы (bodyBg) были видны
+  const hubColor    = pol === 'paper' ? '#0E0C0A' : '#EDE7DB'
 
   const trackLabel = trackTitle ? `КИШЛАК — ${trackTitle.toUpperCase()}` : 'КИШЛАК'
+  // радиальный градиент на диске ленты — имитирует округлость бобины
+  const tapeGrad   = `radial-gradient(circle at 38% 32%, ${COPPER_LIGHT}, ${COPPER} 55%, ${COPPER_DARK})`
 
   return (
-    <button
-      onClick={onTap}
-      aria-label={playing ? 'Пауза' : 'Воспроизвести'}
-      className="relative w-full select-none"
+    // обёртка: перспективный наклон + тень предмета
+    <div
+      className="relative w-full"
       style={{
-        aspectRatio: '1.44',
-        maxHeight: 240,
-        borderRadius: 10,
-        background: bodyBg,
-        backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 18px, rgba(255,255,255,0.02) 18px, rgba(255,255,255,0.02) 19px)`,
-        border: `1px solid ${bodyBorder}`,
-        padding: '14px 16px',
-        WebkitTapHighlightColor: 'transparent',
+        transform: reducedMotion.current ? undefined : 'perspective(800px) rotateX(4deg)',
+        filter: 'drop-shadow(0 8px 22px rgba(0,0,0,.38))',
       }}
     >
-      {/* 4 винта — 8 px от углов */}
-      {[
-        { top: 8, left: 8 },
-        { top: 8, right: 8 },
-        { bottom: 8, left: 8 },
-        { bottom: 8, right: 8 },
-      ].map((pos, i) => (
-        <div
-          key={i}
-          className="absolute rounded-full"
-          style={{ width: 5, height: 5, background: bodyDim, ...pos }}
-        />
-      ))}
-
-      {/* лейбл */}
-      <div className="flex items-start justify-between gap-2">
-        <span
-          className="font-mono uppercase truncate"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyInk }}
-        >
-          {trackLabel}
-        </span>
-        <span
-          className="font-mono uppercase shrink-0"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyDim }}
-        >
-          №0341
-        </span>
-      </div>
-
-      {/* окно с катушками — фиксированная высота 92 px */}
-      <div
-        className="relative flex items-center justify-center overflow-hidden"
+      {/* лицевая панель */}
+      <button
+        onClick={onTap}
+        aria-label={playing ? 'Пауза' : 'Воспроизвести'}
+        className="relative w-full select-none block overflow-hidden"
         style={{
-          height: 92,
-          marginTop: 10,
-          borderRadius: 6,
-          background: windowBg,
+          aspectRatio: '1.44',
+          maxHeight: 240,
+          borderRadius: '10px 10px 2px 2px',
+          background: bodyBg,
+          backgroundImage: [
+            // блик по верхней кромке
+            'linear-gradient(rgba(255,255,255,.06) 0%, transparent 20%)',
+            // пластиковая текстура шаг 3 px, разница 2%
+            'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,.02) 2px, rgba(255,255,255,.02) 3px)',
+          ].join(', '),
           border: `1px solid ${bodyBorder}`,
+          borderBottom: `1px solid ${chamfer}`,
+          padding: '14px 16px',
+          WebkitTapHighlightColor: 'transparent',
         }}
       >
-        {/* левая катушка */}
+        {/* 4 винта — 8 px от углов */}
+        {[
+          { top: 8, left: 8 },
+          { top: 8, right: 8 },
+          { bottom: 8, left: 8 },
+          { bottom: 8, right: 8 },
+        ].map((pos, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full"
+            style={{ width: 5, height: 5, background: bodyDim, ...pos }}
+          />
+        ))}
+
+        {/* лейбл */}
+        <div className="flex items-start justify-between gap-2">
+          <span
+            className="font-mono uppercase truncate"
+            style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyInk }}
+          >
+            {trackLabel}
+          </span>
+          <span
+            className="font-mono uppercase shrink-0"
+            style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyDim }}
+          >
+            №0341
+          </span>
+        </div>
+
+        {/* окно с катушками — утоплено внутренней тенью */}
         <div
-          className="relative flex items-center justify-center"
-          style={{ width: REEL_SIZE, height: REEL_SIZE }}
+          className="relative flex items-center justify-center overflow-hidden"
+          style={{
+            height: 92,
+            marginTop: 10,
+            borderRadius: 6,
+            background: windowBg,
+            border: `1px solid ${bodyBorder}`,
+            boxShadow: 'inset 0 2px 6px rgba(0,0,0,.6)',
+          }}
         >
-          <div className="absolute rounded-full" style={{ width: leftR * 2, height: leftR * 2, background: COPPER }} />
-          <div ref={leftHubRef} className="absolute rounded-full" style={{ width: 16, height: 16, background: bodyBg }}>
-            <Spokes color={bodyBg} />
+          {/* левая катушка */}
+          <div
+            className="relative flex items-center justify-center"
+            style={{ width: REEL_SIZE, height: REEL_SIZE }}
+          >
+            <div
+              className="absolute rounded-full"
+              style={{ width: leftR * 2, height: leftR * 2, background: tapeGrad }}
+            />
+            <div
+              ref={leftHubRef}
+              className="absolute rounded-full"
+              style={{
+                width: 16, height: 16,
+                background: hubColor,
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,.55)',
+              }}
+            >
+              <Spokes color={bodyBg} />
+            </div>
+          </div>
+
+          {/* лента */}
+          <div style={{ flex: 1, height: 2, background: COPPER }} />
+
+          {/* правая катушка */}
+          <div
+            className="relative flex items-center justify-center"
+            style={{ width: REEL_SIZE, height: REEL_SIZE }}
+          >
+            <div
+              className="absolute rounded-full"
+              style={{ width: rightR * 2, height: rightR * 2, background: tapeGrad }}
+            />
+            <div
+              ref={rightHubRef}
+              className="absolute rounded-full"
+              style={{
+                width: 16, height: 16,
+                background: hubColor,
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,.55)',
+              }}
+            >
+              <Spokes color={bodyBg} />
+            </div>
           </div>
         </div>
 
-        {/* лента */}
-        <div style={{ flex: 1, height: 2, background: COPPER }} />
-
-        {/* правая катушка */}
-        <div
-          className="relative flex items-center justify-center"
-          style={{ width: REEL_SIZE, height: REEL_SIZE }}
-        >
-          <div className="absolute rounded-full" style={{ width: rightR * 2, height: rightR * 2, background: COPPER }} />
-          <div ref={rightHubRef} className="absolute rounded-full" style={{ width: 16, height: 16, background: bodyBg }}>
-            <Spokes color={bodyBg} />
-          </div>
+        {/* нижняя подпись */}
+        <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
+          <span
+            className="font-mono uppercase"
+            style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyInk }}
+          >
+            СТОРОНА {side}
+          </span>
+          <span
+            className="font-mono uppercase"
+            style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyDim }}
+          >
+            C-60 · {releaseYear ?? 2026}
+          </span>
         </div>
-      </div>
+      </button>
 
-      {/* нижняя подпись */}
-      <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
-        <span
-          className="font-mono uppercase"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyInk }}
-        >
-          СТОРОНА {side}
-        </span>
-        <span
-          className="font-mono uppercase"
-          style={{ fontSize: 8.5, letterSpacing: '0.18em', lineHeight: 1, color: bodyDim }}
-        >
-          C-60 · {releaseYear ?? 2026}
-        </span>
-      </div>
-    </button>
+      {/* торец — 6 px темнее на 6% */}
+      <div
+        style={{
+          height: 6,
+          background: spineColor,
+          borderRadius: '0 0 10px 10px',
+          border: `1px solid ${bodyBorder}`,
+          borderTop: 'none',
+        }}
+      />
+    </div>
   )
 }
 
