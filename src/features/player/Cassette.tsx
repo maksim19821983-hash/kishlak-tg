@@ -120,10 +120,10 @@ export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, p
       <p
         className="font-mono uppercase"
         style={{
-          fontSize: 16,
+          fontSize: 19,
           fontWeight: 700,
-          letterSpacing: '0.05em',
-          lineHeight: 1.25,
+          letterSpacing: '0.04em',
+          lineHeight: 1.2,
           color: bodyInk,
           marginTop: 12,
           display: '-webkit-box',
@@ -198,13 +198,13 @@ export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, p
       <div className="flex items-center justify-between" style={{ marginTop: 12 }}>
         <span
           className="font-mono uppercase truncate"
-          style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1, color: bodyInk }}
+          style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', lineHeight: 1, color: bodyInk }}
         >
           {releaseTitle ? `${releaseTitle} · ${releaseYear ?? '—'}` : `СТОРОНА ${side}`}
         </span>
         <span
           className="font-mono uppercase shrink-0"
-          style={{ fontSize: 9, letterSpacing: '0.18em', lineHeight: 1, color: bodyDim, marginLeft: 8 }}
+          style={{ fontSize: 10, letterSpacing: '0.14em', lineHeight: 1, color: bodyDim, marginLeft: 8 }}
         >
           C-60
         </span>
