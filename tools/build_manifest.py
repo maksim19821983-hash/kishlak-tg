@@ -90,6 +90,16 @@ def build() -> dict:
         },
     }
     PUBLIC.mkdir(parents=True, exist_ok=True)
+
+    # постеры для локскрина: обложка + альбом и год, без названия трека
+    try:
+        import lock_art  # лежит рядом, в tools/
+        made = lock_art.generate_all(manifest, CONTENT, PUBLIC)
+        if made:
+            print(f"постеры локскрина: {made}")
+    except Exception as err:  # генерация не должна валить сборку манифеста
+        print(f"постеры локскрина: пропущено ({err})")
+
     (PUBLIC / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )

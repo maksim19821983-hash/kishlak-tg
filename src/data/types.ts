@@ -18,6 +18,8 @@ export type Track = {
   audio: string
   /** Обложка релиза — для локскрина и системного плеера */
   cover?: string
+  /** Постер для локскрина: обложка + альбом и год, без названия трека */
+  lockArt?: string
   lrc?: string
 }
 

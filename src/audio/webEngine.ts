@@ -280,7 +280,7 @@ class WebAudioEngine implements AudioPort {
   }
 
   private applyMetadata(track: Track): void {
-    updateMediaMetadata(track, track.cover ?? FALLBACK_COVER)
+    updateMediaMetadata(track, track.lockArt ?? track.cover ?? FALLBACK_COVER)
   }
 
   private bindAudioEvents(): void {
