@@ -1,6 +1,7 @@
-"""Постеры для локскрина: обложка релиза + альбом и год, без названия трека.
+"""Постеры для локскрина: обложка релиза + альбом и год.
 
-Название трека остаётся в системной строке плеера — так нет дублирования.
+Название трека и подписи сверху нет: обложки у Кишлака часто сами содержат
+рукописный текст, и любая наша строка поверх начинает с ней спорить.
 Размер 1080×1080, поля не меньше 80 px: iOS скругляет края картинки.
 """
 
@@ -16,7 +17,6 @@ except ImportError:  # Pillow нужен только для генерации 
 
 SIZE = 1080
 FONT_MONO = "design/assets/jbmono-regular.ttf"
-LABEL = "КИШЛАК · №0341"
 ACCENT = (180, 127, 100)
 CREAM = (240, 236, 228)
 
@@ -45,8 +45,7 @@ def make_poster(cover_path: Path, album: str, year: int | str, out_path: Path) -
     draw = ImageDraw.Draw(scrim)
     for y in range(SIZE):
         bottom = int(255 * (max(0.0, y - SIZE * 0.45) / (SIZE * 0.55)) ** 1.5)
-        top = int(130 * (1 - min(1.0, y / (SIZE * 0.22))))
-        draw.line([(0, y), (SIZE, y)], fill=(6, 6, 6, max(bottom, top)))
+        draw.line([(0, y), (SIZE, y)], fill=(6, 6, 6, bottom))
 
     img = Image.alpha_composite(img.convert("RGBA"), scrim).convert("RGB")
     draw = ImageDraw.Draw(img)
@@ -54,8 +53,6 @@ def make_poster(cover_path: Path, album: str, year: int | str, out_path: Path) -
     font_path = Path(FONT_MONO)
     if not font_path.exists():
         return False
-
-    draw.text((80, 104), LABEL, font=ImageFont.truetype(str(font_path), 32), fill=CREAM)
 
     sub = f"{album.upper()} · {year}"
     size = 40
