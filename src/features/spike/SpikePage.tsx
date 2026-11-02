@@ -5,6 +5,7 @@ import { CatalogRepo } from '@/data/CatalogRepo'
 import { getWebEngine } from '@/audio/webEngine'
 import { getSessionDiag, subscribeFan } from '@/features/fan/trackListen'
 import { getState } from '@/features/fan/state'
+import { getMediaActionLog, getMediaSessionInfo } from '@/audio/mediaSession'
 import { isListened, releaseProgress } from '@/features/fan/derive'
 
 function fmt(s: number): string {
@@ -258,6 +259,13 @@ export function SpikePage() {
         <Row label="index"        value={diag.index} />
         <Row label="pos"          value={diag.pos} />
         <Row label="repeat"       value={diag.repeat} />
+
+        <p className="text-mono-label uppercase text-dim mt-3 mb-1">media session</p>
+        <Row label="есть" value={String(getMediaSessionInfo().supported)} />
+        <Row label="state" value={getMediaSessionInfo().playbackState ?? '—'} />
+        <Row label="title" value={getMediaSessionInfo().title ?? '—'} />
+        <Row label="artwork" value={(getMediaSessionInfo().artworkUrl ?? '—').split('/').pop() ?? '—'} />
+        <Row label="действия" value={getMediaActionLog().slice(-3).map((e) => e.action).join(', ') || '—'} />
 
         <p className="text-mono-label uppercase text-dim mt-3 mb-1">журнал</p>
         <ul className="text-mono-num">

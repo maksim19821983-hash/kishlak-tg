@@ -27,6 +27,38 @@ export function updatePositionState(el: HTMLAudioElement): void {
   } catch {}
 }
 
+// ── диагностика: какие действия реально приходят с локскрина ───────────────
+
+export type MediaActionLogEntry = { action: string; at: number }
+const actionLog: MediaActionLogEntry[] = []
+
+function logAction(action: string): void {
+  actionLog.push({ action, at: Date.now() })
+  if (actionLog.length > 20) actionLog.shift()
+}
+
+export function getMediaActionLog(): MediaActionLogEntry[] {
+  return [...actionLog]
+}
+
+export function getMediaSessionInfo(): {
+  supported: boolean
+  playbackState: string | null
+  title: string | null
+  artworkUrl: string | null
+} {
+  if (!('mediaSession' in navigator)) {
+    return { supported: false, playbackState: null, title: null, artworkUrl: null }
+  }
+  const meta = navigator.mediaSession.metadata
+  return {
+    supported: true,
+    playbackState: navigator.mediaSession.playbackState ?? null,
+    title: meta?.title ?? null,
+    artworkUrl: meta?.artwork?.[0]?.src ?? null,
+  }
+}
+
 type Handlers = {
   play(): void
   pause(): void
@@ -39,12 +71,21 @@ export function setupMediaSession(handlers: Handlers): () => void {
   // Регистрируем по одному: если WebKit бросает на каком-то действии,
   // остальные всё равно встанут. Иначе iOS показывает свои ±10 вместо ⏮⏭.
   const setHandler = (action: MediaSessionAction, handler: MediaSessionActionHandler | null): void => {
-    try { navigator.mediaSession.setActionHandler(action, handler) } catch { /* не поддерживается */ }
+    try {
+      navigator.mediaSession.setActionHandler(action, handler)
+      logAction(`set:${action}`)
+    } catch (err) {
+      logAction(`fail:${action}:${err instanceof Error ? err.name : 'error'}`)
+    }
   }
-  setHandler('previoustrack', handlers.prev)
-  setHandler('nexttrack', handlers.next)
-  setHandler('play', handlers.play)
-  setHandler('pause', handlers.pause)
+  setHandler('previoustrack', () => { logAction('previoustrack'); handlers.prev() })
+  setHandler('nexttrack', () => { logAction('nexttrack'); handlers.next() })
+  setHandler('play', () => { logAction('play'); handlers.play() })
+  setHandler('pause', () => { logAction('pause'); handlers.pause() })
+
+  // только журналируем: покажет, присылает ли iOS перемотку вместо переключения
+  setHandler('seekbackward', (d) => { logAction(`seekbackward:${d.seekOffset ?? ''}`) })
+  setHandler('seekforward', (d) => { logAction(`seekforward:${d.seekOffset ?? ''}`) })
 
   return () => {
     if (!('mediaSession' in navigator)) return
