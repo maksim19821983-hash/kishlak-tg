@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom'
+
 type Action = {
   label: string
   onSelect: () => void
@@ -13,8 +15,10 @@ type Props = {
 
 export function TrackMenu({ open, title, actions, onClose }: Props) {
   if (!open) return null
-  return (
-    <div className="fixed inset-0 z-[60] flex flex-col justify-end" role="dialog" aria-modal>
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
+    <div className="fixed inset-0 z-[999] flex flex-col justify-end" role="dialog" aria-modal>
       <button
         className="absolute inset-0 anim-backdrop"
         style={{ background: 'rgba(0,0,0,.55)' }}
@@ -52,6 +56,7 @@ export function TrackMenu({ open, title, actions, onClose }: Props) {
           Отмена
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

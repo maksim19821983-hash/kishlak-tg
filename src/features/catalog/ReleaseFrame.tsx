@@ -5,6 +5,8 @@ import type { Track } from '@/data/types'
 import { showBackButton, hideBackButton, disableVerticalSwipes, haptic } from '@/app/telegram'
 import { useFavorites } from '@/features/favorites/store'
 import { HeartButton } from '@/ui/HeartButton'
+import { TrackMenu } from '@/ui/TrackMenu'
+import { IconMore } from '@/ui/icons'
 
 const SCRIM = 'linear-gradient(to bottom, rgba(0,0,0,.5), transparent 22%, rgba(0,0,0,.4) 55%, rgba(0,0,0,.94) 90%)'
 
@@ -33,6 +35,8 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
   const favoriteTracks = useFavorites((st) => st.tracks)
   const toggleTrack = useFavorites((st) => st.toggleTrack)
   const currentId = useAudioStore((st) => st.track?.id)
+  const [menuTrack, setMenuTrack] = useState<Track | null>(null)
+  const playNext = useAudioStore((st) => st.playNext)
   const totalDuration = release.tracks.reduce((a, t) => a + t.duration, 0)
   const progress = release.tracks.length > 0 ? listenedCount / release.tracks.length : 0
 
@@ -151,6 +155,14 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
                   label={isFav ? 'Убрать из любимого' : 'В любимое'}
                   inactiveColor="rgba(241,237,230,.45)"
                 />
+                <button
+                  onClick={() => { setMenuTrack(track); haptic('light') }}
+                  className="flex items-center justify-center press"
+                  style={{ width: 36, height: 44, color: 'rgba(241,237,230,.45)' }}
+                  aria-label={`Действия: ${track.title}`}
+                >
+                  <IconMore size={16} />
+                </button>
               </div>
             )
           })}
@@ -211,6 +223,27 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
           </div>
         </div>
       </div>
+
+      <TrackMenu
+        open={menuTrack !== null}
+        title={menuTrack?.title ?? ''}
+        onClose={() => setMenuTrack(null)}
+        actions={menuTrack ? [
+          {
+            label: favoriteTracks.includes(menuTrack.id) ? 'Убрать из любимого' : 'В любимое',
+            onSelect: () => { toggleTrack(menuTrack.id); haptic('light') },
+            accent: favoriteTracks.includes(menuTrack.id),
+          },
+          {
+            label: 'Играть следующим',
+            onSelect: () => { playNext(menuTrack); haptic('light') },
+          },
+          {
+            label: 'Слушать сейчас',
+            onSelect: () => (onPlayTrack ? onPlayTrack(menuTrack) : onPlay()),
+          },
+        ] : []}
+      />
 
       {/* кнопка закрыть */}
       <button

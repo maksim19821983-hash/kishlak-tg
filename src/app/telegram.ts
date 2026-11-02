@@ -132,6 +132,16 @@ export function ready(): void { call((app) => app.ready()) }
 export function expand(): void { call((app) => app.expand()) }
 export function disableVerticalSwipes(): void { call((app) => app.disableVerticalSwipes()) }
 
+/** Полноэкранный режим (Bot API 8.0+). На старых клиентах тихо игнорируется. */
+export function requestFullscreen(): void {
+  try {
+    const app = window.Telegram?.WebApp as (WebApp & { requestFullscreen?: () => void }) | undefined
+    app?.requestFullscreen?.()
+  } catch {
+    /* не поддерживается — остаёмся в обычном режиме */
+  }
+}
+
 let sdkPromise: Promise<void> | null = null
 
 export function ensureSdk(timeoutMs = 3000): Promise<void> {
@@ -159,6 +169,15 @@ export function initTelegram(): void {
     ready()
     expand()
     disableVerticalSwipes()
+    requestFullscreen()
+    // некоторые клиенты разрешают полноэкранный режим только после касания
+    if (!app.isFullscreen) {
+      const once = () => {
+        if (!app.isFullscreen) requestFullscreen()
+        window.removeEventListener('pointerdown', once)
+      }
+      window.addEventListener('pointerdown', once, { once: true })
+    }
 
     // синхронизировать цвет при старте
     const pol = document.documentElement.dataset.polarity ?? 'dark'
