@@ -37,6 +37,8 @@ class WebAudioEngine implements AudioPort {
   private lastNotify = 0
   private rafId = 0
   private cleanupMs: (() => void) | null = null
+  /** Перерегистрирует обработчики Media Session — нужен повторный вызов для WKWebView */
+  private wireMediaSession: () => void = () => {}
   // near-end fallback: если ended не пришёл — переключаем вручную через 500мс
   private nearEndTimer = 0
   /** Конец текущего трека уже обработан (ended или фолбэк по pause). */
@@ -66,12 +68,18 @@ class WebAudioEngine implements AudioPort {
   constructor(el?: HTMLAudioElement) {
     this.el = el ?? createAudioElement()
     this.bindAudioEvents()
-    this.cleanupMs = setupMediaSession({
-      play: () => this.play(),
-      pause: () => this.pause(),
-      prev: () => this.prev(),
-      next: () => this.next('user'),
-    })
+    const wireMediaSession = (): void => {
+      this.cleanupMs?.()
+      this.cleanupMs = setupMediaSession({
+        play: () => this.play(),
+        pause: () => this.pause(),
+        prev: () => this.prev(),
+        next: () => this.next('user'),
+        seek: (delta) => this.seek(Math.max(0, Math.min(this.state.duration || Infinity, this.el.currentTime + delta))),
+      })
+    }
+    this.wireMediaSession = wireMediaSession
+    wireMediaSession()
   }
 
   // ─── AudioPort ────────────────────────────────────────────────────────────
@@ -267,6 +275,8 @@ class WebAudioEngine implements AudioPort {
     const el = this.el
 
     el.addEventListener('play', () => {
+      // Telegram (WKWebView) иногда теряет обработчики, поставленные до старта звука
+      this.wireMediaSession()
       this.diagCounters.play++
       this.startRaf()
       this.patch({ status: 'playing' })

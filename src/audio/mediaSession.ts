@@ -64,6 +64,7 @@ type Handlers = {
   pause(): void
   prev(): void
   next(): void
+  seek?(seconds: number): void
 }
 
 export function setupMediaSession(handlers: Handlers): () => void {
@@ -83,9 +84,15 @@ export function setupMediaSession(handlers: Handlers): () => void {
   setHandler('play', () => { logAction('play'); handlers.play() })
   setHandler('pause', () => { logAction('pause'); handlers.pause() })
 
-  // только журналируем: покажет, присылает ли iOS перемотку вместо переключения
-  setHandler('seekbackward', (d) => { logAction(`seekbackward:${d.seekOffset ?? ''}`) })
-  setHandler('seekforward', (d) => { logAction(`seekforward:${d.seekOffset ?? ''}`) })
+  // iOS в WKWebView (Телеграм) навязывает ±10 вместо ⏮⏭ — пусть хотя бы перематывают
+  setHandler('seekbackward', (d) => {
+    logAction(`seekbackward:${d.seekOffset ?? ''}`)
+    handlers.seek?.(-(d.seekOffset ?? 10))
+  })
+  setHandler('seekforward', (d) => {
+    logAction(`seekforward:${d.seekOffset ?? ''}`)
+    handlers.seek?.(d.seekOffset ?? 10)
+  })
 
   return () => {
     if (!('mediaSession' in navigator)) return
