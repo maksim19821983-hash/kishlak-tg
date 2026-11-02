@@ -132,6 +132,15 @@ export function ready(): void { call((app) => app.ready()) }
 export function expand(): void { call((app) => app.expand()) }
 export function disableVerticalSwipes(): void { call((app) => app.disableVerticalSwipes()) }
 
+/** Отступы, которые Telegram добавляет в полноэкранном режиме под свои кнопки. */
+function applySafeAreas(app: WebApp): void {
+  const root = document.documentElement
+  const content = (app as WebApp & { contentSafeAreaInset?: { top?: number } }).contentSafeAreaInset
+  const safe = (app as WebApp & { safeAreaInset?: { top?: number } }).safeAreaInset
+  const top = Math.max(content?.top ?? 0, safe?.top ?? 0)
+  root.style.setProperty('--tg-safe-top', `${top}px`)
+}
+
 /** Полноэкранный режим (Bot API 8.0+). На старых клиентах тихо игнорируется. */
 export function requestFullscreen(): void {
   try {
@@ -170,6 +179,12 @@ export function initTelegram(): void {
     expand()
     disableVerticalSwipes()
     requestFullscreen()
+    applySafeAreas(app)
+    try {
+      app.onEvent('viewportChanged', () => applySafeAreas(app))
+      app.onEvent('fullscreenChanged', () => applySafeAreas(app))
+    } catch {}
+
     // некоторые клиенты разрешают полноэкранный режим только после касания
     if (!app.isFullscreen) {
       const once = () => {

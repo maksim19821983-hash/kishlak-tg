@@ -73,6 +73,8 @@ function parseTrack(v: unknown, p: string, release: { id: string; artistId: stri
   const lrc = optStr(o, 'lrc', p)
   if (lrc !== undefined) track.lrc = lrc
   if (track.releaseId !== release.id) throw new ManifestError(`${p}.releaseId`, `"${release.id}"`)
+  const cover = optStr(o, 'cover', p)
+  if (cover !== undefined) track.cover = cover
   if (track.artistId !== release.artistId) throw new ManifestError(`${p}.artistId`, `"${release.artistId}"`)
   return track
 }

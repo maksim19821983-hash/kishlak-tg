@@ -16,6 +16,8 @@ export type Track = {
   artistId: string
   releaseId: string
   audio: string
+  /** Обложка релиза — для локскрина и системного плеера */
+  cover?: string
   lrc?: string
 }
 

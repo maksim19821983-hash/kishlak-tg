@@ -62,6 +62,7 @@ def build() -> dict:
             t_out = {
                 "id": track["id"],
                 "title": track["title"],
+                **({"cover": f"/content/covers/{rid}.jpg"} if cover.exists() else {}),
                 "duration": track.get("duration", 0),
                 "releaseId": rid,
                 "artistId": out["artistId"],

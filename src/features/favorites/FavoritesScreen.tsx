@@ -74,7 +74,7 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
   }
 
   return (
-    <div className="min-h-full flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <div className="min-h-full flex flex-col" style={{ paddingTop: 'calc(env(safe-area-inset-top) + var(--tg-safe-top, 0px))' }}>
       <div className="flex items-center justify-between px-screen shrink-0" style={{ height: 40 }}>
         <span className="font-mono text-mono-label uppercase text-ink">КИШЛАК</span>
       </div>

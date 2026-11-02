@@ -81,7 +81,7 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
   return (
     <div
       className="min-h-full flex flex-col overflow-x-hidden"
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      style={{ paddingTop: 'calc(env(safe-area-inset-top) + var(--tg-safe-top, 0px))' }}
     >
       {/* шапка */}
       <header

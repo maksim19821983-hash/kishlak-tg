@@ -36,26 +36,24 @@ type Handlers = {
 
 export function setupMediaSession(handlers: Handlers): () => void {
   if (!('mediaSession' in navigator)) return () => {}
-  try {
-    // Явно сбрасываем перемотку: некоторые клиенты iOS активируют её по умолчанию,
-    // и тогда кнопки previoustrack/nexttrack заменяются на ±10 с.
-    navigator.mediaSession.setActionHandler('seekbackward', null)
-    navigator.mediaSession.setActionHandler('seekforward', null)
-    navigator.mediaSession.setActionHandler('play', handlers.play)
-    navigator.mediaSession.setActionHandler('pause', handlers.pause)
-    navigator.mediaSession.setActionHandler('previoustrack', handlers.prev)
-    navigator.mediaSession.setActionHandler('nexttrack', handlers.next)
-  } catch {}
+  // Регистрируем по одному: если WebKit бросает на каком-то действии,
+  // остальные всё равно встанут. Иначе iOS показывает свои ±10 вместо ⏮⏭.
+  const setHandler = (action: MediaSessionAction, handler: MediaSessionActionHandler | null): void => {
+    try { navigator.mediaSession.setActionHandler(action, handler) } catch { /* не поддерживается */ }
+  }
+  setHandler('previoustrack', handlers.prev)
+  setHandler('nexttrack', handlers.next)
+  setHandler('play', handlers.play)
+  setHandler('pause', handlers.pause)
 
   return () => {
     if (!('mediaSession' in navigator)) return
-    try {
-      navigator.mediaSession.setActionHandler('seekbackward', null)
-      navigator.mediaSession.setActionHandler('seekforward', null)
-      navigator.mediaSession.setActionHandler('play', null)
-      navigator.mediaSession.setActionHandler('pause', null)
-      navigator.mediaSession.setActionHandler('previoustrack', null)
-      navigator.mediaSession.setActionHandler('nexttrack', null)
-    } catch {}
+    const clear = (action: MediaSessionAction): void => {
+      try { navigator.mediaSession.setActionHandler(action, null) } catch { /* не поддерживается */ }
+    }
+    clear('previoustrack')
+    clear('nexttrack')
+    clear('play')
+    clear('pause')
   }
 }
