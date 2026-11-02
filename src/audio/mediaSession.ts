@@ -84,6 +84,8 @@ export function setupMediaSession(handlers: Handlers): () => void {
   setHandler('play', () => { logAction('play'); handlers.play() })
   setHandler('pause', () => { logAction('pause'); handlers.pause() })
 
+  // ВАЖНО: не объявлять seekto/seekbackward/seekforward.
+  // Любой seek-обработчик заставляет iOS показать ±10 вместо ⏮⏭ (проверено 02.11).
   // Перемотку не объявляем: пока обработчики seek* висят, WebKit показывает ±10.
   // Ставим в null, чтобы система вернула кнопки переключения треков.
   setHandler('seekbackward', null)
