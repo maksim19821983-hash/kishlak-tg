@@ -254,6 +254,10 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
           trackTitle={track?.title}
           releaseTitle={release?.title}
           releaseYear={release?.year}
+          releaseCover={release?.cover}
+          releaseType={release?.type}
+          accent={release?.palette.accent}
+          series={release?.series}
           polarity={polarity}
         />
       </div>

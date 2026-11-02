@@ -79,6 +79,18 @@ def build() -> dict:
 
         releases.append(out)
 
+    # серия: место релиза в дискографии по дате выхода
+    def sort_key(r):
+        value = r.get("releasedAt")
+        if value:
+            return value
+        return f"{r.get('year', 0)}-01-01"
+
+    ordered = sorted(releases, key=sort_key)
+    total = len(ordered)
+    for position, rel in enumerate(ordered, start=1):
+        rel["series"] = {"index": position, "total": total}
+
     manifest = {
         "artist": ARTIST,
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),

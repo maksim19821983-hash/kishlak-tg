@@ -81,6 +81,11 @@ function parseTrack(v: unknown, p: string, release: { id: string; artistId: stri
   return track
 }
 
+function parseSeries(v: unknown, p: string): { index: number; total: number } {
+  const o = obj(v, p)
+  return { index: num(o, 'index', p), total: num(o, 'total', p) }
+}
+
 function parseRelease(v: unknown, i: number, artistId: string): Release {
   const p = `releases[${i}]`
   const o = obj(v, p)
@@ -95,6 +100,7 @@ function parseRelease(v: unknown, i: number, artistId: string): Release {
     year: num(o, 'year', p),
     ...(typeof o.releasedAt === 'string' ? { releasedAt: o.releasedAt } : {}),
     type: oneOf(o, 'type', p, RELEASE_TYPES),
+    ...(o.series !== undefined ? { series: parseSeries(o.series, `${p}.series`) } : {}),
     palette: {
       mode: oneOf(palette, 'mode', `${p}.palette`, ['paper', 'dark'] as const),
       accent: str(palette, 'accent', `${p}.palette`),

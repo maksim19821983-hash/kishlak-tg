@@ -31,6 +31,8 @@ export type Release = {
   /** Точная дата выхода (ISO), если известна — для сортировки каталога */
   releasedAt?: string
   type: ReleaseType
+  /** Место релиза в дискографии: index из total */
+  series?: { index: number; total: number }
   palette: { mode: Polarity; accent: string }
   cover: string
   coverSmall: string
