@@ -84,15 +84,10 @@ export function setupMediaSession(handlers: Handlers): () => void {
   setHandler('play', () => { logAction('play'); handlers.play() })
   setHandler('pause', () => { logAction('pause'); handlers.pause() })
 
-  // iOS в WKWebView (Телеграм) навязывает ±10 вместо ⏮⏭ — пусть хотя бы перематывают
-  setHandler('seekbackward', (d) => {
-    logAction(`seekbackward:${d.seekOffset ?? ''}`)
-    handlers.seek?.(-(d.seekOffset ?? 10))
-  })
-  setHandler('seekforward', (d) => {
-    logAction(`seekforward:${d.seekOffset ?? ''}`)
-    handlers.seek?.(d.seekOffset ?? 10)
-  })
+  // Перемотку не объявляем: пока обработчики seek* висят, WebKit показывает ±10.
+  // Ставим в null, чтобы система вернула кнопки переключения треков.
+  setHandler('seekbackward', null)
+  setHandler('seekforward', null)
 
   return () => {
     if (!('mediaSession' in navigator)) return

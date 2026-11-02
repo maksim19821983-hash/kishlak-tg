@@ -9,9 +9,20 @@ const FALLBACK_COVER = '/content/covers/vdps-2026.jpg'
 
 function createAudioElement(): HTMLAudioElement {
   const el = document.createElement('audio')
-  el.preload = 'metadata'
+  el.preload = 'auto'
   // playsInline через атрибут (setAttribute нужен для Safari)
   el.setAttribute('playsinline', '')
+  // Элемент должен быть в документе: иначе WKWebView (Телеграм) не связывает
+  // медиасессию с Now Playing и подменяет ⏮⏭ на ±10.
+  el.style.position = 'absolute'
+  el.style.width = '0'
+  el.style.height = '0'
+  el.style.opacity = '0'
+  el.style.pointerEvents = 'none'
+  el.setAttribute('aria-hidden', 'true')
+  if (typeof document !== 'undefined' && document.body) {
+    document.body.appendChild(el)
+  }
   return el
 }
 
@@ -59,6 +70,7 @@ class WebAudioEngine implements AudioPort {
       elEnded: el.ended,
       errorCode: el.error?.code ?? null,
       errorMsg: el.error?.message ?? null,
+      elConnected: this.el.isConnected,
       queueLen: this.state.queue.length,
       index: this.state.index,
       pos: this.pos,
