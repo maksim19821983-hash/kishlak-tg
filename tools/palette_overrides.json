@@ -1,0 +1,8 @@
+{
+  "_комментарий": "Ручные акценты: цвет берётся с обложки глазами, а не алгоритмом. Применяется после gen_palette.py",
+  "11-11-2020":         { "accent": "#3FA96F", "secondary": "#E0578C", "mono": false, "why": "зелёный LED-экран 11:11, розовые волосы" },
+  "boleyu-toboy-2023":  { "accent": "#D9537F", "secondary": "#B07A4A", "mono": false, "why": "неоновая вывеска на дереве" },
+  "emo-rap-2022":       { "accent": "#3E6E8C", "secondary": "#8FA6B2", "mono": false, "why": "ночной город, синие огни" },
+  "kogda-ya-umer-2026": { "accent": "#3A3A3C", "secondary": "#8C8880", "mono": true,  "why": "чёрная обложка — нужен приём, не цвет" },
+  "lava-2021":          { "accent": "#C98A6A", "secondary": "#D98CA6", "mono": false, "why": "песочная тетрадь и розовая шляпа" }
+}

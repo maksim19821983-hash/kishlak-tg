@@ -87,6 +87,30 @@ def analyze(cover: Path) -> dict:
     return {"accent": accent, "secondary": secondary, "mono": max_s < 0.38}
 
 
+def apply_overrides() -> None:
+    """Ручные акценты из tools/palette_overrides.json перекрывают алгоритм."""
+    path = Path("tools/palette_overrides.json")
+    if not path.exists():
+        return
+    overrides = json.loads(path.read_text(encoding="utf-8"))
+    for rid, spec in overrides.items():
+        if rid.startswith("_"):
+            continue
+        release = CONTENT / rid / "release.json"
+        if not release.exists():
+            print(f"нет релиза {rid}")
+            continue
+        data = json.loads(release.read_text(encoding="utf-8"))
+        palette = data.get("palette", {})
+        palette["accent"] = spec["accent"]
+        palette["secondary"] = spec["secondary"]
+        palette["mono"] = spec.get("mono", False)
+        palette["curated"] = True
+        data["palette"] = palette
+        release.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"ручной акцент: {data['title']} {spec['accent']}")
+
+
 def main() -> None:
     changed = 0
     for path in sorted(CONTENT.glob("*/release.json")):
@@ -108,6 +132,7 @@ def main() -> None:
         flag = "моно" if palette["mono"] else "цвет"
         print(f"{data['title'][:24]:26} {merged['accent']} + {merged['secondary']}  {flag}")
     print(f"обновлено: {changed}")
+    apply_overrides()
 
 
 if __name__ == "__main__":
