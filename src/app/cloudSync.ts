@@ -37,9 +37,12 @@ type Diag = {
   lastPush: string
   remoteFav: string
   keys: number
+  lastError: string
 }
 
-const diag: Diag = { available: false, sdkPlatform: '-', lastPull: '-', lastPush: '-', remoteFav: '-', keys: 0 }
+const diag: Diag = {
+  available: false, sdkPlatform: '-', lastPull: '-', lastPush: '-', remoteFav: '-', keys: 0, lastError: '—',
+}
 
 export function getCloudDiag(): Diag {
   return { ...diag, available: cloudSyncAvailable(), sdkPlatform: (window.Telegram?.WebApp?.platform ?? '-') }
@@ -48,8 +51,12 @@ export function getCloudDiag(): Diag {
 function read(c: Cloud, key: string): Promise<string | null> {
   return new Promise((resolve) => {
     try {
-      c.getItem(key, (err, value) => resolve(err || !value ? null : value))
-    } catch {
+      c.getItem(key, (err, value) => {
+        if (err) diag.lastError = `getItem ${key}: ${err}`
+        resolve(err || !value ? null : value)
+      })
+    } catch (e) {
+      diag.lastError = `getItem ${key}: ${String(e)}`
       resolve(null)
     }
   })
@@ -58,8 +65,12 @@ function read(c: Cloud, key: string): Promise<string | null> {
 function write(c: Cloud, key: string, value: string): Promise<void> {
   return new Promise((resolve) => {
     try {
-      c.setItem(key, value, () => resolve())
-    } catch {
+      c.setItem(key, value, (err) => {
+        if (err) diag.lastError = `setItem ${key}: ${err} (${value.length} байт)`
+        resolve()
+      })
+    } catch (e) {
+      diag.lastError = `setItem ${key}: ${String(e)}`
       resolve()
     }
   })
@@ -180,4 +191,50 @@ export function schedulePush(delayMs = 2500): void {
 export function watchFavorites(): () => void {
   if (!cloudSyncAvailable()) return () => {}
   return useFavorites.subscribe(() => schedulePush())
+}
+
+
+// ── перенос данных кодом (работает без облака) ──────────────────────────────
+
+type Transfer = {
+  v: 1
+  fav: { tracks: string[]; releases: string[] }
+  facts: Record<string, TrackFact>
+}
+
+export function exportCode(): string {
+  const fav = useFavorites.getState()
+  const data: Transfer = {
+    v: 1,
+    fav: { tracks: fav.tracks, releases: fav.releases },
+    facts: getState().tracks,
+  }
+  const json = JSON.stringify(data)
+  const bytes = new TextEncoder().encode(json)
+  let binary = ''
+  bytes.forEach((b) => { binary += String.fromCharCode(b) })
+  return btoa(binary)
+}
+
+export async function importCode(code: string): Promise<string> {
+  try {
+    const clean = code.trim().replace(/\s+/g, '')
+    const binary = atob(clean)
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0))
+    const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Transfer
+    if (parsed.v !== 1) return 'неизвестная версия кода'
+
+    const fav = useFavorites.getState()
+    const tracks = Array.from(new Set([...(parsed.fav?.tracks ?? []), ...fav.tracks]))
+    const releases = Array.from(new Set([...(parsed.fav?.releases ?? []), ...fav.releases]))
+    useFavorites.setState({ tracks, releases })
+
+    const merged = mergeFan(getState(), parsed.facts ?? {})
+    setState(merged)
+    saveStateNow()
+
+    return `ок: избранное ${tracks.length}, треков ${Object.keys(merged.tracks).length}`
+  } catch (e) {
+    return `ошибка чтения кода: ${String(e)}`
+  }
 }

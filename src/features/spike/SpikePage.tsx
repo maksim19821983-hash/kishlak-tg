@@ -7,7 +7,7 @@ import { getSessionDiag, subscribeFan } from '@/features/fan/trackListen'
 import { getState } from '@/features/fan/state'
 import { getMediaActionLog, getMediaSessionInfo } from '@/audio/mediaSession'
 import { isListened, releaseProgress } from '@/features/fan/derive'
-import { getCloudDiag, initCloud, pullAndMerge, pushAll } from '@/app/cloudSync'
+import { getCloudDiag, initCloud, pullAndMerge, pushAll, exportCode, importCode } from '@/app/cloudSync'
 
 function fmt(s: number): string {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
@@ -105,6 +105,7 @@ function CloudPanel() {
         push: d.lastPush,
         keys: String(d.keys),
         remoteFav: d.remoteFav,
+        error: d.lastError,
       })
     }
     tick()
@@ -126,6 +127,32 @@ function CloudPanel() {
       {Object.entries(info).map(([k, v]) => (
         <Row key={k} label={k} value={String(v)} />
       ))}
+      <div className="flex" style={{ gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+        <button
+          className="font-mono uppercase"
+          style={{ fontSize: 10, padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6 }}
+          onClick={() => {
+            const code = exportCode()
+            window.Telegram?.WebApp?.showAlert?.(`Код переноса (${code.length} символов):\n\n${code}`)
+            void navigator.clipboard?.writeText(code).catch(() => {})
+            setInfo((p) => ({ ...p, transfer: `код готов: ${code.length} символов` }))
+          }}
+        >
+          код: скопировать
+        </button>
+        <button
+          className="font-mono uppercase"
+          style={{ fontSize: 10, padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6 }}
+          onClick={() => {
+            const code = window.prompt('Вставь код переноса с другого устройства')
+            if (!code) return
+            void importCode(code).then((res) => setInfo((p) => ({ ...p, transfer: res })))
+          }}
+        >
+          код: вставить
+        </button>
+      </div>
+
       <div className="flex" style={{ gap: 8, marginTop: 10 }}>
         <button
           className="font-mono uppercase"
