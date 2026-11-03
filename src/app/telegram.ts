@@ -142,13 +142,34 @@ function applySafeAreas(app: WebApp): void {
 }
 
 /** Полноэкранный режим (Bot API 8.0+). На старых клиентах тихо игнорируется. */
+/** Полноэкранный режим включаем только на телефоне: на десктопе нужна обычная панель. */
+function isMobileClient(): boolean {
+  try {
+    const platform = window.Telegram?.WebApp?.platform ?? ''
+    if (platform === 'ios' || platform === 'android') return true
+    if (platform !== '') return false
+  } catch {
+    /* без SDK — смотрим на экран */
+  }
+  return window.matchMedia('(hover: none) and (pointer: coarse)').matches && window.innerWidth < 820
+}
+
 export function requestFullscreen(): void {
+  if (!isMobileClient()) return
   try {
     const app = window.Telegram?.WebApp as (WebApp & { requestFullscreen?: () => void }) | undefined
     app?.requestFullscreen?.()
   } catch {
     /* не поддерживается — остаёмся в обычном режиме */
   }
+}
+
+/** Свернуть полноэкранный режим обратно в окно (нужно на десктопе). */
+export function exitFullscreen(): void {
+  try {
+    const app = window.Telegram?.WebApp as (WebApp & { exitFullscreen?: () => void; isFullscreen?: boolean }) | undefined
+    if (app?.isFullscreen) app.exitFullscreen?.()
+  } catch {}
 }
 
 let sdkPromise: Promise<void> | null = null
@@ -185,8 +206,11 @@ export function initTelegram(): void {
       app.onEvent('fullscreenChanged', () => applySafeAreas(app))
     } catch {}
 
+    // на десктопе принудительно выходим из полноэкранного режима
+    if (!isMobileClient()) exitFullscreen()
+
     // некоторые клиенты разрешают полноэкранный режим только после касания
-    if (!app.isFullscreen) {
+    if (isMobileClient() && !app.isFullscreen) {
       const once = () => {
         if (!app.isFullscreen) requestFullscreen()
         window.removeEventListener('pointerdown', once)
