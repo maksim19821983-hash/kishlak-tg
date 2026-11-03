@@ -74,6 +74,9 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
   const polarity = useCurrentPolarity()
   const [flatTracks, setFlatTracks] = useState<FlatTrack[]>([])
   const [menuTrackId, setMenuTrackId] = useState<string | null>(null)
+  // кроссфейд строки в превью: сначала гасим старую, потом ставим новую
+  const [shownLyric, setShownLyric] = useState('')
+  const [lyricFading, setLyricFading] = useState(false)
   const favoriteTracks = useFavorites((st) => st.tracks)
   const toggleFavorite = useFavorites((st) => st.toggleTrack)
   const playNext = useAudioStore((st) => st.playNext)
@@ -144,6 +147,18 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
     ? null
     : (activeIdx < textLines.length - 1 ? textLines[activeIdx + 1] ?? null : null)
   const hasLyrics = lyrics !== null && textLines.length > 0
+
+  // плавная замена строки в превью
+  useEffect(() => {
+    const target = activeLine?.text ?? (showCountdown ? upcomingLine?.text ?? '' : '')
+    if (target === shownLyric) return
+    setLyricFading(true)
+    const id = setTimeout(() => {
+      setShownLyric(target)
+      setLyricFading(false)
+    }, 200)
+    return () => clearTimeout(id)
+  }, [activeLine?.text, showCountdown, upcomingLine?.text, shownLyric])
 
   // тап по кассете: только короткое касание без смещения
   const handleTap = () => {
@@ -269,43 +284,65 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
       {hasLyrics && (
         <div className="px-screen mt-2 shrink-0">
           <button onClick={() => setInsertOpen(true)} className="w-full text-left" aria-label="Открыть текст">
+            {/* верхняя полоса: обратный отсчёт или предыдущая строка */}
             <p
-              key={`prev-${prevLine?.text ?? ''}`}
-              className="font-mono text-lyric text-dim line-clamp-1 lyric-line-in"
-              style={{ height: prevLine && !prevLine.isBlank ? 20 : 0, lineHeight: '20px', overflow: 'hidden', opacity: prevLine && !prevLine.isBlank ? 0.85 : 0, transition: 'height 260ms ease, opacity 320ms ease' }}
-            >
-              {prevLine && !prevLine.isBlank ? prevLine.text : '·'}
-            </p>
-
-            <p
-              key={`active-${activeLine?.text ?? upcomingLine?.text ?? ''}-${secondsToLyrics}`}
-              className="font-mono text-lyric-active line-clamp-1 lyric-line-in"
+              className="font-mono line-clamp-1"
               style={{
-                height: 22,
+                height: showCountdown || (prevLine && !prevLine.isBlank) ? 22 : 0,
                 lineHeight: '22px',
-                color: activeLine ? 'var(--accent-text)' : 'var(--dim)',
-                opacity: activeLine && !activeLine.isBlank ? 1 : upcomingLine ? 0.6 : 0,
-                transition: 'color 320ms ease, opacity 320ms ease',
+                overflow: 'hidden',
+                fontSize: showCountdown ? 16 : undefined,
+                letterSpacing: showCountdown ? '.10em' : undefined,
+                fontWeight: showCountdown ? 700 : undefined,
+                color: showCountdown ? 'var(--accent-text)' : 'var(--dim)',
+                opacity: showCountdown ? 0.95 : prevLine && !prevLine.isBlank ? 0.8 : 0,
+                transition: 'height 260ms ease, opacity 320ms ease',
               }}
             >
-              {activeLine && !activeLine.isBlank ? activeLine.text : (
-                upcomingLine ? (
-                  showCountdown ? (
-                    <>
-                      <span style={{ marginRight: 8, color: 'var(--accent-text)', opacity: 0.9 }}>
-                        {secondsToLyrics}
-                      </span>
-                      {upcomingLine.text}
-                    </>
-                  ) : ''
-                ) : '·'
-              )}
+              {showCountdown
+                ? secondsToLyrics
+                : (prevLine && !prevLine.isBlank ? prevLine.text : '·')}
             </p>
 
+            {/* активная строка или точки «текст скоро» */}
             <p
-              key={`next-${nextLine?.text ?? ''}`}
-              className="font-mono text-lyric text-dim line-clamp-1 lyric-line-in"
-              style={{ height: nextLine && !nextLine.isBlank ? 20 : 0, lineHeight: '20px', overflow: 'hidden', opacity: nextLine && !nextLine.isBlank ? 0.85 : 0, transition: 'height 260ms ease, opacity 320ms ease' }}
+              className="font-mono text-lyric-active line-clamp-1"
+              style={{
+                height: 24,
+                lineHeight: '24px',
+                color: activeLine ? 'var(--accent-text)' : 'var(--dim)',
+                opacity: activeLine && !activeLine.isBlank ? 1 : upcomingLine ? 0.55 : 0.45,
+                transition: 'color 420ms ease, opacity 420ms ease',
+              }}
+            >
+              {showCountdown || activeLine ? (
+                <span
+                  style={{
+                    opacity: lyricFading ? 0 : 1,
+                    transition: 'opacity 200ms ease',
+                  }}
+                >
+                  {shownLyric || '·'}
+                </span>
+              ) : upcomingLine ? (
+                <span className="inline-flex items-center gap-1" aria-label="текст скоро">
+                  {[0, 1, 2].map((i) => (
+                    <span key={i} className="lyric-dot" style={{ animationDelay: `${i * 140}ms` }} />
+                  ))}
+                </span>
+              ) : '·'}
+            </p>
+
+            {/* следующая строка */}
+            <p
+              className="font-mono text-lyric text-dim line-clamp-1"
+              style={{
+                height: nextLine && !nextLine.isBlank ? 20 : 0,
+                lineHeight: '20px',
+                overflow: 'hidden',
+                opacity: nextLine && !nextLine.isBlank ? 0.7 : 0,
+                transition: 'height 260ms ease, opacity 320ms ease',
+              }}
             >
               {nextLine && !nextLine.isBlank ? nextLine.text : '·'}
             </p>
