@@ -65,7 +65,8 @@ export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, p
 
   const pol = polarity ?? (document.documentElement.dataset.polarity as 'paper' | 'dark' | undefined) ?? 'paper'
 
-  const bodyBg     = pol === 'paper' ? '#1E1C1A' : '#E4DED2'
+  const tint       = (document.documentElement.style.getPropertyValue('--cassette-tint') || '').trim()
+  const bodyBg     = tint !== '' ? tint : (pol === 'paper' ? '#1E1C1A' : '#E4DED2')
   const bodyInk    = pol === 'paper' ? '#F1EDE6' : '#131211'
   const bodyDim    = pol === 'paper' ? 'rgba(241,237,230,.45)' : 'rgba(19,18,17,.45)'
   const bodyBorder = pol === 'paper' ? 'rgba(241,237,230,.15)' : 'rgba(19,18,17,.15)'

@@ -95,3 +95,18 @@ export function accentText(accentHex: string, mode: Polarity): string {
 
   return FALLBACK[mode]
 }
+
+/** Смешивает цвет обложки с базой темы: 0 — только база, 1 — только цвет. */
+export function mixHex(hex: string, base: string, amount: number): string {
+  const parse = (h: string): [number, number, number] => {
+    const c = h.replace('#', '')
+    return [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)]
+  }
+  const [r1, g1, b1] = parse(hex)
+  const [r2, g2, b2] = parse(base)
+  const to = (a: number, b: number): number => Math.round(a * amount + b * (1 - amount))
+  return `rgb(${to(r1, r2)}, ${to(g1, g2)}, ${to(b1, b2)})`
+}
+
+export const PAPER_BG_HEX = '#EDE7DC'
+export const DARK_BG_HEX = '#0B0B0C'

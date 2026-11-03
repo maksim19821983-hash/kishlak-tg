@@ -77,6 +77,8 @@ function parseTrack(v: unknown, p: string, release: { id: string; artistId: stri
   if (cover !== undefined) track.cover = cover
   const lockArt = optStr(o, 'lockArt', p)
   if (lockArt !== undefined) track.lockArt = lockArt
+  const accent = optStr(o, 'accent', p)
+  if (accent !== undefined) track.accent = accent
   if (track.artistId !== release.artistId) throw new ManifestError(`${p}.artistId`, `"${release.artistId}"`)
   return track
 }

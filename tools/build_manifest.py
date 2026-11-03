@@ -63,6 +63,7 @@ def build() -> dict:
                 "id": track["id"],
                 "title": track["title"],
                 **({"cover": f"/content/covers/{rid}.jpg"} if cover.exists() else {}),
+                "accent": out["palette"].get("accent", "#8C5334"),
                 "duration": track.get("duration", 0),
                 "releaseId": rid,
                 "artistId": out["artistId"],

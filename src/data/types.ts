@@ -20,6 +20,8 @@ export type Track = {
   cover?: string
   /** Постер для локскрина: обложка + альбом и год, без названия трека */
   lockArt?: string
+  /** Акцент релиза — задаёт цветовую гамму всего экрана */
+  accent?: string
   lrc?: string
 }
 
