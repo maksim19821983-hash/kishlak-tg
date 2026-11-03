@@ -135,6 +135,11 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
   const nonBlank = textLines.filter((l) => !l.isBlank)
   // до первой строки показываем её приглушённо в средней полосе — как «сейчас начнётся»
   const upcomingLine = activeIdx < 0 ? (nonBlank[0] ?? null) : null
+  const secondsToLyrics = upcomingLine && upcomingLine.time > currentTime
+    ? Math.ceil(upcomingLine.time - currentTime)
+    : 0
+  // до первой строки: меньше 6 секунд — обратный отсчёт, дальше — «текст через 0:14»
+  const showCountdown = secondsToLyrics > 0 && secondsToLyrics <= 6
   const nextLine = activeIdx < 0
     ? null
     : (activeIdx < textLines.length - 1 ? textLines[activeIdx + 1] ?? null : null)
@@ -266,29 +271,43 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
           <button onClick={() => setInsertOpen(true)} className="w-full text-left" aria-label="Открыть текст">
             <p
               key={`prev-${prevLine?.text ?? ''}`}
-              className="font-mono text-lyric text-dim line-clamp-1"
-              style={{ minHeight: '1.2em', opacity: prevLine && !prevLine.isBlank ? 1 : 0, transition: 'opacity 260ms ease' }}
+              className="font-mono text-lyric text-dim line-clamp-1 lyric-line-in"
+              style={{ height: 20, lineHeight: '20px', opacity: prevLine && !prevLine.isBlank ? 0.85 : 0, transition: 'opacity 320ms ease' }}
             >
               {prevLine && !prevLine.isBlank ? prevLine.text : '·'}
             </p>
 
             <p
-              key={`active-${activeLine?.text ?? upcomingLine?.text ?? ''}`}
-              className="font-mono text-lyric-active line-clamp-1 anim-fade-up"
+              key={`active-${activeLine?.text ?? upcomingLine?.text ?? ''}-${secondsToLyrics}`}
+              className="font-mono text-lyric-active line-clamp-1 lyric-line-in"
               style={{
-                minHeight: '1.2em',
+                height: 22,
+                lineHeight: '22px',
                 color: activeLine ? 'var(--accent-text)' : 'var(--dim)',
-                opacity: activeLine && !activeLine.isBlank ? 1 : upcomingLine ? 0.55 : 0,
-                transition: 'color 260ms ease, opacity 260ms ease',
+                opacity: activeLine && !activeLine.isBlank ? 1 : upcomingLine ? 0.6 : 0,
+                transition: 'color 320ms ease, opacity 320ms ease',
               }}
             >
-              {activeLine && !activeLine.isBlank ? activeLine.text : upcomingLine?.text ?? '·'}
+              {activeLine && !activeLine.isBlank ? activeLine.text : (
+                upcomingLine ? (
+                  showCountdown ? (
+                    <>
+                      <span style={{ marginRight: 8, color: 'var(--accent-text)', opacity: 0.9 }}>
+                        {secondsToLyrics}
+                      </span>
+                      {upcomingLine.text}
+                    </>
+                  ) : (
+                    <span style={{ opacity: 0.8 }}>текст через {fmt(upcomingLine.time)}</span>
+                  )
+                ) : '·'
+              )}
             </p>
 
             <p
               key={`next-${nextLine?.text ?? ''}`}
-              className="font-mono text-lyric text-dim line-clamp-1"
-              style={{ minHeight: '1.2em', opacity: nextLine && !nextLine.isBlank ? 1 : 0, transition: 'opacity 260ms ease' }}
+              className="font-mono text-lyric text-dim line-clamp-1 lyric-line-in"
+              style={{ height: 20, lineHeight: '20px', opacity: nextLine && !nextLine.isBlank ? 0.85 : 0, transition: 'opacity 320ms ease' }}
             >
               {nextLine && !nextLine.isBlank ? nextLine.text : '·'}
             </p>

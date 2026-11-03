@@ -120,9 +120,11 @@ export function InsertScreen({ lyrics, currentTime, queue, release, onSeek, onCl
                     // один шрифт у всех строк — иначе смена кегля «прыгает»
                     color: isActive ? 'var(--accent-text)' : 'var(--dim)',
                     fontWeight: isActive ? 600 : 400,
-                    opacity: isActive ? 1 : 0.8,
-                    transform: isActive ? 'translateX(3px)' : 'none',
-                    transition: 'color 240ms ease, opacity 240ms ease, transform 240ms ease, font-weight 240ms ease',
+                    opacity: isActive ? 1 : 0.62,
+                    transform: isActive ? 'translateX(4px) scale(1.015)' : 'translateX(0) scale(1)',
+                    transformOrigin: 'left center',
+                    transition:
+                      'color 420ms cubic-bezier(.22,.8,.28,1), opacity 420ms cubic-bezier(.22,.8,.28,1), transform 420ms cubic-bezier(.22,.8,.28,1)',
                   }}
                 >
                   {line.text}
