@@ -23,7 +23,7 @@ export function BootScreen({ done, progress }: { done: boolean; progress: number
       <div className="relative flex flex-col items-center">
         <div className="relative" style={{ height: 132 }}>
           {/* серый контур: видно всегда */}
-          <div style={{ filter: 'grayscale(1) opacity(.22)' }}>
+          <div style={{ position: 'relative', zIndex: 1, filter: 'grayscale(1) contrast(.85) opacity(.55)' }}>
             <Logo1111 height={132} />
           </div>
 
@@ -31,6 +31,7 @@ export function BootScreen({ done, progress }: { done: boolean; progress: number
           <div
             className="absolute inset-0"
             style={{
+              zIndex: 2,
               clipPath: `inset(${(1 - pct) * 100}% 0 0 0)`,
               transition: 'clip-path 620ms cubic-bezier(.22,.8,.28,1)',
             }}

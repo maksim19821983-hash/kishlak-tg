@@ -41,25 +41,23 @@ export function App() {
     return cleanup
   }, [])
 
-  // грузим манифест и шрифты, показываем логотип 11:11 и заливаем его по прогрессу
+  // грузим манифест и шрифты; логотип 11:11 заливается плавно и достоверно
   useEffect(() => {
     let cancelled = false
+    let loaded = false
     const started = performance.now()
 
-    setBootProgress(0.12)
-    const fonts = (document.fonts?.ready ?? Promise.resolve()).then(() => {
-      if (!cancelled) setBootProgress((p) => Math.max(p, 0.45))
-    })
-    const catalog = CatalogRepo.load().then(() => {
-      if (!cancelled) setBootProgress((p) => Math.max(p, 0.8))
-    }).catch(() => {
-      if (!cancelled) setBootProgress((p) => Math.max(p, 0.8))
-    })
+    CatalogRepo.load().then(() => { loaded = true }).catch(() => { loaded = true })
+    document.fonts?.ready.then(() => { loaded = true })
 
-    Promise.all([fonts, catalog]).then(() => {
-      const wait = Math.max(0, 700 - (performance.now() - started))
-      setTimeout(() => {
-        if (cancelled) return
+    const total = 1600
+    const id = setInterval(() => {
+      if (cancelled) return
+      const elapsed = performance.now() - started
+      const ready = loaded && elapsed >= total
+
+      if (ready) {
+        clearInterval(id)
         setBootProgress(1)
         setTimeout(() => {
           if (cancelled) return
@@ -70,9 +68,18 @@ export function App() {
             setShowOnboarding(!hasSeenOnboarding())
           }, 420)
         }, 520)
-      }, wait)
-    })
-    return () => { cancelled = true }
+        return
+      }
+
+      // заливка идёт по времени и упирается в 90%, пока данные не готовы
+      const ramp = Math.min(0.9, 0.05 + (elapsed / total) * 0.85)
+      setBootProgress((prev) => Math.max(prev, ramp))
+    }, 60)
+
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
   }, [])
 
   useEffect(() => {

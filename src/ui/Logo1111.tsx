@@ -3,7 +3,10 @@
 const VB_W = 620
 const VB_H = 300
 
+import { useId } from 'react'
+
 export function Logo1111({ height = 120 }: { height?: number }) {
+  const filterId = `logo-rough-${useId().replace(/:/g, '')}`
   return (
     <svg
       viewBox={`0 0 ${VB_W} ${VB_H}`}
@@ -14,7 +17,7 @@ export function Logo1111({ height = 120 }: { height?: number }) {
       style={{ overflow: 'visible' }}
     >
       <defs>
-        <filter id="logo-rough" x="-12%" y="-12%" width="124%" height="124%">
+        <filter id={filterId} x="-12%" y="-12%" width="124%" height="124%">
           <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="3" seed="7" result="n" />
           <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G" />
         </filter>
