@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTelegramStatus } from '@/app/telegram'
 import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
@@ -92,6 +92,9 @@ function snapshot(): DiagSnapshot {
 function CloudPanel() {
   const [info, setInfo] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState('')
+  const [result, setResult] = useState('готово к работе')
+  const [code, setCode] = useState('')
+  const areaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     let alive = true
@@ -113,68 +116,134 @@ function CloudPanel() {
     return () => { alive = false; clearInterval(id) }
   }, [])
 
-  const run = async (label: string, fn: () => Promise<void>): Promise<void> => {
+  const run = async (label: string, fn: () => Promise<string>): Promise<void> => {
     setBusy(label)
-    try { await fn() } catch (e) { setInfo((p) => ({ ...p, error: String(e) })) }
+    setResult(`${label}: выполняю…`)
+    try {
+      const text = await fn()
+      setResult(`${label}: ${text}`)
+    } catch (e) {
+      setResult(`${label}: ошибка — ${String(e)}`)
+    }
     setBusy('')
   }
+
+  const btn = (label: string, onClick: () => void, isBusy = false) => (
+    <button
+      onClick={onClick}
+      className="font-mono uppercase"
+      style={{
+        fontSize: 10,
+        padding: '10px 12px',
+        border: '1px solid var(--line)',
+        borderRadius: 6,
+        opacity: isBusy ? 0.5 : 1,
+        minHeight: 40,
+      }}
+    >
+      {isBusy ? '…' : label}
+    </button>
+  )
 
   return (
     <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
       <p className="font-mono uppercase text-dim" style={{ fontSize: 10, letterSpacing: '.18em', marginBottom: 8 }}>
-        облако телеграма
+        облако и перенос данных
       </p>
+
       {Object.entries(info).map(([k, v]) => (
         <Row key={k} label={k} value={String(v)} />
       ))}
-      <div className="flex" style={{ gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-        <button
-          className="font-mono uppercase"
-          style={{ fontSize: 10, padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6 }}
-          onClick={() => {
-            const code = exportCode()
-            window.Telegram?.WebApp?.showAlert?.(`Код переноса (${code.length} символов):\n\n${code}`)
-            void navigator.clipboard?.writeText(code).catch(() => {})
-            setInfo((p) => ({ ...p, transfer: `код готов: ${code.length} символов` }))
-          }}
-        >
-          код: скопировать
-        </button>
-        <button
-          className="font-mono uppercase"
-          style={{ fontSize: 10, padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6 }}
-          onClick={() => {
-            const code = window.prompt('Вставь код переноса с другого устройства')
-            if (!code) return
-            void importCode(code).then((res) => setInfo((p) => ({ ...p, transfer: res })))
-          }}
-        >
-          код: вставить
-        </button>
+
+      <p
+        className="font-mono"
+        style={{
+          fontSize: 11,
+          lineHeight: 1.5,
+          marginTop: 10,
+          padding: '8px 10px',
+          borderRadius: 6,
+          background: 'var(--surface)',
+          color: 'var(--ink)',
+        }}
+        role="status"
+        aria-live="polite"
+      >
+        {result}
+      </p>
+
+      <div className="flex" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+        {btn('забрать из облака', () => void run('облако', async () => {
+          const ok = await initCloud()
+          if (!ok) return 'CloudStorage недоступен'
+          const cat = await CatalogRepo.load()
+          await pullAndMerge(cat.releases.map((r) => r.id))
+          await pushAll()
+          const d = getCloudDiag()
+          return `получено — избранное ${getState().tracks ? 'ок' : '—'}; ${d.lastPull}; ${d.remoteFav}`
+        }), busy === 'облако')}
+
+        {btn('отправить в облако', () => void run('отправка', async () => {
+          const ok = await initCloud()
+          if (!ok) return 'CloudStorage недоступен'
+          await pushAll()
+          const d = getCloudDiag()
+          return `${d.lastPush}; ошибки: ${d.lastError}`
+        }), busy === 'отправка')}
       </div>
 
-      <div className="flex" style={{ gap: 8, marginTop: 10 }}>
-        <button
-          className="font-mono uppercase"
-          style={{ fontSize: 10, padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6 }}
-          onClick={() => void run('pull', async () => {
-            const ok = await initCloud()
-            if (!ok) { setInfo((p) => ({ ...p, pull: 'SDK без CloudStorage' })); return }
-            const cat = await CatalogRepo.load()
-            await pullAndMerge(cat.releases.map((r) => r.id))
-            await pushAll()
-          })}
-        >
-          {busy === 'pull' ? '…' : 'забрать из облака'}
-        </button>
-        <button
-          className="font-mono uppercase"
-          style={{ fontSize: 10, padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6 }}
-          onClick={() => void run('push', () => pushAll())}
-        >
-          {busy === 'push' ? '…' : 'отправить в облако'}
-        </button>
+      <p className="font-mono uppercase text-dim" style={{ fontSize: 9.5, letterSpacing: '.16em', marginTop: 16, marginBottom: 6 }}>
+        перенос данные кодом
+      </p>
+
+      <div className="flex" style={{ gap: 8, flexWrap: 'wrap' }}>
+        {btn('сгенерировать код', () => {
+          const value = exportCode()
+          setCode(value)
+          setResult(`код готов: ${value.length} символов. Выдели и скопируй его ниже.`)
+          setTimeout(() => areaRef.current?.select(), 50)
+        })}
+
+        {btn('скопировать', () => {
+          if (code === '') { setResult('сначала сгенерируй код'); return }
+          const area = areaRef.current
+          if (area) area.select()
+          try {
+            void navigator.clipboard?.writeText(code).catch(() => {})
+            document.execCommand?.('copy')
+            setResult('скопировано. Открой на другом устройстве и вставь в поле ниже.')
+          } catch {
+            setResult('не удалось скопировать автоматически — выдели и скопируй вручную')
+          }
+        })}
+
+        {btn('применить код', () => void run('импорт', async () => {
+          if (code.trim() === '') return 'поле пустое — вставь код'
+          return importCode(code)
+        }), busy === 'импорт')}
       </div>
+
+      <textarea
+        ref={areaRef}
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        placeholder="Сюда вставляется код с другого устройства"
+        spellCheck={false}
+        onFocus={(e) => e.currentTarget.select()}
+        style={{
+          width: '100%',
+          minHeight: 88,
+          marginTop: 10,
+          padding: 10,
+          fontSize: 12,
+          fontFamily: 'var(--font-mono)',
+          color: 'var(--ink)',
+          background: 'var(--surface)',
+          border: '1px solid var(--line)',
+          borderRadius: 6,
+          resize: 'vertical',
+        }}
+      />
     </div>
   )
 }
