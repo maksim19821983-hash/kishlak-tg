@@ -21,6 +21,8 @@ type Props = {
 export function InsertScreen({ lyrics, currentTime, queue, release, onSeek, onClose }: Props) {
   const [visible, setVisible] = useState(false)
   const touchStartY = useRef<number | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const activeRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     // mount → animate open
@@ -47,6 +49,25 @@ export function InsertScreen({ lyrics, currentTime, queue, release, onSeek, onCl
   // Только строки с текстом (без секций) для подсветки активной
   const textLines = lyrics.lines.filter((l) => !l.isSection)
   const activeIdx = getActiveLineIndex(textLines, currentTime)
+
+  // держим активную строку по центру, как в системных плеерах
+  useEffect(() => {
+    const el = activeRef.current
+    if (!el) return
+    el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' })
+  }, [activeIdx])
+
+
+  // плавное затухание строк по расстоянию от активной
+  const lineOpacity = (idx: number, active: number): number => {
+    if (active < 0) return idx < 4 ? 0.5 : 0.24
+    const d = Math.abs(idx - active)
+    if (d === 0) return 1
+    if (d === 1) return 0.55
+    if (d === 2) return 0.34
+    if (d === 3) return 0.22
+    return 0.12
+  }
 
   return (
     <div
@@ -84,7 +105,7 @@ export function InsertScreen({ lyrics, currentTime, queue, release, onSeek, onCl
         <div className="h-px bg-line shrink-0 mx-screen" />
 
         {/* скролл */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-screen py-4">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-screen py-4">
 
           {/* строки лирики */}
           <div className="mb-6">
@@ -110,19 +131,20 @@ export function InsertScreen({ lyrics, currentTime, queue, release, onSeek, onCl
               return (
                 <button
                   key={i}
+                  ref={isActive ? activeRef : undefined}
                   onClick={() => {
                     onSeek(line.time)
                     try { HapticFeedback.impactOccurred('light') } catch {}
                   }}
-                  className="block w-full text-left whitespace-pre-wrap break-words font-mono text-lyric"
+                  className="block w-full text-center whitespace-pre-wrap break-words font-mono text-lyric"
                   style={{
                     lineHeight: '34px',
-                    // один шрифт у всех строк — иначе смена кегля «прыгает»
+                    // как в референсе: активная строка ярче всех, дальше затухание по расстоянию
                     color: isActive ? 'var(--accent-text)' : 'var(--dim)',
                     fontWeight: isActive ? 600 : 400,
-                    opacity: isActive ? 1 : 0.62,
-                    transform: isActive ? 'translateX(4px) scale(1.015)' : 'translateX(0) scale(1)',
-                    transformOrigin: 'left center',
+                    opacity: lineOpacity(textIdx, activeIdx),
+                    transform: isActive ? 'scale(1.03)' : 'scale(1)',
+                    transformOrigin: 'center center',
                     transition:
                       'color 420ms cubic-bezier(.22,.8,.28,1), opacity 420ms cubic-bezier(.22,.8,.28,1), transform 420ms cubic-bezier(.22,.8,.28,1)',
                   }}
