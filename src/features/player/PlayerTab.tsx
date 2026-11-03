@@ -277,6 +277,7 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
           releaseTitle={release?.title}
           releaseYear={release?.year}
           motif={release?.motif}
+          motifColor={release?.palette.secondary}
           polarity={polarity}
         />
       </div>

@@ -22,10 +22,11 @@ type Props = {
   releaseTitle?: string
   releaseYear?: number
   motif?: string
+  motifColor?: string
   polarity?: 'paper' | 'dark'
 }
 
-export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, motif, polarity }: Props) {
+export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, motif, motifColor, polarity }: Props) {
   const playing     = useAudioStore((s) => s.status === 'playing')
   const currentTime = useAudioStore((s) => s.currentTime)
   const duration    = useAudioStore((s) => s.duration)
@@ -106,7 +107,7 @@ export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, m
       {/* верхняя строка: артист слева, номер справа */}
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center" style={{ gap: 6 }}>
-          <Motif name={motif} size={17} color={bodyInk} />
+          <Motif name={motif} size={17} color={motifColor ?? bodyInk} />
           <span
             className="font-mono uppercase"
             style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyInk }}
@@ -198,6 +199,21 @@ export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, m
           </div>
         </div>
       </div>
+
+      {/* вторичный цвет обложки: тонкая линия под подписями */}
+      {motifColor !== undefined && (
+        <div
+          aria-hidden
+          style={{
+            height: 2,
+            marginTop: 8,
+            marginBottom: -2,
+            borderRadius: 1,
+            background: motifColor,
+            opacity: 0.85,
+          }}
+        />
+      )}
 
       {/* нижняя строка: релиз · год слева, C-60 справа */}
       <div className="flex items-center justify-between" style={{ marginTop: 12 }}>

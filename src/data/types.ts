@@ -37,7 +37,7 @@ export type Release = {
   series?: { index: number; total: number }
   /** Знак релиза: печатается на кассете и в кадре релиза */
   motif?: string
-  palette: { mode: Polarity; accent: string }
+  palette: { mode: Polarity; accent: string; secondary?: string; mono?: boolean }
   cover: string
   coverSmall: string
   tracks: Track[]

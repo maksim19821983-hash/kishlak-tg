@@ -107,6 +107,8 @@ function parseRelease(v: unknown, i: number, artistId: string): Release {
     palette: {
       mode: oneOf(palette, 'mode', `${p}.palette`, ['paper', 'dark'] as const),
       accent: str(palette, 'accent', `${p}.palette`),
+      ...(palette.secondary !== undefined ? { secondary: str(palette, 'secondary', `${p}.palette`) } : {}),
+      ...(palette.mono !== undefined ? { mono: palette.mono === true } : {}),
     },
     cover: str(o, 'cover', p),
     coverSmall: str(o, 'coverSmall', p),
