@@ -36,6 +36,18 @@ def copy(src: Path, dst: Path) -> str:
     return "/" + str(dst.relative_to(ROOT / "public")).replace("\\", "/")
 
 
+def clean_title(title: str, fallback: str) -> str:
+    """Отсеивает битые названия: иероглифы вместо кириллицы, управляющие символы."""
+    bad = any(
+        0x3000 <= ord(c) <= 0x9FFF
+        or 0xAC00 <= ord(c) <= 0xD7AF
+        or 0xFF00 <= ord(c) <= 0xFFEF
+        or ord(c) < 0x20
+        for c in title
+    )
+    return fallback if bad or not title.strip() else title
+
+
 def build() -> dict:
     releases = []
     for release_file in sorted(CONTENT.glob("*/release.json")):
@@ -62,7 +74,7 @@ def build() -> dict:
         for track in data.get("tracks", []):
             t_out = {
                 "id": track["id"],
-                "title": track["title"],
+                "title": clean_title(track["title"], data["title"]),
                 **({"cover": f"/content/covers/{rid}.jpg"} if cover.exists() else {}),
                 "accent": out["palette"].get("accent", "#8C5334"),
                 "duration": track.get("duration", 0),
