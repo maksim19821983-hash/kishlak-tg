@@ -3,6 +3,7 @@ import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Release, Track } from '@/data/types'
 import { Cassette } from './Cassette'
+import { VolumeControl } from './VolumeControl'
 import { IconShuffle, IconRepeat, IconMore } from '@/ui/icons'
 import { HeartButton } from '@/ui/HeartButton'
 import { TrackMenu } from '@/ui/TrackMenu'
@@ -281,6 +282,8 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
           polarity={polarity}
         />
       </div>
+
+      <VolumeControl />
 
       {/* превью текста */}
       {hasLyrics && (
