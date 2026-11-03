@@ -1,13 +1,15 @@
 /** Логотип 11:11 — рисованный знак: четыре цветные цифры, кошачья морда вместо
  *  двоеточия, каракули. Контуры с дрожью заложены в path, без SVG-фильтров:
  *  feTurbulence не отрисовывается в WKWebView Телеграма. */
-const VB_W = 620
-const VB_H = 300
+const VB_X = 38
+const VB_Y = 16
+const VB_W = 428
+const VB_H = 252
 
 export function Logo1111({ height = 120 }: { height?: number }) {
   return (
     <svg
-      viewBox={`0 0 ${VB_W} ${VB_H}`}
+      viewBox={`${VB_X} ${VB_Y} ${VB_W} ${VB_H}`}
       height={height}
       width={height * (VB_W / VB_H)}
       role="img"

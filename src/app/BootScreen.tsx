@@ -21,10 +21,10 @@ export function BootScreen({ done, progress }: { done: boolean; progress: number
       <Grain />
 
       <div className="relative flex flex-col items-center">
-        <div className="relative" style={{ height: 132 }}>
+        <div className="relative" style={{ height: 172 }}>
           {/* серый контур: видно всегда */}
           <div style={{ position: 'relative', zIndex: 1, filter: 'grayscale(1) contrast(.85) opacity(.55)' }}>
-            <Logo1111 height={132} />
+            <Logo1111 height={172} />
           </div>
 
           {/* цветной слой: обрезан по прогрессу, снизу вверх */}
@@ -36,30 +36,10 @@ export function BootScreen({ done, progress }: { done: boolean; progress: number
               transition: 'clip-path 620ms cubic-bezier(.22,.8,.28,1)',
             }}
           >
-            <Logo1111 height={132} />
+            <Logo1111 height={172} />
           </div>
         </div>
 
-        <div className="flex items-center justify-between" style={{ width: 232, marginTop: 26 }}>
-          <span className="font-mono uppercase text-dim" style={{ fontSize: 9, letterSpacing: '.2em' }}>
-            Загружаю архив
-          </span>
-          <span className="font-mono tabular-nums text-dim" style={{ fontSize: 9, letterSpacing: '.1em' }}>
-            {Math.round(pct * 100)}%
-          </span>
-        </div>
-
-        <div style={{ width: 232, height: 1, background: 'var(--line)', marginTop: 8, position: 'relative' }}>
-          <div
-            style={{
-              position: 'absolute',
-              inset: '0 auto 0 0',
-              width: `${pct * 100}%`,
-              background: 'var(--accent)',
-              transition: 'width 620ms cubic-bezier(.22,.8,.28,1)',
-            }}
-          />
-        </div>
       </div>
     </div>
   )
