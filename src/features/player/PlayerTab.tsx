@@ -478,7 +478,17 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
       </div>
 
       {/* список треков */}
-      <div className="flex-1 overflow-y-auto overscroll-contain">
+      <div
+        className="flex-1 overflow-y-auto overscroll-contain"
+        style={{
+          background: 'var(--panel)',
+          borderTop: '1px solid var(--line)',
+          borderTopLeftRadius: 14,
+          borderTopRightRadius: 14,
+          marginTop: 4,
+          boxShadow: '0 -10px 24px rgba(0,0,0,.06)',
+        }}
+      >
         <div className="px-screen py-2 border-t border-line">
           <p className="font-mono text-mono-label uppercase text-dim">
             ВСЕ ТРЕКИ · {totalCount}

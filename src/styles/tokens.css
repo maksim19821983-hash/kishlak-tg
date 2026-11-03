@@ -78,6 +78,7 @@
   --ink: var(--paper-ink);
   --dim: var(--paper-dim);
   --line: var(--paper-line);
+  --panel: var(--paper-bg);
 }
 
 [data-polarity='dark'],
@@ -89,6 +90,7 @@
   --ink: var(--dark-ink);
   --dim: var(--dark-dim);
   --line: var(--dark-line);
+  --panel: var(--dark-bg);
 }
 
 @media (prefers-reduced-motion: reduce) {

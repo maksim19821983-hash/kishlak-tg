@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Grain } from '@/ui/Grain'
 import { usePolarity } from '@/features/polarity/usePolarity'
 import { useAudioStore } from '@/audio/store'
+import { mixHex } from '@/features/polarity/accent'
 import { PlayerTab } from '@/features/player/PlayerTab'
 import { CatalogScreen } from '@/features/catalog/CatalogScreen'
 import { ProfileSoon } from '@/features/fan/ProfileSoon'
@@ -29,14 +30,27 @@ function firstUnlistenedIndex(release: Release): number {
   return 0
 }
 
-/** Фон из обложки: 0 — выключен, 1 — сильное размытие, 2 — мягкое, 3 — фото сверху. */
-const BACKDROP_LEVEL = Number(new URLSearchParams(window.location.search).get('backdrop') ?? 2)
-const COVER_BACKDROP = BACKDROP_LEVEL > 0
+/** Фон сцены — обложка играющего релиза: афиша сверху, бумага снизу. */
+const COVER_BACKDROP = true
 
 export function App() {
   usePolarity()
   const cover = useAudioStore((s) => s.track?.cover)
   const polarity = (document.documentElement.dataset.polarity as 'paper' | 'dark') ?? 'paper'
+  const accent = useAudioStore((s) => s.track?.accent)
+
+  // светлота обложки: на тёмных обложках скрим плотнее, иначе текст проваливается
+  const coverIsLight = (() => {
+    if (accent === undefined) return true
+    const c = accent.replace('#', '')
+    const ch = (i: number): number => parseInt(c.slice(i, i + 2), 16) / 255
+    return 0.2126 * ch(0) + 0.7152 * ch(2) + 0.0722 * ch(4) > 0.45
+  })()
+
+  // скрим подкрашиваем цветом обложки, чтобы дымка не была серой
+  const paperFree = polarity === 'paper' ? '#EDE7DC' : '#0B0B0C'
+  const scrimRgb = accent !== undefined ? mixHex(accent, paperFree, polarity === 'paper' ? 0.3 : 0.24) : paperFree
+  const scrim = (a: number): string => scrimRgb.replace('rgb(', 'rgba(').replace(')', `,${a})`)
 
   useEffect(() => {
     document.documentElement.style.setProperty('--scene', COVER_BACKDROP ? 'transparent' : 'var(--bg)')
@@ -159,13 +173,15 @@ export function App() {
               inset: 0,
               backgroundImage: `url(${cover})`,
               backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              filter: `blur(${BACKDROP_LEVEL === 1 ? 64 : 22}px) saturate(1.2)`,
-              transform: 'scale(1.2)',
-              opacity: polarity === 'paper' ? (BACKDROP_LEVEL === 1 ? 0.75 : 0.7) : 0.55,
-              transition: 'opacity 600ms ease, background-image 600ms ease',
+              backgroundPosition: 'center top',
+              filter: 'blur(10px) saturate(1.2)',
+              transform: 'scale(1.25)',
+              opacity: polarity === 'paper' ? (coverIsLight ? 0.9 : 0.75) : 0.6,
+              transition: 'opacity 600ms ease',
               pointerEvents: 'none',
               zIndex: 0,
+              WebkitMaskImage: 'linear-gradient(to bottom, black 8%, rgba(0,0,0,.45) 40%, transparent 56%)',
+              maskImage: 'linear-gradient(to bottom, black 8%, rgba(0,0,0,.45) 40%, transparent 56%)',
             }}
           />
           <div
@@ -174,12 +190,7 @@ export function App() {
               position: 'fixed',
               inset: 0,
               background:
-                polarity === 'paper'
-                  ? `linear-gradient(to bottom, rgba(237,231,220,${BACKDROP_LEVEL === 1 ? 0.6 : 0.5}) 0%, rgba(237,231,220,0.85) 100%)`
-                  : `linear-gradient(to bottom, rgba(11,11,12,${BACKDROP_LEVEL === 1 ? 0.6 : 0.5}) 0%, rgba(11,11,12,0.9) 100%)`,
-              ...(BACKDROP_LEVEL === 3
-                ? { WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 78%)', maskImage: 'linear-gradient(to bottom, black 30%, transparent 78%)' }
-                : {}),
+                `linear-gradient(to bottom, ${scrim(coverIsLight ? 0.18 : 0.4)} 0%, ${scrim(0.55)} 34%, ${scrim(1)} 56%)`,
               pointerEvents: 'none',
               zIndex: 0,
             }}
