@@ -12,8 +12,8 @@ type Props = { active: Tab; onSelect: (tab: Tab) => void }
 export function TabBar({ active, onSelect }: Props) {
   return (
     <div
-      className="shrink-0 flex items-start justify-around border-t border-line bg-[var(--scene)]"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)', minHeight: 56 }}
+      className="shrink-0 flex items-start justify-around border-t border-line bg-[var(--panel)]"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)', minHeight: 56, position: 'relative', zIndex: 2 }}
       role="tablist"
     >
       {TABS.map((tab) => {
