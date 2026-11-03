@@ -143,7 +143,16 @@ export function App() {
   }, [])
 
   const p = window.location.pathname
-  if (p === '/spike') return <SpikePage />
+  // отладка в Телеграме: открыть бота со ссылкой ?startapp=debug
+  const startParam = (() => {
+    try {
+      return (window.Telegram?.WebApp as unknown as { initDataUnsafe?: { start_param?: string } } | undefined)
+        ?.initDataUnsafe?.start_param ?? ''
+    } catch {
+      return ''
+    }
+  })()
+  if (p === '/spike' || startParam === 'debug') return <SpikePage />
   if (import.meta.env.DEV && p === '/polarity') return <PolarityPage />
 
   const handlePlayTrack = (trackId: string) => {
