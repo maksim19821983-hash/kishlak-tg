@@ -129,12 +129,14 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
   const progress = duration > 0 ? currentTime / duration : 0
   const textLines = lyrics ? lyrics.lines.filter((l) => !l.isSection) : []
   const activeIdx = lyrics ? getActiveLineIndex(textLines, currentTime) : -1
-  const prevLine  = activeIdx > 0 ? textLines[activeIdx - 1] ?? null : null
+  const prevLine = activeIdx > 0 ? textLines[activeIdx - 1] ?? null : null
+  // до первой строки активной нет: показываем пустоту, а не первую строку заранее
   const activeLine = activeIdx >= 0 ? textLines[activeIdx] ?? null : null
-  const nonBlank  = textLines.filter((l) => !l.isBlank)
-  const displayActive = activeLine ?? nonBlank[0] ?? null
-  const nextLine = activeIdx === -1
-    ? (nonBlank[1] ?? null)
+  const nonBlank = textLines.filter((l) => !l.isBlank)
+  // до первой строки показываем её приглушённо в средней полосе — как «сейчас начнётся»
+  const upcomingLine = activeIdx < 0 ? (nonBlank[0] ?? null) : null
+  const nextLine = activeIdx < 0
+    ? null
     : (activeIdx < textLines.length - 1 ? textLines[activeIdx + 1] ?? null : null)
   const hasLyrics = lyrics !== null && textLines.length > 0
 
@@ -262,17 +264,34 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
       {hasLyrics && (
         <div className="px-screen mt-2 shrink-0">
           <button onClick={() => setInsertOpen(true)} className="w-full text-left" aria-label="Открыть текст">
-            {prevLine && !prevLine.isBlank
-              ? <p className="font-mono text-lyric text-dim line-clamp-1">{prevLine.text}</p>
-              : <p className="font-mono text-lyric text-dim line-clamp-1 opacity-0">·</p>
-            }
-            <p className="font-display text-lyric-active text-[var(--accent-text)] line-clamp-1">
-              {displayActive && !displayActive.isBlank ? displayActive.text : ''}
+            <p
+              key={`prev-${prevLine?.text ?? ''}`}
+              className="font-mono text-lyric text-dim line-clamp-1"
+              style={{ minHeight: '1.2em', opacity: prevLine && !prevLine.isBlank ? 1 : 0, transition: 'opacity 260ms ease' }}
+            >
+              {prevLine && !prevLine.isBlank ? prevLine.text : '·'}
             </p>
-            {nextLine && !nextLine.isBlank
-              ? <p className="font-mono text-lyric text-dim line-clamp-1">{nextLine.text}</p>
-              : <p className="font-mono text-lyric text-dim line-clamp-1 opacity-0">·</p>
-            }
+
+            <p
+              key={`active-${activeLine?.text ?? upcomingLine?.text ?? ''}`}
+              className="font-mono text-lyric-active line-clamp-1 anim-fade-up"
+              style={{
+                minHeight: '1.2em',
+                color: activeLine ? 'var(--accent-text)' : 'var(--dim)',
+                opacity: activeLine && !activeLine.isBlank ? 1 : upcomingLine ? 0.55 : 0,
+                transition: 'color 260ms ease, opacity 260ms ease',
+              }}
+            >
+              {activeLine && !activeLine.isBlank ? activeLine.text : upcomingLine?.text ?? '·'}
+            </p>
+
+            <p
+              key={`next-${nextLine?.text ?? ''}`}
+              className="font-mono text-lyric text-dim line-clamp-1"
+              style={{ minHeight: '1.2em', opacity: nextLine && !nextLine.isBlank ? 1 : 0, transition: 'opacity 260ms ease' }}
+            >
+              {nextLine && !nextLine.isBlank ? nextLine.text : '·'}
+            </p>
           </button>
         </div>
       )}

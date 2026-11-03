@@ -114,12 +114,16 @@ export function InsertScreen({ lyrics, currentTime, queue, release, onSeek, onCl
                     onSeek(line.time)
                     try { HapticFeedback.impactOccurred('light') } catch {}
                   }}
-                  className={`block w-full text-left whitespace-pre-wrap break-words ${
-                    isActive
-                      ? 'font-display text-lyric-active text-[var(--accent-text)]'
-                      : 'font-mono text-lyric text-dim'
-                  }`}
-                  style={{ lineHeight: '34px' }}
+                  className="block w-full text-left whitespace-pre-wrap break-words font-mono text-lyric"
+                  style={{
+                    lineHeight: '34px',
+                    // один шрифт у всех строк — иначе смена кегля «прыгает»
+                    color: isActive ? 'var(--accent-text)' : 'var(--dim)',
+                    fontWeight: isActive ? 600 : 400,
+                    opacity: isActive ? 1 : 0.8,
+                    transform: isActive ? 'translateX(3px)' : 'none',
+                    transition: 'color 240ms ease, opacity 240ms ease, transform 240ms ease, font-weight 240ms ease',
+                  }}
                 >
                   {line.text}
                 </button>
