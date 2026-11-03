@@ -138,8 +138,8 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
   const secondsToLyrics = upcomingLine && upcomingLine.time > currentTime
     ? Math.ceil(upcomingLine.time - currentTime)
     : 0
-  // до первой строки: меньше 6 секунд — обратный отсчёт, дальше — «текст через 0:14»
-  const showCountdown = secondsToLyrics > 0 && secondsToLyrics <= 6
+  // до первой строки: отсчёт только за 3 секунды, раньше ничего не показываем
+  const showCountdown = secondsToLyrics > 0 && secondsToLyrics <= 3
   const nextLine = activeIdx < 0
     ? null
     : (activeIdx < textLines.length - 1 ? textLines[activeIdx + 1] ?? null : null)
@@ -272,7 +272,7 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
             <p
               key={`prev-${prevLine?.text ?? ''}`}
               className="font-mono text-lyric text-dim line-clamp-1 lyric-line-in"
-              style={{ height: 20, lineHeight: '20px', opacity: prevLine && !prevLine.isBlank ? 0.85 : 0, transition: 'opacity 320ms ease' }}
+              style={{ height: prevLine && !prevLine.isBlank ? 20 : 0, lineHeight: '20px', overflow: 'hidden', opacity: prevLine && !prevLine.isBlank ? 0.85 : 0, transition: 'height 260ms ease, opacity 320ms ease' }}
             >
               {prevLine && !prevLine.isBlank ? prevLine.text : '·'}
             </p>
@@ -297,9 +297,7 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
                       </span>
                       {upcomingLine.text}
                     </>
-                  ) : (
-                    <span style={{ opacity: 0.8 }}>текст через {fmt(upcomingLine.time)}</span>
-                  )
+                  ) : ''
                 ) : '·'
               )}
             </p>
@@ -307,7 +305,7 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
             <p
               key={`next-${nextLine?.text ?? ''}`}
               className="font-mono text-lyric text-dim line-clamp-1 lyric-line-in"
-              style={{ height: 20, lineHeight: '20px', opacity: nextLine && !nextLine.isBlank ? 0.85 : 0, transition: 'opacity 320ms ease' }}
+              style={{ height: nextLine && !nextLine.isBlank ? 20 : 0, lineHeight: '20px', overflow: 'hidden', opacity: nextLine && !nextLine.isBlank ? 0.85 : 0, transition: 'height 260ms ease, opacity 320ms ease' }}
             >
               {nextLine && !nextLine.isBlank ? nextLine.text : '·'}
             </p>
