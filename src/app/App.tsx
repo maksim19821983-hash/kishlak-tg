@@ -33,6 +33,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState<Tab>('player')
   const [pendingRelease, setPendingRelease] = useState<string | null>(null)
   const [booting, setBooting] = useState(true)
+  const [bootProgress, setBootProgress] = useState(0.06)
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
@@ -40,19 +41,35 @@ export function App() {
     return cleanup
   }, [])
 
-  // грузим манифест и шрифты, показываем кассету-загрузку не дольше 1.5 с
+  // грузим манифест и шрифты, показываем логотип 11:11 и заливаем его по прогрессу
   useEffect(() => {
     let cancelled = false
     const started = performance.now()
-    Promise.all([
-      CatalogRepo.load().catch(() => null),
-      document.fonts?.ready ?? Promise.resolve(),
-    ]).then(() => {
+
+    setBootProgress(0.12)
+    const fonts = (document.fonts?.ready ?? Promise.resolve()).then(() => {
+      if (!cancelled) setBootProgress((p) => Math.max(p, 0.45))
+    })
+    const catalog = CatalogRepo.load().then(() => {
+      if (!cancelled) setBootProgress((p) => Math.max(p, 0.8))
+    }).catch(() => {
+      if (!cancelled) setBootProgress((p) => Math.max(p, 0.8))
+    })
+
+    Promise.all([fonts, catalog]).then(() => {
       const wait = Math.max(0, 700 - (performance.now() - started))
       setTimeout(() => {
         if (cancelled) return
-        setBooting(false)
-        setShowOnboarding(!hasSeenOnboarding())
+        setBootProgress(1)
+        setTimeout(() => {
+          if (cancelled) return
+          setBooting(false)
+          // ждём, пока логотип погаснет, и только потом показываем онбординг
+          setTimeout(() => {
+            if (cancelled) return
+            setShowOnboarding(!hasSeenOnboarding())
+          }, 420)
+        }, 520)
       }, wait)
     })
     return () => { cancelled = true }
@@ -135,7 +152,7 @@ export function App() {
 
       <TabBar active={activeTab} onSelect={setActiveTab} />
 
-      <BootScreen done={!booting} />
+      <BootScreen done={!booting} progress={bootProgress} />
       {!booting && showOnboarding && (
         <Onboarding onDone={() => setShowOnboarding(false)} onStart={startRandom} />
       )}
