@@ -325,7 +325,7 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
                   {shownLyric || '·'}
                 </span>
               ) : upcomingLine ? (
-                <span className="inline-flex items-center gap-1" aria-label="текст скоро">
+                <span className="inline-flex items-center" style={{ gap: 7 }} aria-label="текст скоро">
                   {[0, 1, 2].map((i) => (
                     <span key={i} className="lyric-dot" style={{ animationDelay: `${i * 140}ms` }} />
                   ))}

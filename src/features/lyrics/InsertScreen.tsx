@@ -110,7 +110,7 @@ export function InsertScreen({ lyrics, currentTime, queue, release, onSeek, onCl
           {/* строки лирики */}
           <div className="mb-6">
             {activeIdx < 0 && (
-              <div className="flex items-center justify-center gap-1 mb-4" style={{ color: 'var(--dim)' }} aria-label="текст скоро">
+              <div className="flex items-center justify-center mb-5" style={{ color: 'var(--dim)', gap: 7 }} aria-label="текст скоро">
                 {[0, 1, 2].map((i) => (
                   <span key={i} className="lyric-dot" style={{ animationDelay: `${i * 140}ms` }} />
                 ))}
@@ -148,11 +148,14 @@ export function InsertScreen({ lyrics, currentTime, queue, release, onSeek, onCl
                     fontSize: 17,
                     lineHeight: '26px',
                     marginBottom: 8,
+                    overflowWrap: 'anywhere',
+                    paddingLeft: 6,
+                    paddingRight: 6,
                     // как в референсе: активная строка ярче всех, дальше затухание по расстоянию
                     color: isActive ? 'var(--accent-text)' : 'var(--dim)',
                     fontWeight: isActive ? 600 : 400,
                     opacity: lineOpacity(textIdx, activeIdx),
-                    transform: isActive ? 'scale(1.04)' : 'scale(1)',
+                    transform: isActive ? 'scale(1.02)' : 'scale(1)',
                     transformOrigin: 'center center',
                     transition:
                       'color 520ms cubic-bezier(.16,.84,.24,1), opacity 520ms cubic-bezier(.16,.84,.24,1), transform 520ms cubic-bezier(.16,.84,.24,1)',
