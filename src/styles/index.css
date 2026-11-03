@@ -147,3 +147,20 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .lyric-dot { animation: none !important; opacity: .5; }
 }
+
+/* ── загрузочный экран ───────────────────────────────────────────────────── */
+
+@keyframes boot-reel {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes boot-tape {
+  0%   { width: 0%; opacity: .5; }
+  50%  { width: 100%; opacity: 1; }
+  100% { width: 0%; opacity: .5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes boot-reel { from { transform: none; } to { transform: none; } }
+}

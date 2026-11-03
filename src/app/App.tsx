@@ -15,6 +15,8 @@ import type { Release, Track } from '@/data/types'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
+import { BootScreen } from './BootScreen'
+import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
 
 function firstUnlistenedIndex(release: Release): number {
   const fanState = getState()
@@ -30,10 +32,30 @@ export function App() {
   usePolarity()
   const [activeTab, setActiveTab] = useState<Tab>('player')
   const [pendingRelease, setPendingRelease] = useState<string | null>(null)
+  const [booting, setBooting] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
     const cleanup = initTrackListener()
     return cleanup
+  }, [])
+
+  // грузим манифест и шрифты, показываем кассету-загрузку не дольше 1.5 с
+  useEffect(() => {
+    let cancelled = false
+    const started = performance.now()
+    Promise.all([
+      CatalogRepo.load().catch(() => null),
+      document.fonts?.ready ?? Promise.resolve(),
+    ]).then(() => {
+      const wait = Math.max(0, 700 - (performance.now() - started))
+      setTimeout(() => {
+        if (cancelled) return
+        setBooting(false)
+        setShowOnboarding(!hasSeenOnboarding())
+      }, wait)
+    })
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
@@ -71,6 +93,18 @@ export function App() {
     setActiveTab('player')
   }
 
+  const startRandom = (): void => {
+    CatalogRepo.load().then((cat) => {
+      const allTracks: Track[] = cat.releases.flatMap((r) => r.tracks)
+      if (allTracks.length === 0) return
+      const idx = Math.floor(Math.random() * allTracks.length)
+      const engine = getWebEngine()
+      engine.load(allTracks, idx)
+      engine.play()
+      setActiveTab('player')
+    }).catch(() => {})
+  }
+
   return (
     <div
       className="bg-bg text-ink transition-colors duration-theme flex flex-col"
@@ -100,6 +134,11 @@ export function App() {
       </div>
 
       <TabBar active={activeTab} onSelect={setActiveTab} />
+
+      <BootScreen done={!booting} />
+      {!booting && showOnboarding && (
+        <Onboarding onDone={() => setShowOnboarding(false)} onStart={startRandom} />
+      )}
     </div>
   )
 }
