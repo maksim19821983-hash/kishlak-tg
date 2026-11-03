@@ -240,7 +240,7 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
 
   return (
     <div
-      className="flex flex-col bg-bg overflow-hidden"
+      className="flex flex-col bg-[var(--scene)] overflow-hidden"
       style={{ height: '100%', paddingTop: 'calc(env(safe-area-inset-top) + var(--tg-safe-top, 0px))' }}
     >
       {/* шапка */}

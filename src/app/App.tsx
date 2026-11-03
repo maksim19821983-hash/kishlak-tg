@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Grain } from '@/ui/Grain'
 import { usePolarity } from '@/features/polarity/usePolarity'
+import { useAudioStore } from '@/audio/store'
 import { PlayerTab } from '@/features/player/PlayerTab'
 import { CatalogScreen } from '@/features/catalog/CatalogScreen'
 import { ProfileSoon } from '@/features/fan/ProfileSoon'
@@ -28,8 +29,21 @@ function firstUnlistenedIndex(release: Release): number {
   return 0
 }
 
+/** Фон из обложки: 0 — выключен, 1 — сильное размытие, 2 — мягкое, 3 — фото сверху. */
+const BACKDROP_LEVEL = Number(new URLSearchParams(window.location.search).get('backdrop') ?? 2)
+const COVER_BACKDROP = BACKDROP_LEVEL > 0
+
 export function App() {
   usePolarity()
+  const cover = useAudioStore((s) => s.track?.cover)
+  const polarity = (document.documentElement.dataset.polarity as 'paper' | 'dark') ?? 'paper'
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--scene', COVER_BACKDROP ? 'transparent' : 'var(--bg)')
+    return () => {
+      document.documentElement.style.removeProperty('--scene')
+    }
+  }, [])
   const [activeTab, setActiveTab] = useState<Tab>('player')
   const [pendingRelease, setPendingRelease] = useState<string | null>(null)
   const [booting, setBooting] = useState(true)
@@ -136,7 +150,44 @@ export function App() {
     >
       <Grain />
 
-      <div className="flex-1 min-h-0 relative">
+      {COVER_BACKDROP && cover !== undefined && (
+        <>
+          <div
+            aria-hidden
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundImage: `url(${cover})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: `blur(${BACKDROP_LEVEL === 1 ? 64 : 22}px) saturate(1.2)`,
+              transform: 'scale(1.2)',
+              opacity: polarity === 'paper' ? (BACKDROP_LEVEL === 1 ? 0.75 : 0.7) : 0.55,
+              transition: 'opacity 600ms ease, background-image 600ms ease',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+          />
+          <div
+            aria-hidden
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background:
+                polarity === 'paper'
+                  ? `linear-gradient(to bottom, rgba(237,231,220,${BACKDROP_LEVEL === 1 ? 0.6 : 0.5}) 0%, rgba(237,231,220,0.85) 100%)`
+                  : `linear-gradient(to bottom, rgba(11,11,12,${BACKDROP_LEVEL === 1 ? 0.6 : 0.5}) 0%, rgba(11,11,12,0.9) 100%)`,
+              ...(BACKDROP_LEVEL === 3
+                ? { WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 78%)', maskImage: 'linear-gradient(to bottom, black 30%, transparent 78%)' }
+                : {}),
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+          />
+        </>
+      )}
+
+      <div className="flex-1 min-h-0 relative" style={{ zIndex: 1 }}>
         <div className="absolute inset-0 tab-pane" data-active={activeTab === 'player'}>
           <PlayerTab onOpenRelease={(id) => { setPendingRelease(id); setActiveTab('catalog') }} />
         </div>
