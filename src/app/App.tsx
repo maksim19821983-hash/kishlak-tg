@@ -18,7 +18,7 @@ import { CatalogRepo } from '@/data/CatalogRepo'
 import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
-import { pullAndMerge, pushAll, schedulePush, watchFavorites, cloudSyncAvailable } from './cloudSync'
+import { initCloud, pullAndMerge, pushAll, schedulePush, watchFavorites } from './cloudSync'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
 
 function firstUnlistenedIndex(release: Release): number {
@@ -76,12 +76,11 @@ export function App() {
 
   // подтягиваем данные аккаунта из облака Телеграма (телефон ↔ ПК) и отдаём обратно
   useEffect(() => {
-    if (!cloudSyncAvailable()) return
     let cancelled = false
-    CatalogRepo.load()
-      .then((cat) => {
-        if (cancelled) return
-        return pullAndMerge(cat.releases.map((r) => r.id))
+    initCloud()
+      .then((ok) => {
+        if (cancelled || !ok) return
+        return CatalogRepo.load().then((cat) => pullAndMerge(cat.releases.map((r) => r.id)))
       })
       .then(() => { if (!cancelled) void pushAll() })
       .catch(() => {})

@@ -7,6 +7,7 @@ import { getSessionDiag, subscribeFan } from '@/features/fan/trackListen'
 import { getState } from '@/features/fan/state'
 import { getMediaActionLog, getMediaSessionInfo } from '@/audio/mediaSession'
 import { isListened, releaseProgress } from '@/features/fan/derive'
+import { getCloudDiag, initCloud, pullAndMerge, pushAll } from '@/app/cloudSync'
 
 function fmt(s: number): string {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
@@ -86,6 +87,69 @@ function snapshot(): DiagSnapshot {
     pos: d.pos,
     repeat: st.repeat,
   }
+}
+
+function CloudPanel() {
+  const [info, setInfo] = useState<Record<string, string>>({})
+  const [busy, setBusy] = useState('')
+
+  useEffect(() => {
+    let alive = true
+    const tick = () => {
+      if (!alive) return
+      const d = getCloudDiag()
+      setInfo({
+        platform: d.sdkPlatform,
+        available: String(d.available),
+        pull: d.lastPull,
+        push: d.lastPush,
+        keys: String(d.keys),
+        remoteFav: d.remoteFav,
+      })
+    }
+    tick()
+    const id = setInterval(tick, 1200)
+    return () => { alive = false; clearInterval(id) }
+  }, [])
+
+  const run = async (label: string, fn: () => Promise<void>): Promise<void> => {
+    setBusy(label)
+    try { await fn() } catch (e) { setInfo((p) => ({ ...p, error: String(e) })) }
+    setBusy('')
+  }
+
+  return (
+    <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+      <p className="font-mono uppercase text-dim" style={{ fontSize: 10, letterSpacing: '.18em', marginBottom: 8 }}>
+        облако телеграма
+      </p>
+      {Object.entries(info).map(([k, v]) => (
+        <Row key={k} label={k} value={String(v)} />
+      ))}
+      <div className="flex" style={{ gap: 8, marginTop: 10 }}>
+        <button
+          className="font-mono uppercase"
+          style={{ fontSize: 10, padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6 }}
+          onClick={() => void run('pull', async () => {
+            const ok = await initCloud()
+            if (!ok) { setInfo((p) => ({ ...p, pull: 'SDK без CloudStorage' })); return }
+            const cat = await CatalogRepo.load()
+            await pullAndMerge(cat.releases.map((r) => r.id))
+            await pushAll()
+          })}
+        >
+          {busy === 'pull' ? '…' : 'забрать из облака'}
+        </button>
+        <button
+          className="font-mono uppercase"
+          style={{ fontSize: 10, padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6 }}
+          onClick={() => void run('push', () => pushAll())}
+        >
+          {busy === 'push' ? '…' : 'отправить в облако'}
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export function SpikePage() {
@@ -216,6 +280,8 @@ export function SpikePage() {
       >
         {tgStatus === 'ready' ? 'tg: ok' : tgStatus === 'loading' ? 'tg: …' : 'tg: браузер'}
       </span>
+
+      <CloudPanel />
 
       <p className="mb-2 text-mono-num text-dim">каталог: {catalogState}</p>
       {loadError !== null && (

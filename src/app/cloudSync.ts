@@ -5,6 +5,7 @@
  * Состояние прослушиваний хранится по релизам — у CloudStorage лимит 4096 байт на ключ.
  */
 
+import { ensureSdk } from './telegram'
 import { useFavorites } from '@/features/favorites/store'
 import { getState, setState, saveStateNow, type FanState, type TrackFact } from '@/features/fan/state'
 
@@ -27,6 +28,21 @@ function cloud(): Cloud | null {
 
 export function cloudSyncAvailable(): boolean {
   return cloud() !== null
+}
+
+type Diag = {
+  available: boolean
+  sdkPlatform: string
+  lastPull: string
+  lastPush: string
+  remoteFav: string
+  keys: number
+}
+
+const diag: Diag = { available: false, sdkPlatform: '-', lastPull: '-', lastPush: '-', remoteFav: '-', keys: 0 }
+
+export function getCloudDiag(): Diag {
+  return { ...diag, available: cloudSyncAvailable(), sdkPlatform: (window.Telegram?.WebApp?.platform ?? '-') }
 }
 
 function read(c: Cloud, key: string): Promise<string | null> {
@@ -89,12 +105,21 @@ function splitByRelease(state: FanState): Record<string, string> {
 
 // ── публичное ───────────────────────────────────────────────────────────────
 
+export async function initCloud(): Promise<boolean> {
+  await ensureSdk(4000)
+  return cloudSyncAvailable()
+}
+
 export async function pullAndMerge(releaseIds: string[]): Promise<void> {
   const c = cloud()
-  if (!c) return
+  if (!c) {
+    diag.lastPull = 'нет CloudStorage'
+    return
+  }
 
   // избранное
   const favRaw = await read(c, FAV_KEY)
+  diag.remoteFav = favRaw === null ? 'пусто' : favRaw.slice(0, 120)
   if (favRaw) {
     try {
       const remote = JSON.parse(favRaw) as { tracks?: string[]; releases?: string[] }
@@ -121,17 +146,23 @@ export async function pullAndMerge(releaseIds: string[]): Promise<void> {
   const merged = mergeFan(getState(), remoteTracks)
   setState(merged)
   saveStateNow()
+  diag.lastPull = `получено треков: ${Object.keys(remoteTracks).length}, всего: ${Object.keys(merged.tracks).length}`
 }
 
 export async function pushAll(): Promise<void> {
   const c = cloud()
-  if (!c) return
+  if (!c) {
+    diag.lastPush = 'нет CloudStorage'
+    return
+  }
 
   const fav = useFavorites.getState()
   await write(c, FAV_KEY, JSON.stringify({ tracks: fav.tracks, releases: fav.releases }))
 
   const groups = splitByRelease(getState())
   await Promise.all(Object.entries(groups).map(([release, value]) => write(c, `${FAN_PREFIX}${release}`, value)))
+  diag.keys = Object.keys(groups).length + 1
+  diag.lastPush = `отправлено: избранное ${fav.tracks.length}, релизов ${groups ? Object.keys(groups).length : 0}`
 }
 
 let pushTimer: ReturnType<typeof setTimeout> | null = null
