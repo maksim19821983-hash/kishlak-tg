@@ -64,6 +64,7 @@ export function App() {
   const [booting, setBooting] = useState(true)
   const [bootProgress, setBootProgress] = useState(0.06)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
 
   useEffect(() => {
     const cleanup = initTrackListener()
@@ -235,7 +236,10 @@ export function App() {
 
       <div className="flex-1 min-h-0 relative" style={{ zIndex: 1 }}>
         <div className="absolute inset-0 tab-pane" data-active={activeTab === 'player'}>
-          <PlayerTab onOpenRelease={(id) => { setPendingRelease(id); setActiveTab('catalog') }} />
+          <PlayerTab
+            onOpenRelease={(id) => { setPendingRelease(id); setActiveTab('catalog') }}
+            onOpenDebug={() => setShowDebug(true)}
+          />
         </div>
         <div className="absolute inset-0 overflow-y-auto overscroll-contain tab-pane" data-active={activeTab === 'catalog'}>
           <CatalogScreen
@@ -255,6 +259,24 @@ export function App() {
       </div>
 
       <TabBar active={activeTab} onSelect={setActiveTab} />
+
+      {showDebug && (
+        <div className="fixed inset-0 z-[70] bg-bg overflow-y-auto">
+          <div className="flex items-center justify-between px-4 pt-4">
+            <span className="font-mono uppercase text-dim" style={{ fontSize: 10, letterSpacing: '.16em' }}>
+              диагностика
+            </span>
+            <button
+              onClick={() => setShowDebug(false)}
+              className="font-mono uppercase text-ink"
+              style={{ fontSize: 11, minHeight: 44, paddingInline: 12 }}
+            >
+              закрыть
+            </button>
+          </div>
+          <SpikePage />
+        </div>
+      )}
 
       <BootScreen done={!booting} progress={bootProgress} />
       {!booting && showOnboarding && (

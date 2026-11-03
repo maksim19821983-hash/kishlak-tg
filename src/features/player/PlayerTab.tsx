@@ -42,9 +42,9 @@ function buildFlat(releases: Release[]): FlatTrack[] {
   return result
 }
 
-type PlayerTabProps = { onOpenRelease?: (releaseId: string) => void }
+type PlayerTabProps = { onOpenRelease?: (releaseId: string) => void; onOpenDebug?: () => void }
 
-export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
+export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
   const track       = useAudioStore((s) => s.track)
   const queue       = useAudioStore((s) => s.queue)
   const index       = useAudioStore((s) => s.index)
@@ -249,7 +249,17 @@ export function PlayerTab({ onOpenRelease }: PlayerTabProps) {
         className="flex items-center justify-between px-screen shrink-0"
         style={{ height: 40 }}
       >
-        <span className="font-mono text-mono-label uppercase text-ink">КИШЛАК</span>
+        <span
+          className="font-mono text-mono-label uppercase text-ink"
+          onPointerDown={() => {
+            // долгое нажатие на «КИШЛАК» — диагностика (для отладки на устройстве)
+            const timer = setTimeout(() => onOpenDebug?.(), 700)
+            const clear = (): void => { clearTimeout(timer); window.removeEventListener('pointerup', clear) }
+            window.addEventListener('pointerup', clear, { once: true })
+          }}
+        >
+          КИШЛАК
+        </span>
         <div className="flex items-center gap-1">
           <span className="font-mono text-mono-num tabular-nums text-dim">
             {track && totalCount > 0 ? `${String(globalIndex + 1).padStart(2, '0')} / ${String(totalCount).padStart(2, '0')}` : '—'}
