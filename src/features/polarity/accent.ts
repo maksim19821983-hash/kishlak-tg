@@ -110,3 +110,35 @@ export function mixHex(hex: string, base: string, amount: number): string {
 
 export const PAPER_BG_HEX = '#EDE7DC'
 export const DARK_BG_HEX = '#0B0B0C'
+
+/** Поднимает насыщенность блёклого акцента, чтобы разные обложки читались. */
+export function boostAccent(hex: string, minSat = 0.52): string {
+  const parse = (h: string): [number, number, number] => {
+    const c = h.replace('#', '')
+    return [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)]
+  }
+  const [r, g, b] = parse(hex).map((v) => v / 255) as [number, number, number]
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const l = (max + min) / 2
+  let s = max === min ? 0 : (max - min) / (1 - Math.abs(2 * l - 1))
+  if (s >= minSat) return hex
+
+  const h = (() => {
+    if (max === min) return 0
+    if (max === r) return ((g - b) / (max - min) + 6) % 6
+    if (max === g) return (b - r) / (max - min) + 2
+    return (r - g) / (max - min) + 4
+  })() * 60
+
+  const s2 = Math.min(0.72, minSat)
+  const l2 = Math.min(0.62, Math.max(0.34, l))
+  const c = (1 - Math.abs(2 * l2 - 1)) * s2
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1))
+  const m = l2 - c / 2
+  const rgb: [number, number, number] =
+    h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x]
+    : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x]
+  const to = (v: number): string => Math.round((v + m) * 255).toString(16).padStart(2, '0')
+  return `#${to(rgb[0])}${to(rgb[1])}${to(rgb[2])}`
+}

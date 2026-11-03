@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
-import { accentText, mixHex, PAPER_BG_HEX, DARK_BG_HEX } from './accent'
+import { accentText, mixHex, boostAccent, PAPER_BG_HEX, DARK_BG_HEX } from './accent'
 import { analyzeCover } from './analyzeCover'
 
 export const AUTO_POLARITY = false
@@ -21,12 +21,12 @@ function applyToDOM(mode: 'paper' | 'dark', accent: string, aText: string): void
 
   // фон и поверхность подкрашиваем цветом обложки: общий тон меняется вместе с альбомом
   const base = mode === 'paper' ? PAPER_BG_HEX : DARK_BG_HEX
-  el.style.setProperty('--bg', mixHex(accent, base, mode === 'paper' ? 0.06 : 0.1))
+  el.style.setProperty('--bg', mixHex(accent, base, mode === 'paper' ? 0.11 : 0.16))
   el.style.setProperty(
     '--surface',
-    mixHex(accent, mode === 'paper' ? '#E4DDD0' : '#17171A', mode === 'paper' ? 0.08 : 0.14),
+    mixHex(accent, mode === 'paper' ? '#E4DDD0' : '#17171A', mode === 'paper' ? 0.14 : 0.2),
   )
-  el.style.setProperty('--cassette-tint', mixHex(accent, mode === 'paper' ? '#1E1C1A' : '#E4DED2', mode === 'paper' ? 0.14 : 0.1))
+  el.style.setProperty('--cassette-tint', mixHex(accent, mode === 'paper' ? '#1E1C1A' : '#E4DED2', mode === 'paper' ? 0.3 : 0.22))
 }
 
 export function toggleTheme(): void {
@@ -55,7 +55,7 @@ export function usePolarity(): void {
   const track = useAudioStore((s) => s.track)
   const releaseId = track?.releaseId ?? null
   const prevReleaseId = useRef<string | null>(null)
-  const accent = track?.accent ?? FALLBACK_ACCENT
+  const accent = boostAccent(track?.accent ?? FALLBACK_ACCENT)
   const mode = useCurrentPolarity()
 
   // цветовая гамма следует за обложкой играющего релиза

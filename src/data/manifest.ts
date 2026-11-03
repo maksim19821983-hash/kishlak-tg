@@ -103,6 +103,7 @@ function parseRelease(v: unknown, i: number, artistId: string): Release {
     ...(typeof o.releasedAt === 'string' ? { releasedAt: o.releasedAt } : {}),
     type: oneOf(o, 'type', p, RELEASE_TYPES),
     ...(o.series !== undefined ? { series: parseSeries(o.series, `${p}.series`) } : {}),
+    ...(o.motif !== undefined ? { motif: str(o, 'motif', `${p}.motif`) } : {}),
     palette: {
       mode: oneOf(palette, 'mode', `${p}.palette`, ['paper', 'dark'] as const),
       accent: str(palette, 'accent', `${p}.palette`),

@@ -53,6 +53,7 @@ def build() -> dict:
             **({"releasedAt": data["releasedAt"]} if data.get("releasedAt") else {}),
             "type": data.get("type", "single"),
             "palette": data.get("palette", {"mode": "paper", "accent": "#8C5334"}),
+            "motif": data.get("motif", "cassette"),
             "cover": copy(cover, PUBLIC / "covers" / f"{rid}.jpg") if cover.exists() else None,
             "coverSmall": copy(cover_small, PUBLIC / "covers" / f"{rid}-400.jpg") if cover_small.exists() else None,
             "tracks": [],

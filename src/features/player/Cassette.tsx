@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useAudioStore } from '@/audio/store'
+import { Motif } from '@/ui/Motifs'
 
 const COPPER    = '#8C5334'
 const REEL_SIZE = 72
@@ -20,10 +21,11 @@ type Props = {
   trackTitle?: string
   releaseTitle?: string
   releaseYear?: number
+  motif?: string
   polarity?: 'paper' | 'dark'
 }
 
-export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, polarity }: Props) {
+export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, motif, polarity }: Props) {
   const playing     = useAudioStore((s) => s.status === 'playing')
   const currentTime = useAudioStore((s) => s.currentTime)
   const duration    = useAudioStore((s) => s.duration)
@@ -103,11 +105,14 @@ export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, p
 
       {/* верхняя строка: артист слева, номер справа */}
       <div className="flex items-center justify-between gap-2">
-        <span
-          className="font-mono uppercase"
-          style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyInk }}
-        >
-          КИШЛАК
+        <span className="flex items-center" style={{ gap: 6 }}>
+          <Motif name={motif} size={17} color={bodyInk} />
+          <span
+            className="font-mono uppercase"
+            style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', lineHeight: 1.3, color: bodyInk }}
+          >
+            КИШЛАК
+          </span>
         </span>
         <span
           className="font-mono uppercase shrink-0"

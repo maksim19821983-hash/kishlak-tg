@@ -35,6 +35,8 @@ export type Release = {
   type: ReleaseType
   /** Место релиза в дискографии: index из total */
   series?: { index: number; total: number }
+  /** Знак релиза: печатается на кассете и в кадре релиза */
+  motif?: string
   palette: { mode: Polarity; accent: string }
   cover: string
   coverSmall: string
