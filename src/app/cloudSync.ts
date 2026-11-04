@@ -12,12 +12,14 @@ import { getState, setState, saveStateNow, type FanState, type TrackFact } from 
 type Cloud = {
   getItem: (key: string, cb: (err: string | null, value?: string) => void) => void
   setItem: (key: string, value: string, cb?: (err: string | null) => void) => void
+  removeItem?: (key: string, cb?: (err: string | null) => void) => void
 }
 
 // CloudStorage разрешает только латиницу, цифры, дефис и подчёркивание: точки запрещены
 const FAV_KEY = 'fav_v1'
-const STATE_KEY = 'state_v1'
-const VALUE_LIMIT = 3800
+const STATE_PREFIX = 'state_v1_'
+const CHUNK_LIMIT = 3400   // запас до лимита CloudStorage в 4096 байт
+const MAX_CHUNKS = 9
 const FAN_PREFIX = 'fan_'
 const MAX_KEY = 128
 
@@ -288,92 +290,110 @@ export async function importCode(code: string): Promise<string> {
 }
 
 
-// ── компактный формат: всё состояние в один ключ ────────────────────────────
+// ── компактный формат: состояние частями по лимиту ключа ────────────────────
 
-type Compact = {
-  f: [string[], string[]]
-  t: Record<string, [number, number, number, number, number, 0 | 1]>
-}
-
-function packCompact(): string {
+function packChunks(): string[] {
   const fav = useFavorites.getState()
   const facts = getState().tracks
-  const t: Compact['t'] = {}
-  for (const [id, f] of Object.entries(facts)) {
-    t[id] = [
-      Math.round(f.maxPosition),
-      Math.round(f.duration),
-      Math.round(f.seconds),
-      f.plays,
-      Math.round(f.lastAt / 1000),
-      f.completed ? 1 : 0,
-    ]
-  }
-  return JSON.stringify({ f: [fav.tracks, fav.releases], t } satisfies Compact)
-}
+  const records = Object.entries(facts).map(([id, f]) => {
+    const compact = [Math.round(f.maxPosition), Math.round(f.duration), Math.round(f.seconds), f.plays, Math.round(f.lastAt / 1000), f.completed ? 1 : 0]
+    return `{"${id}":${JSON.stringify(compact)}}`
+  })
 
-function unpackCompact(raw: string): { fav: { tracks: string[]; releases: string[] }; facts: Record<string, TrackFact> } | null {
-  try {
-    const parsed = JSON.parse(raw) as Compact
-    if (!Array.isArray(parsed.f) || typeof parsed.t !== 'object') return null
-    const facts: Record<string, TrackFact> = {}
-    for (const [id, v] of Object.entries(parsed.t)) {
-      if (!Array.isArray(v) || v.length < 6) continue
-      facts[id] = {
-        maxPosition: Number(v[0]) || 0,
-        duration: Number(v[1]) || 0,
-        seconds: Number(v[2]) || 0,
-        plays: Number(v[3]) || 0,
-        lastAt: (Number(v[4]) || 0) * 1000,
-        completed: v[5] === 1,
-      }
+  const chunks: string[] = []
+  const head = `{"f":${JSON.stringify([fav.tracks, fav.releases])}}`
+  let current = head
+  for (const record of records) {
+    if ((current + record).length > CHUNK_LIMIT - 2) {
+      chunks.push(current + (current === head ? '' : ''))
+      current = `{"f":[]}`
     }
-    return { fav: { tracks: parsed.f[0] ?? [], releases: parsed.f[1] ?? [] }, facts }
-  } catch {
-    return null
+    current += record
   }
+  chunks.push(current)
+  return chunks
 }
 
-/** Синхронизация одним ключом: быстрее и надёжнее, чем 30 ключей по релизам. */
+function mergeChunks(raws: string[]): { fav: { tracks: string[]; releases: string[] }; facts: Record<string, TrackFact> } | null {
+  const tracks = new Set<string>()
+  const releases = new Set<string>()
+  const facts: Record<string, TrackFact> = {}
+  let parsedAny = false
+
+  for (const raw of raws) {
+    if (!raw) continue
+    try {
+      const obj = JSON.parse(raw) as { f?: [string[], string[]]; [key: string]: unknown }
+      parsedAny = true
+      if (Array.isArray(obj.f)) {
+        obj.f[0]?.forEach((t) => tracks.add(t))
+        obj.f[1]?.forEach((r) => releases.add(r))
+      }
+      for (const [id, value] of Object.entries(obj)) {
+        if (id === 'f' || !Array.isArray(value) || value.length < 6) continue
+        facts[id] = {
+          maxPosition: Number(value[0]) || 0,
+          duration: Number(value[1]) || 0,
+          seconds: Number(value[2]) || 0,
+          plays: Number(value[3]) || 0,
+          lastAt: (Number(value[4]) || 0) * 1000,
+          completed: value[5] === 1,
+        }
+      }
+    } catch {
+      /* битый кусок пропускаем */
+    }
+  }
+
+  if (!parsedAny) return null
+  return { fav: { tracks: [...tracks], releases: [...releases] }, facts }
+}
+
+/** Синхронизация: состояние режется на куски по лимиту ключа CloudStorage. */
 export async function syncCompact(): Promise<string> {
   const c = cloud()
   if (!c) return 'облако недоступно'
 
-  const payload = packCompact()
   diag.lastError = '—'
-  diag.payload = `${payload.length} байт`
 
-  // 1) читаем чужое
-  const raw = await withTimeout(read(c, STATE_KEY), 2000, null)
-  if (raw) {
-    const remote = unpackCompact(raw)
-    if (!remote) {
-      diag.lastPull = 'не смог разобрать данные из облака'
-    } else {
-      const fav = useFavorites.getState()
-      useFavorites.setState({
-        tracks: Array.from(new Set([...remote.fav.tracks, ...fav.tracks])),
-        releases: Array.from(new Set([...remote.fav.releases, ...fav.releases])),
-      })
-      const merged = mergeFan(getState(), remote.facts)
-      setState(merged)
-      saveStateNow()
-      diag.lastPull = `получено: избранное ${remote.fav.tracks.length}, треков ${Object.keys(remote.facts).length}`
-    }
+  // 1) читаем все куски, пока не встретим пустой
+  const raws: string[] = []
+  for (let i = 0; i < MAX_CHUNKS; i++) {
+    const raw = await withTimeout(read(c, `${STATE_PREFIX}${i}`), 1500, null)
+    if (raw === null) break
+    raws.push(raw)
+  }
+
+  const remote = mergeChunks(raws)
+  if (remote) {
+    const fav = useFavorites.getState()
+    useFavorites.setState({
+      tracks: Array.from(new Set([...remote.fav.tracks, ...fav.tracks])),
+      releases: Array.from(new Set([...remote.fav.releases, ...fav.releases])),
+    })
+    const merged = mergeFan(getState(), remote.facts)
+    setState(merged)
+    saveStateNow()
+    diag.lastPull = `кусков ${raws.length}, избранное ${remote.fav.tracks.length}, треков ${Object.keys(remote.facts).length}`
   } else {
     diag.lastPull = 'в облаке пусто'
   }
 
-  // 2) отправляем объединённое
-  const merged = packCompact()
-  if (merged.length > VALUE_LIMIT) {
-    diag.lastPush = `слишком много данных для одного ключа: ${merged.length} байт`
+  // 2) отправляем объединённое, по куску за раз
+  const chunks = packChunks()
+  if (chunks.length > MAX_CHUNKS) {
+    diag.lastPush = `слишком много данных: ${chunks.length} кусков`
     return diag.lastPush
   }
-  await withTimeout(write(c, STATE_KEY, merged), 2000, undefined)
-  diag.payload = `${merged.length} байт`
-  diag.lastPush = `отправлено: избранное ${useFavorites.getState().tracks.length}, треков ${Object.keys(getState().tracks).length}`
-  diag.keys = 1
+  let written = 0
+  for (let i = 0; i < chunks.length; i++) {
+    await withTimeout(write(c, `${STATE_PREFIX}${i}`, chunks[i] ?? ''), 1500, undefined)
+    written += 1
+    diag.keys = written
+  }
+
+  diag.payload = `${chunks.reduce((sum, chunk) => sum + chunk.length, 0)} байт в ${chunks.length} частях`
+  diag.lastPush = `избранное ${useFavorites.getState().tracks.length}, треков ${Object.keys(getState().tracks).length}`
   diag.lastSyncAt = new Date().toLocaleTimeString('ru-RU')
   return `${diag.lastPull} · ${diag.lastPush}`
 }
