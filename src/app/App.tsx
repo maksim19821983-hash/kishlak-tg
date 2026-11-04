@@ -18,7 +18,7 @@ import { CatalogRepo } from '@/data/CatalogRepo'
 import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
-import { remoteAvailable, syncRemote, getSyncStatus } from './remoteSync'
+import { remoteAvailable, syncRemote, getSyncStatus, markSync } from './remoteSync'
 import { ErrorOverlay } from './ErrorOverlay'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
@@ -83,11 +83,15 @@ export function App() {
     let ready = false
 
     const syncOnce = async (): Promise<void> => {
-      if (!remoteAvailable()) return
+      if (!remoteAvailable()) {
+        markSync(false, 'приложение открыто не в Телеграме')
+        return
+      }
       try {
         await syncRemote()
-      } catch {
-        /* сервер недоступен — данные остаются локально, попробуем позже */
+      } catch (e) {
+        // причина видна в профиле, иначе «ожидание обмена» без объяснений
+        markSync(false, e instanceof Error ? e.message : String(e))
       }
     }
 

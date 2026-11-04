@@ -3,7 +3,6 @@ import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Release, Track } from '@/data/types'
 import { Cassette } from './Cassette'
-import { VolumeHover } from './VolumeHover'
 import { IconShuffle, IconRepeat, IconMore } from '@/ui/icons'
 import { HeartButton } from '@/ui/HeartButton'
 import { TrackMenu } from '@/ui/TrackMenu'
@@ -15,10 +14,47 @@ import { InsertScreen } from '@/features/lyrics/InsertScreen'
 import { shareTrack } from '@/features/telegram/share'
 import { SupportSheet } from '@/features/telegram/SupportSheet'
 import { getWebEngine } from '@/audio/webEngine'
-import { IconPrev, IconNext, IconPlay, IconPause, IconStar, IconTheme, IconHeart } from '@/ui/icons'
+import { IconPrev, IconNext, IconPlay, IconPause, IconStar, IconTheme, IconHeart, IconVolume, IconVolumeOff } from '@/ui/icons'
 import { getState } from '@/features/fan/state'
 import { isListened } from '@/features/fan/derive'
 import { toggleTheme, useCurrentPolarity } from '@/features/polarity/usePolarity'
+
+/** Компактная громкость в шапке: только там, где есть мышь. */
+function HeaderVolume() {
+  const volume = useAudioStore((s) => s.volume)
+  const setVolume = useAudioStore((s) => s.setVolume)
+  const last = useRef(0.8)
+  const muted = volume === 0
+
+  return (
+    <div className="flex items-center shrink-0" style={{ gap: 6, marginRight: 8 }}>
+      <button
+        onClick={() => {
+          if (muted) setVolume(last.current > 0 ? last.current : 0.8)
+          else {
+            last.current = volume
+            setVolume(0)
+          }
+          haptic('light')
+        }}
+        aria-label={muted ? 'Включить звук' : 'Выключить звук'}
+        style={{ width: 24, height: 24, display: 'grid', placeItems: 'center', color: muted ? 'var(--accent-text)' : 'var(--dim)' }}
+      >
+        {muted ? <IconVolumeOff size={17} /> : <IconVolume size={17} />}
+      </button>
+
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={Math.round(volume * 100)}
+        onChange={(e) => setVolume(Number(e.target.value) / 100)}
+        aria-label="Громкость"
+        style={{ width: 68, height: 3, accentColor: 'var(--accent)', cursor: 'pointer' }}
+      />
+    </div>
+  )
+}
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60), s = Math.floor(sec % 60)
@@ -264,6 +300,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
           КИШЛАК
         </span>
         <div className="flex items-center gap-1">
+          {hoverCapable && <HeaderVolume />}
           <span className="font-mono text-mono-num tabular-nums text-dim">
             {track && totalCount > 0 ? `${String(globalIndex + 1).padStart(2, '0')} / ${String(totalCount).padStart(2, '0')}` : '—'}
           </span>
@@ -425,8 +462,6 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
 
       {/* транспорт: шаффл · назад · play · вперёд · повтор · любимое (+громкость на десктопе) */}
       <div className="px-screen py-2 flex items-center justify-between shrink-0">
-        {hoverCapable && <VolumeHover />}
-
         <button
           onClick={() => { setShuffle(!shuffle); haptic('light') }}
           className="relative flex items-center justify-center"
