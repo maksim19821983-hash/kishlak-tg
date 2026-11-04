@@ -19,8 +19,8 @@ type Cloud = {
 const FAV_KEY = 'fav_v1'
 const STATE_PREFIX = 'state_v1_'
 const PROBE_KEY = 'probe_v1'
-const CHUNK_LIMIT = 3400   // запас до лимита CloudStorage в 4096 байт
-const MAX_CHUNKS = 9
+const CHUNK_LIMIT = 900    // iOS-клиент теряет крупные значения — держим запас
+const MAX_CHUNKS = 24
 const FAN_PREFIX = 'fan_'
 const MAX_KEY = 128
 
@@ -361,10 +361,10 @@ export async function syncCompact(): Promise<string> {
   // 1) читаем все куски; первый читаем дважды — облако может ответить с задержкой
   const raws: string[] = []
   for (let i = 0; i < MAX_CHUNKS; i++) {
-    let raw = await withTimeout(read(c, `${STATE_PREFIX}${i}`), 1500, null)
+    let raw = await withTimeout(read(c, `${STATE_PREFIX}${i}`), 3000, null)
     if (raw === null && i === 0) {
       await new Promise((r) => setTimeout(r, 700))
-      raw = await withTimeout(read(c, `${STATE_PREFIX}${i}`), 1500, null)
+      raw = await withTimeout(read(c, `${STATE_PREFIX}${i}`), 3000, null)
     }
     if (raw === null) break
     raws.push(raw)
@@ -401,7 +401,7 @@ export async function syncCompact(): Promise<string> {
   }
 
   // проверяем, что запись реально легла: читаем обратно первый кусок
-  const check = await withTimeout(read(c, `${STATE_PREFIX}0`), 2000, null)
+  const check = await withTimeout(read(c, `${STATE_PREFIX}0`), 3000, null)
   const checkLen = check === null ? 0 : check.length
 
   diag.payload = `${chunks.reduce((sum, chunk) => sum + chunk.length, 0)} байт в ${chunks.length} частях`
