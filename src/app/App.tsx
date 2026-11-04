@@ -129,9 +129,23 @@ export function App() {
     const started = performance.now()
 
     CatalogRepo.load().then(() => { loaded = true }).catch(() => { loaded = true })
-    document.fonts?.ready.then(() => { loaded = true })
+
+    // шрифты не должны держать загрузку: на iOS промис иногда не завершается
+    const fontsReady = document.fonts?.ready
+    if (fontsReady !== undefined) {
+      void Promise.race([fontsReady, new Promise((resolve) => setTimeout(resolve, 2500))]).then(() => { loaded = true })
+    } else {
+      loaded = true
+    }
 
     const total = 1600
+    // страховка: через 5 секунд показываем приложение при любом состоянии загрузки
+    const hardStop = setTimeout(() => {
+      if (cancelled) return
+      setBootProgress(1)
+      setBooting(false)
+    }, 5000)
+
     const id = setInterval(() => {
       if (cancelled) return
       const elapsed = performance.now() - started
@@ -139,6 +153,7 @@ export function App() {
 
       if (ready) {
         clearInterval(id)
+        clearTimeout(hardStop)
         setBootProgress(1)
         setTimeout(() => {
           if (cancelled) return
@@ -163,6 +178,7 @@ export function App() {
     return () => {
       cancelled = true
       clearInterval(id)
+      clearTimeout(hardStop)
     }
   }, [])
 
