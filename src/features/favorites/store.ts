@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { track } from '@/app/analytics'
 
 const STORAGE_KEY = 'kishlak:favorites:v2'
 
@@ -52,6 +53,7 @@ export const useFavorites = create<FavoritesStore>((set) => ({
         : [id, ...state.tracks]
       const next = { tracks, releases: state.releases, updatedAt: Date.now() }
       persist(next)
+      if (tracks.includes(id)) track({ name: 'favorite', trackId: id })
       return next
     }),
 

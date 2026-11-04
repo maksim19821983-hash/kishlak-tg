@@ -29,13 +29,23 @@ p.write_text(s, encoding='utf-8')
 print('wrangler.toml обновлён')
 PY
 
-echo '── 2/4 создаю таблицу'
+echo '── 2/5 создаю таблицы'
 npx wrangler d1 execute kishlak-sync --file server/schema.sql --remote
 
-echo '── 3/4 сборка'
+echo '── 3/5 ключ для сводки статистики'
+if ! npx wrangler pages secret list --project-name kishlak-tg 2>/dev/null | grep -q STATS_KEY; then
+  KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(16))")
+  echo "$KEY" | npx wrangler pages secret put STATS_KEY --project-name kishlak-tg
+  echo "ключ статистики: $KEY"
+  echo "сводка: https://kishlak-tg.pages.dev/api/stats?key=$KEY"
+else
+  echo 'ключ уже задан'
+fi
+
+echo '── 4/5 сборка'
 npm run build
 
-echo '── 4/4 деплой'
+echo '── 5/5 деплой'
 npx wrangler pages deploy dist --project-name kishlak-tg
 
 echo 'готово: проверь https://kishlak-tg.pages.dev/api/sync?probe=1 — должно быть storage: D1'

@@ -22,6 +22,7 @@ import { BootScreen } from './BootScreen'
 import { remoteAvailable, syncRemote, getSyncStatus, markSync, markDirty, hasPendingChanges, flushRemote } from './remoteSync'
 import { ErrorOverlay } from './ErrorOverlay'
 import { onPersist } from '@/features/fan/state'
+import { track, flushAnalytics } from './analytics'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
 import { GateScreen } from '@/features/gate/GateScreen'
 import { checkGate } from './gate'
@@ -169,6 +170,18 @@ export function App() {
       await syncOnce()
     })()
 
+    // одно событие «открыл приложение» на сеанс
+    track({ name: 'open' })
+
+    // запуск трека: считаем по смене текущего трека, когда звук пошёл
+    let lastTrackId: string | null = null
+    const unsubscribeTrack = useAudioStore.subscribe((state) => {
+      const current = state.track
+      if (current === null || current.id === lastTrackId) return
+      lastTrackId = current.id
+      track({ name: 'play', trackId: current.id, releaseId: current.releaseId })
+    })
+
     // прогресс изменился — пометили и отправим одним пакетом позже
     onPersist(() => markDirty())
 
@@ -177,7 +190,10 @@ export function App() {
       if (!ready) return
       void syncRemote({ push: false }).catch(() => {})
       // вкладку прячут — досылаем изменения, чтобы не потерять правку
-      if (document.visibilityState === 'hidden') void flushRemote()
+      if (document.visibilityState === 'hidden') {
+        void flushRemote()
+        flushAnalytics()
+      }
     }
     document.addEventListener('visibilitychange', onVisible)
 
@@ -209,6 +225,7 @@ export function App() {
       clearInterval(retry)
       clearInterval(pullTimer)
       clearInterval(pushTimer)
+      unsubscribeTrack()
     }
   }, [])
 
