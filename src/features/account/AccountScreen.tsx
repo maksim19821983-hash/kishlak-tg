@@ -18,7 +18,7 @@ const cardStyle: React.CSSProperties = {
 }
 
 /** Блок «аккаунт»: в Телеграме показывает код, в браузере — поле ввода. */
-export function AccountBlock({ compact = false }: { compact?: boolean }) {
+export function AccountBlock({ compact = false, onLinked }: { compact?: boolean; onLinked?: () => void }) {
   const telegram = inTelegram()
   const [linked, setLinked] = useState(() => deviceToken() !== '')
   const [code, setCode] = useState('')
@@ -46,6 +46,7 @@ export function AccountBlock({ compact = false }: { compact?: boolean }) {
       await syncRemote().catch(() => {})
       setLinked(true)
       setStatus('готово')
+      onLinked?.()
     } catch (e) {
       setStatus(e instanceof Error ? e.message : String(e))
     }
@@ -141,30 +142,59 @@ export function AccountBlock({ compact = false }: { compact?: boolean }) {
 
 /** Экран входа в браузере: показывается, пока аккаунт не подключён или не пропущен. */
 export function ConnectGate({ onDone }: { onDone: () => void }) {
+  const [linked, setLinked] = useState(false)
+
   return (
-    <div className="fixed inset-0 z-[58] bg-bg flex flex-col justify-center px-screen">
-      <p className="font-mono uppercase text-dim" style={{ fontSize: 9.5, letterSpacing: '.2em' }}>
-        Кишлак · архив
-      </p>
-      <h1 className="font-display uppercase text-ink" style={{ fontSize: 32, lineHeight: 1.05, marginTop: 8 }}>
-        Это приложение
-        <br />
-        уже твоё
-      </h1>
-      <p className="font-mono text-dim" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 12, marginBottom: 18 }}>
-        Подключи аккаунт — и здесь появятся избранное, прослушивания и статистика из Телеграма.
-        Если не нужно, продолжай так.
-      </p>
+    <div
+      className="fixed inset-0 z-[58] bg-bg overflow-y-auto"
+      style={{
+        padding: 'calc(env(safe-area-inset-top) + 24px) 24px calc(env(safe-area-inset-bottom) + 20px)',
+      }}
+    >
+      <div className="flex flex-col justify-center" style={{ minHeight: '100%' }}>
+        <p className="font-mono uppercase" style={{ fontSize: 9.5, letterSpacing: '.2em', color: 'var(--ink)', opacity: 0.6 }}>
+          Кишлак · архив
+        </p>
+        <h1 className="font-display uppercase text-ink" style={{ fontSize: 32, lineHeight: 1.05, marginTop: 8 }}>
+          {linked ? (
+            <>
+              Готово,
+              <br />
+              всё синхронно
+            </>
+          ) : (
+            <>
+              Это приложение
+              <br />
+              уже твоё
+            </>
+          )}
+        </h1>
+        <p className="font-mono text-ink" style={{ fontSize: 12, lineHeight: 1.6, marginTop: 12, marginBottom: 20, opacity: 0.8 }}>
+          {linked
+            ? 'Избранное, прослушивания и статистика теперь одинаковые здесь и в Телеграме.'
+            : 'Подключи аккаунт — и здесь появятся избранное, прослушивания и статистика из Телеграма. Если не нужно, продолжай так.'}
+        </p>
 
-      <AccountBlock compact />
+        {!linked && <AccountBlock compact onLinked={() => setLinked(true)} />}
 
-      <button
-        onClick={onDone}
-        className="font-mono uppercase text-dim"
-        style={{ fontSize: 9.5, letterSpacing: '.16em', marginTop: 16, minHeight: 32 }}
-      >
-        продолжить без аккаунта
-      </button>
+        <button
+          onClick={onDone}
+          className="font-display uppercase press"
+          style={{
+            marginTop: linked ? 28 : 24,
+            height: 52,
+            borderRadius: 999,
+            background: linked ? 'var(--ink)' : 'transparent',
+            color: linked ? 'var(--bg)' : 'var(--ink)',
+            border: `1px solid ${linked ? 'var(--ink)' : 'var(--line)'}`,
+            fontSize: 13,
+            letterSpacing: '.04em',
+          }}
+        >
+          {linked ? 'Готово' : 'Продолжить без аккаунта'}
+        </button>
+      </div>
     </div>
   )
 }
