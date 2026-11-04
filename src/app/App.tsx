@@ -344,7 +344,7 @@ export function App() {
       <BootScreen
         done={!booting}
         progress={bootProgress}
-        diag={`сборка ${__BUILD_ID__} · ${online ? 'сеть' : 'офлайн'} · кэш ${sw.state === 'ready' ? `${sw.files} ф` : sw.state}`}
+        diag={`сборка ${__BUILD_ID__} · ${online ? 'сеть' : 'офлайн'} · кэш ${sw.files > 0 ? `${sw.files} ф` : sw.state} · sw ${'serviceWorker' in navigator ? (navigator.serviceWorker.controller ? 'on' : 'ждёт') : 'нет'}`}
       />
       {!booting && showOnboarding && (
         <Onboarding onDone={() => setShowOnboarding(false)} onStart={startRandom} />

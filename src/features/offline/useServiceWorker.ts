@@ -37,8 +37,10 @@ export function useServiceWorker(): SwStatus {
       try {
         const response = await fetch('/precache.json', { cache: 'no-store' })
         if (!response.ok) return
-        const { build, files } = (await response.json()) as { build: string; files: string[] }
-        if (!build || !Array.isArray(files)) return
+        const parsed = (await response.json()) as { build?: string; files?: string[] } | string[]
+        const build = Array.isArray(parsed) ? `warm${Date.now()}` : parsed.build
+        const files = Array.isArray(parsed) ? parsed : parsed.files
+        if (!build || !Array.isArray(files) || files.length === 0) return
 
         const assets = await caches.open(`kishlak-assets-${build}`)
         await Promise.all(files.map((file) => assets.add(file).catch(() => {})))

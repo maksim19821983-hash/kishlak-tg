@@ -50,9 +50,12 @@ self.addEventListener('install', (event) => {
       try {
         const response = await fetch('/precache.json', { cache: 'no-store' })
         if (!response.ok) return
-        const { build, files } = await response.json()
+        const parsed = await response.json()
+        // совместимость: раньше файл был просто массивом
+        const build = Array.isArray(parsed) ? `legacy${Date.now()}` : parsed.build
+        const files = Array.isArray(parsed) ? parsed : parsed.files
+        if (!Array.isArray(files) || files.length === 0) return
         const stored = await installBuild(build, files)
-        // активируем версию только если сохранилась хотя бы половина файлов
         if (stored >= Math.ceil(files.length / 2)) await setActiveBuild(build)
       } catch {
         /* версия останется прежней */
@@ -67,7 +70,13 @@ self.addEventListener('activate', (event) => {
       const build = await activeBuild()
       const keep = new Set([META_CACHE, AUDIO_CACHE, shellCache(build ?? ''), assetCache(build ?? '')])
       const names = await caches.keys()
-      await Promise.all(names.filter((name) => !keep.has(name)).map((name) => caches.delete(name)))
+      await Promise.all(
+        names
+          .filter((name) => !keep.has(name))
+          // без активной версии не трогаем оболочки: иначе офлайн станет пустым
+          .filter((name) => build !== null || !/^kishlak-(shell|assets)-/.test(name))
+          .map((name) => caches.delete(name)),
+      )
       await self.clients.claim()
     })(),
   )
