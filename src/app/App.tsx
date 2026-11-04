@@ -281,14 +281,14 @@ export function App() {
               backgroundImage: `url(${cover})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center top',
-              filter: 'blur(2px) saturate(1.18)',
-              transform: 'scale(1.25)',
+              filter: 'blur(1px) saturate(1.16)',
+              transform: 'scale(1.12)',
               opacity: polarity === 'paper' ? (coverIsLight ? 0.95 : 0.82) : 0.68,
               transition: 'opacity 600ms ease',
               pointerEvents: 'none',
               zIndex: 0,
-              WebkitMaskImage: 'linear-gradient(to bottom, black 8%, rgba(0,0,0,.45) 40%, transparent 56%)',
-              maskImage: 'linear-gradient(to bottom, black 8%, rgba(0,0,0,.45) 40%, transparent 56%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 74%, rgba(0,0,0,.55) 90%, transparent 100%)',
+              maskImage: 'linear-gradient(to bottom, black 0%, black 74%, rgba(0,0,0,.55) 90%, transparent 100%)',
             }}
           />
           <div
@@ -297,7 +297,7 @@ export function App() {
               position: 'fixed',
               inset: 0,
               background:
-                `linear-gradient(to bottom, ${scrim(coverIsLight ? 0.18 : 0.4)} 0%, ${scrim(0.55)} 34%, ${scrim(1)} 56%)`,
+                `linear-gradient(to bottom, ${scrim(coverIsLight ? 0.16 : 0.38)} 0%, ${scrim(0.5)} 32%, ${scrim(0.86)} 68%, ${scrim(0.96)} 100%)`,
               pointerEvents: 'none',
               zIndex: 0,
             }}
