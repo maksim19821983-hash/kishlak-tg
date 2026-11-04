@@ -18,7 +18,7 @@ import { CatalogRepo } from '@/data/CatalogRepo'
 import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
-import { initCloud, schedulePush, watchFavorites, syncNow } from './cloudSync'
+import { initCloud, schedulePush, watchFavorites, syncCompact } from './cloudSync'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
 
@@ -79,16 +79,14 @@ export function App() {
   // синхронизация без участия пользователя: при старте, при возврате в приложение и раз в минуту
   useEffect(() => {
     let cancelled = false
-    let releaseIds: string[] | null = null
     let ready = false
 
     const boot = async (): Promise<void> => {
       const ok = await initCloud()
       if (cancelled || !ok) return
-      const cat = await CatalogRepo.load()
+      await CatalogRepo.load()
       if (cancelled) return
-      releaseIds = cat.releases.map((r) => r.id)
-      await syncNow(releaseIds)
+      await syncCompact()
       ready = true
     }
     void boot()
@@ -98,7 +96,7 @@ export function App() {
 
     const sync = (): void => {
       if (cancelled || !ready) return
-      void syncNow(releaseIds)
+      void syncCompact()
     }
 
     const onVisible = (): void => {

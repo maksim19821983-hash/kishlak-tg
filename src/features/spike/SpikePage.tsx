@@ -7,7 +7,7 @@ import { getSessionDiag, subscribeFan } from '@/features/fan/trackListen'
 import { getState } from '@/features/fan/state'
 import { getMediaActionLog, getMediaSessionInfo } from '@/audio/mediaSession'
 import { isListened, releaseProgress } from '@/features/fan/derive'
-import { getCloudDiag, initCloud, pullAndMerge, pushAll, exportCode, importCode } from '@/app/cloudSync'
+import { getCloudDiag, initCloud, syncCompact, exportCode, importCode } from '@/app/cloudSync'
 
 function fmt(s: number): string {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
@@ -109,6 +109,8 @@ function CloudPanel() {
         keys: String(d.keys),
         remoteFav: d.remoteFav,
         error: d.lastError,
+        payload: d.payload,
+        sync: d.lastSyncAt,
       })
     }
     tick()
@@ -176,19 +178,15 @@ function CloudPanel() {
         {btn('забрать из облака', () => void run('облако', async () => {
           const ok = await initCloud()
           if (!ok) return 'CloudStorage недоступен'
-          const cat = await CatalogRepo.load()
-          await pullAndMerge(cat.releases.map((r) => r.id))
-          await pushAll()
-          const d = getCloudDiag()
-          return `получено — избранное ${getState().tracks ? 'ок' : '—'}; ${d.lastPull}; ${d.remoteFav}`
+          const result = await syncCompact()
+          return result
         }), busy === 'облако')}
 
         {btn('отправить в облако', () => void run('отправка', async () => {
           const ok = await initCloud()
           if (!ok) return 'CloudStorage недоступен'
-          await pushAll()
-          const d = getCloudDiag()
-          return `${d.lastPush}; ошибки: ${d.lastError}`
+          const result = await syncCompact()
+          return result
         }), busy === 'отправка')}
       </div>
 

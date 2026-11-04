@@ -16,6 +16,8 @@ type Cloud = {
 
 // CloudStorage разрешает только латиницу, цифры, дефис и подчёркивание: точки запрещены
 const FAV_KEY = 'fav_v1'
+const STATE_KEY = 'state_v1'
+const VALUE_LIMIT = 3800
 const FAN_PREFIX = 'fan_'
 const MAX_KEY = 128
 
@@ -44,10 +46,13 @@ type Diag = {
   remoteFav: string
   keys: number
   lastError: string
+  payload: string
+  lastSyncAt: string
 }
 
 const diag: Diag = {
   available: false, sdkPlatform: '-', lastPull: '-', lastPush: '-', remoteFav: '-', keys: 0, lastError: '—',
+  payload: '—', lastSyncAt: '—',
 }
 
 export function getCloudDiag(): Diag {
@@ -213,11 +218,10 @@ export async function pushAll(): Promise<void> {
 let pushTimer: ReturnType<typeof setTimeout> | null = null
 
 export function schedulePush(delayMs = 2500): void {
-  if (!cloudSyncAvailable()) return
   if (pushTimer) clearTimeout(pushTimer)
   pushTimer = setTimeout(() => {
     pushTimer = null
-    void pushAll()
+    void syncCompact()
   }, delayMs)
 }
 
@@ -281,4 +285,95 @@ export async function importCode(code: string): Promise<string> {
   } catch (e) {
     return `ошибка чтения кода: ${String(e)}`
   }
+}
+
+
+// ── компактный формат: всё состояние в один ключ ────────────────────────────
+
+type Compact = {
+  f: [string[], string[]]
+  t: Record<string, [number, number, number, number, number, 0 | 1]>
+}
+
+function packCompact(): string {
+  const fav = useFavorites.getState()
+  const facts = getState().tracks
+  const t: Compact['t'] = {}
+  for (const [id, f] of Object.entries(facts)) {
+    t[id] = [
+      Math.round(f.maxPosition),
+      Math.round(f.duration),
+      Math.round(f.seconds),
+      f.plays,
+      Math.round(f.lastAt / 1000),
+      f.completed ? 1 : 0,
+    ]
+  }
+  return JSON.stringify({ f: [fav.tracks, fav.releases], t } satisfies Compact)
+}
+
+function unpackCompact(raw: string): { fav: { tracks: string[]; releases: string[] }; facts: Record<string, TrackFact> } | null {
+  try {
+    const parsed = JSON.parse(raw) as Compact
+    if (!Array.isArray(parsed.f) || typeof parsed.t !== 'object') return null
+    const facts: Record<string, TrackFact> = {}
+    for (const [id, v] of Object.entries(parsed.t)) {
+      if (!Array.isArray(v) || v.length < 6) continue
+      facts[id] = {
+        maxPosition: Number(v[0]) || 0,
+        duration: Number(v[1]) || 0,
+        seconds: Number(v[2]) || 0,
+        plays: Number(v[3]) || 0,
+        lastAt: (Number(v[4]) || 0) * 1000,
+        completed: v[5] === 1,
+      }
+    }
+    return { fav: { tracks: parsed.f[0] ?? [], releases: parsed.f[1] ?? [] }, facts }
+  } catch {
+    return null
+  }
+}
+
+/** Синхронизация одним ключом: быстрее и надёжнее, чем 30 ключей по релизам. */
+export async function syncCompact(): Promise<string> {
+  const c = cloud()
+  if (!c) return 'облако недоступно'
+
+  const payload = packCompact()
+  diag.lastError = '—'
+  diag.payload = `${payload.length} байт`
+
+  // 1) читаем чужое
+  const raw = await withTimeout(read(c, STATE_KEY), 2000, null)
+  if (raw) {
+    const remote = unpackCompact(raw)
+    if (!remote) {
+      diag.lastPull = 'не смог разобрать данные из облака'
+    } else {
+      const fav = useFavorites.getState()
+      useFavorites.setState({
+        tracks: Array.from(new Set([...remote.fav.tracks, ...fav.tracks])),
+        releases: Array.from(new Set([...remote.fav.releases, ...fav.releases])),
+      })
+      const merged = mergeFan(getState(), remote.facts)
+      setState(merged)
+      saveStateNow()
+      diag.lastPull = `получено: избранное ${remote.fav.tracks.length}, треков ${Object.keys(remote.facts).length}`
+    }
+  } else {
+    diag.lastPull = 'в облаке пусто'
+  }
+
+  // 2) отправляем объединённое
+  const merged = packCompact()
+  if (merged.length > VALUE_LIMIT) {
+    diag.lastPush = `слишком много данных для одного ключа: ${merged.length} байт`
+    return diag.lastPush
+  }
+  await withTimeout(write(c, STATE_KEY, merged), 2000, undefined)
+  diag.payload = `${merged.length} байт`
+  diag.lastPush = `отправлено: избранное ${useFavorites.getState().tracks.length}, треков ${Object.keys(getState().tracks).length}`
+  diag.keys = 1
+  diag.lastSyncAt = new Date().toLocaleTimeString('ru-RU')
+  return `${diag.lastPull} · ${diag.lastPush}`
 }
