@@ -377,7 +377,18 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         </div>
       )}
 
-      {/* превью текста */}
+      {/* превью текста; если текста нет — предупреждаем, что он появится */}
+      {track !== null && !hasLyrics && (
+        <div className="px-screen mt-2 shrink-0">
+          <p
+            className="font-mono uppercase text-dim"
+            style={{ fontSize: 10, letterSpacing: '.14em', height: 22, lineHeight: '22px', opacity: 0.7 }}
+          >
+            скоро будет текст
+          </p>
+        </div>
+      )}
+
       {hasLyrics && (
         <div className="px-screen mt-2 shrink-0">
           <button onClick={() => setInsertOpen(true)} className="w-full text-left" aria-label="Открыть текст">
