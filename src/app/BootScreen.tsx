@@ -5,7 +5,7 @@ import { Logo1111 } from '@/ui/Logo1111'
  * Загрузочный экран: рисованный логотип 11:11 заливается цветом снизу вверх
  * по мере загрузки архива. progress — 0..1.
  */
-export function BootScreen({ done, progress }: { done: boolean; progress: number }) {
+export function BootScreen({ done, progress, diag }: { done: boolean; progress: number; diag?: string }) {
   const pct = Math.max(0, Math.min(1, progress))
 
   return (
@@ -40,6 +40,21 @@ export function BootScreen({ done, progress }: { done: boolean; progress: number
           </div>
         </div>
 
+        {diag !== undefined && (
+          <p
+            className="font-mono text-dim"
+            style={{
+              fontSize: 8.5,
+              letterSpacing: '.08em',
+              marginTop: 18,
+              opacity: 0.75,
+              textAlign: 'center',
+              maxWidth: 300,
+            }}
+          >
+            {diag}
+          </p>
+        )}
       </div>
     </div>
   )

@@ -4,6 +4,10 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // метка сборки: по ней видно, какая версия реально запущена
+    __BUILD_ID__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')),
+  },
   build: {
     // Safari 15+ (iOS 15) — базовая цель для PWA
     target: ['safari15', 'chrome100', 'firefox100'],

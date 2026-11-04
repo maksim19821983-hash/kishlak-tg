@@ -22,6 +22,7 @@ import { remoteAvailable, syncRemote } from './remoteSync'
 import { autofillDownloads } from '@/features/offline/downloadSync'
 import { InstallHint } from '@/features/offline/InstallHint'
 import { ConnectGate } from '@/features/account/AccountScreen'
+import { useServiceWorker } from '@/features/offline/useServiceWorker'
 import { deviceToken } from './pairing'
 import { ErrorOverlay } from './ErrorOverlay'
 import { onPersist } from '@/features/fan/state'
@@ -75,6 +76,19 @@ export function App() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [gateOpen, setGateOpen] = useState(false)
+  const sw = useServiceWorker()
+  const [online, setOnline] = useState(() => navigator.onLine !== false)
+
+  useEffect(() => {
+    const up = (): void => setOnline(true)
+    const down = (): void => setOnline(false)
+    window.addEventListener('online', up)
+    window.addEventListener('offline', down)
+    return () => {
+      window.removeEventListener('online', up)
+      window.removeEventListener('offline', down)
+    }
+  }, [])
 
   useEffect(() => {
     const cleanup = initTrackListener()
@@ -327,7 +341,11 @@ export function App() {
         />
       )}
 
-      <BootScreen done={!booting} progress={bootProgress} />
+      <BootScreen
+        done={!booting}
+        progress={bootProgress}
+        diag={`сборка ${__BUILD_ID__} · ${online ? 'сеть' : 'офлайн'} · кэш ${sw.state === 'ready' ? `${sw.files} ф` : sw.state}`}
+      />
       {!booting && showOnboarding && (
         <Onboarding onDone={() => setShowOnboarding(false)} onStart={startRandom} />
       )}
