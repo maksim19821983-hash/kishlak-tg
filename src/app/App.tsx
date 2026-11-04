@@ -100,6 +100,14 @@ export function App() {
       const catalog = await CatalogRepo.load()
       if (cancelled) return
       ready = true
+
+      // если ничего не играло — показываем первую песню каталога (в офлайне это скачанное)
+      const engine = getWebEngine()
+      if (useAudioStore.getState().track === null) {
+        const all = catalog.releases.flatMap((r) => r.tracks)
+        if (all.length > 0) engine.load(all, 0)
+      }
+
       await syncOnce()
       if (cancelled) return
       const tracks = catalog.releases.flatMap((r) => r.tracks)

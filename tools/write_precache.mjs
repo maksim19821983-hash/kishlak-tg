@@ -26,6 +26,8 @@ function walk(dir, base = '') {
 }
 
 walk(DIST)
+// манифест каталога нужен офлайну, но весит немного
+if (!list.includes('/content/manifest.json')) list.push('/content/manifest.json')
 
 const build = `${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '')}`
 writeFileSync(join(DIST, 'precache.json'), JSON.stringify({ build, files: list }, null, 2))

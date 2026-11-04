@@ -14,6 +14,14 @@ export type DownloadRecord = {
   releaseId: string
   bytes: number
   at: number
+  /** Метаданные: нужны, чтобы играть и показывать трек без каталога */
+  title?: string
+  releaseTitle?: string
+  year?: number
+  duration?: number
+  audio?: string
+  cover?: string
+  lrc?: string
 }
 
 type Downloaded = Record<string, DownloadRecord>
@@ -109,7 +117,17 @@ export async function downloadTrack(track: Track, releaseId: string): Promise<nu
       if (cover?.ok) await cache.put(track.cover, cover.clone())
     }
 
-    const record: DownloadRecord = { trackId: track.id, releaseId, bytes: blob.size, at: Date.now() }
+    const record: DownloadRecord = {
+      trackId: track.id,
+      releaseId,
+      bytes: blob.size,
+      at: Date.now(),
+      title: track.title,
+      duration: track.duration,
+      audio: track.audio,
+      cover: track.cover,
+      lrc: track.lrc,
+    }
     useDownloads.getState().setRecord(record)
     return blob.size
   } finally {
@@ -153,4 +171,31 @@ export async function storageInfo(): Promise<{ used: number; quota: number }> {
   } catch {
     return { used: 0, quota: 0 }
   }
+}
+
+/** Офлайн-библиотека: треки из записей о скачивании, без обращения к каталогу. */
+export function offlineTracks(): Track[] {
+  const records = useDownloads.getState().records
+  return Object.values(records)
+    .filter((r) => r.audio !== undefined)
+    .map((r) => ({
+      id: r.trackId,
+      title: r.title ?? 'без названия',
+      releaseId: r.releaseId,
+      duration: r.duration ?? 0,
+      audio: r.audio ?? '',
+      ...(r.cover !== undefined ? { cover: r.cover } : {}),
+      ...(r.lrc !== undefined ? { lrc: r.lrc } : {}),
+    })) as Track[]
+}
+
+/** Группирует скачанное по релизам для офлайн-каталога. */
+export function offlineReleases(): { releaseId: string; tracks: Track[] }[] {
+  const groups = new Map<string, Track[]>()
+  for (const track of offlineTracks()) {
+    const list = groups.get(track.releaseId) ?? []
+    list.push(track)
+    groups.set(track.releaseId, list)
+  }
+  return [...groups.entries()].map(([releaseId, tracks]) => ({ releaseId, tracks }))
 }
