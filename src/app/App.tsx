@@ -18,7 +18,6 @@ import { CatalogRepo } from '@/data/CatalogRepo'
 import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
-import { initCloud, schedulePush, watchFavorites, syncCompact } from './cloudSync'
 import { remoteAvailable, syncRemote } from './remoteSync'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
@@ -70,47 +69,40 @@ export function App() {
 
   useEffect(() => {
     const cleanup = initTrackListener()
-    const unwatch = watchFavorites()
-    return () => {
-      cleanup()
-      unwatch()
-    }
+    return cleanup
   }, [])
 
-  // синхронизация без участия пользователя: при старте, при возврате в приложение и раз в минуту
+  // синхронизация через свой сервер: при старте, при возврате в приложение и раз в 90 секунд
   useEffect(() => {
     let cancelled = false
     let ready = false
 
-    const boot = async (): Promise<void> => {
-      const ok = await initCloud()
-      if (cancelled || !ok) return
-      await CatalogRepo.load()
-      if (cancelled) return
-      await syncCompact()
-      ready = true
-    }
-    void boot()
-
-    // прогресс прослушиваний сохранился локально → отправляем в облако
-    onPersist(() => schedulePush(2000))
-
-    const sync = (): void => {
-      if (cancelled || !ready) return
-      if (remoteAvailable()) {
-        void syncRemote().catch(() => { void syncCompact() })
-      } else {
-        void syncCompact()
+    const syncOnce = async (): Promise<void> => {
+      if (!remoteAvailable()) return
+      try {
+        await syncRemote()
+      } catch {
+        /* сервер недоступен — данные остаются локально, попробуем позже */
       }
     }
 
-    const onVisible = (): void => {
-      if (document.visibilityState === 'visible') sync()
-      else schedulePush(0)
-    }
+    void (async () => {
+      await CatalogRepo.load()
+      if (cancelled) return
+      ready = true
+      await syncOnce()
+    })()
+
+    // прогресс сохранился локально → через пару секунд отправляем на сервер
+    onPersist(() => {
+      window.setTimeout(() => { if (!cancelled && ready) void syncOnce() }, 2000)
+    })
+
+    const onVisible = (): void => { if (ready) void syncOnce() }
     document.addEventListener('visibilitychange', onVisible)
 
-    const timer = setInterval(sync, 90_000)
+    const timer = setInterval(() => { if (ready) void syncOnce() }, 90_000)
+
     return () => {
       cancelled = true
       document.removeEventListener('visibilitychange', onVisible)

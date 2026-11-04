@@ -7,8 +7,9 @@ import { getSessionDiag, subscribeFan } from '@/features/fan/trackListen'
 import { getState } from '@/features/fan/state'
 import { getMediaActionLog, getMediaSessionInfo } from '@/audio/mediaSession'
 import { isListened, releaseProgress } from '@/features/fan/derive'
-import { getCloudDiag, initCloud, syncCompact, exportCode, importCode, readProbe, writeProbe, readProbeSmall, writeProbeSmall, shareCodeLink } from '@/app/cloudSync'
+import { exportCode, importCode, shareCodeLink } from '@/app/transfer'
 import { REMOTE_URL, remoteAvailable, syncRemote, debugRemote } from '@/app/remoteSync'
+import { useFavorites } from '@/features/favorites/store'
 
 function fmt(s: number): string {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
@@ -90,6 +91,11 @@ function snapshot(): DiagSnapshot {
   }
 }
 
+function useFavoritesSnapshot(): { tracks: number } {
+  const tracks = useFavorites((s) => s.tracks)
+  return { tracks: tracks.length }
+}
+
 function CloudPanel() {
   const [info, setInfo] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState('')
@@ -97,38 +103,11 @@ function CloudPanel() {
   const [code, setCode] = useState('')
   const areaRef = useRef<HTMLTextAreaElement>(null)
 
-  useEffect(() => {
-    let alive = true
-    const tick = () => {
-      if (!alive) return
-      const d = getCloudDiag()
-      setInfo({
-        platform: d.sdkPlatform,
-        available: String(d.available),
-        pull: d.lastPull,
-        push: d.lastPush,
-        keys: String(d.keys),
-        remoteFav: d.remoteFav,
-        error: d.lastError,
-        payload: d.payload,
-        server: REMOTE_URL === '' ? 'не задан' : REMOTE_URL,
-        sync: d.lastSyncAt,
-        probe: d.probe,
-      })
-    }
-    void readProbe().then((value) => setInfo((p) => ({ ...p, probe: value })))
-    void readProbeSmall().then((value) => setInfo((p) => ({ ...p, probe2: value })))
-    tick()
-    const id = setInterval(tick, 1200)
-    return () => { alive = false; clearInterval(id) }
-  }, [])
-
   const run = async (label: string, fn: () => Promise<string>): Promise<void> => {
     setBusy(label)
     setResult(`${label}: выполняю…`)
     try {
-      const text = await fn()
-      setResult(`${label}: ${text}`)
+      setResult(`${label}: ${await fn()}`)
     } catch (e) {
       setResult(`${label}: ошибка — ${String(e)}`)
     }
@@ -155,9 +134,12 @@ function CloudPanel() {
   return (
     <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
       <p className="font-mono uppercase text-dim" style={{ fontSize: 10, letterSpacing: '.18em', marginBottom: 8 }}>
-        облако и перенос данных
+        синхронизация
       </p>
 
+      <Row label="сервер" value={REMOTE_URL === '' ? 'не задан' : REMOTE_URL} />
+      <Row label="доступна" value={String(remoteAvailable())} />
+      <Row label="избранное" value={String(useFavoritesSnapshot().tracks)} />
       {Object.entries(info).map(([k, v]) => (
         <Row key={k} label={k} value={String(v)} />
       ))}
@@ -180,42 +162,18 @@ function CloudPanel() {
       </p>
 
       <div className="flex" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-        {btn('сервер: диагностика', () => void run('подпись', () => debugRemote()), busy === 'подпись')}
-
-        {btn('сервер: синхронизировать', () => void run('сервер', async () => {
-          if (!remoteAvailable()) return `адрес сервера не задан: «${REMOTE_URL}»`
-          return syncRemote()
+        {btn('синхронизировать', () => void run('сервер', async () => {
+          if (!remoteAvailable()) return 'сервер не настроен или приложение открыто не в Телеграме'
+          const report = await syncRemote()
+          setInfo((p) => ({ ...p, избранное: String(useFavoritesSnapshot().tracks) }))
+          return report
         }), busy === 'сервер')}
 
-        {btn('забрать из облака', () => void run('облако', async () => {
-          const ok = await initCloud()
-          if (!ok) return 'CloudStorage недоступен'
-          const result = await syncCompact()
-          return result
-        }), busy === 'облако')}
-
-        {btn('тест короткий', () => void run('тест2', async () => {
-          const res = await writeProbeSmall()
-          setInfo((p) => ({ ...p, probe2: res }))
-          return res
-        }), busy === 'тест2')}
-
-        {btn('тест записи', () => void run('тест', async () => {
-          const res = await writeProbe()
-          setInfo((p) => ({ ...p, probe: res }))
-          return res
-        }), busy === 'тест')}
-
-        {btn('отправить в облако', () => void run('отправка', async () => {
-          const ok = await initCloud()
-          if (!ok) return 'CloudStorage недоступен'
-          const result = await syncCompact()
-          return result
-        }), busy === 'отправка')}
+        {btn('диагностика подписи', () => void run('подпись', () => debugRemote()), busy === 'подпись')}
       </div>
 
       <p className="font-mono uppercase text-dim" style={{ fontSize: 9.5, letterSpacing: '.16em', marginTop: 16, marginBottom: 6 }}>
-        перенос данные кодом
+        перенос данных кодом (если сервер недоступен)
       </p>
 
       <div className="flex" style={{ gap: 8, flexWrap: 'wrap' }}>
@@ -226,20 +184,7 @@ function CloudPanel() {
           setTimeout(() => areaRef.current?.select(), 50)
         })}
 
-        {btn('скопировать', () => {
-          if (code === '') { setResult('сначала сгенерируй код'); return }
-          const area = areaRef.current
-          if (area) area.select()
-          try {
-            void navigator.clipboard?.writeText(code).catch(() => {})
-            document.execCommand?.('copy')
-            setResult('скопировано. Открой на другом устройстве и вставь в поле ниже.')
-          } catch {
-            setResult('не удалось скопировать автоматически — выдели и скопируй вручную')
-          }
-        })}
-
-        {btn('отправить код себе', () => {
+        {btn('отправить себе', () => {
           const value = exportCode()
           setCode(value)
           try {
