@@ -7,7 +7,7 @@ import { getSessionDiag, subscribeFan } from '@/features/fan/trackListen'
 import { getState } from '@/features/fan/state'
 import { getMediaActionLog, getMediaSessionInfo } from '@/audio/mediaSession'
 import { isListened, releaseProgress } from '@/features/fan/derive'
-import { getCloudDiag, initCloud, syncCompact, exportCode, importCode, readProbe, writeProbe } from '@/app/cloudSync'
+import { getCloudDiag, initCloud, syncCompact, exportCode, importCode, readProbe, writeProbe, readProbeSmall, writeProbeSmall, shareCodeLink } from '@/app/cloudSync'
 
 function fmt(s: number): string {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
@@ -115,6 +115,7 @@ function CloudPanel() {
       })
     }
     void readProbe().then((value) => setInfo((p) => ({ ...p, probe: value })))
+    void readProbeSmall().then((value) => setInfo((p) => ({ ...p, probe2: value })))
     tick()
     const id = setInterval(tick, 1200)
     return () => { alive = false; clearInterval(id) }
@@ -184,6 +185,12 @@ function CloudPanel() {
           return result
         }), busy === 'облако')}
 
+        {btn('тест короткий', () => void run('тест2', async () => {
+          const res = await writeProbeSmall()
+          setInfo((p) => ({ ...p, probe2: res }))
+          return res
+        }), busy === 'тест2')}
+
         {btn('тест записи', () => void run('тест', async () => {
           const res = await writeProbe()
           setInfo((p) => ({ ...p, probe: res }))
@@ -220,6 +227,17 @@ function CloudPanel() {
             setResult('скопировано. Открой на другом устройстве и вставь в поле ниже.')
           } catch {
             setResult('не удалось скопировать автоматически — выдели и скопируй вручную')
+          }
+        })}
+
+        {btn('отправить код себе', () => {
+          const value = exportCode()
+          setCode(value)
+          try {
+            window.Telegram?.WebApp?.openTelegramLink?.(shareCodeLink(value))
+            setResult('открыл выбор чата: отправь код в «Избранное», потом вставь его на другом устройстве')
+          } catch {
+            setResult('не удалось открыть Телеграм — скопируй код вручную')
           }
         })}
 

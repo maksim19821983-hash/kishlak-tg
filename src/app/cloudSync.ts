@@ -19,6 +19,7 @@ type Cloud = {
 const FAV_KEY = 'fav_v1'
 const STATE_PREFIX = 'state_v1_'
 const PROBE_KEY = 'probe_v1'
+const PROBE2_KEY = 'p2'
 const CHUNK_LIMIT = 900    // iOS-клиент теряет крупные значения — держим запас
 const MAX_CHUNKS = 24
 const FAN_PREFIX = 'fan_'
@@ -431,4 +432,28 @@ export async function writeProbe(): Promise<string> {
   const back = await withTimeout(read(c, PROBE_KEY), 2000, null)
   if (back === null) return `записано ${stamp}, но чтение вернуло пусто`
   return back === stamp ? `записано и прочитано: ${new Date(Number(stamp) * 1000).toLocaleString('ru-RU')}` : `в облаке другое значение: ${back}`
+}
+
+
+/** Короткое значение в отдельном ключе: проверяем, важен ли размер. */
+export async function writeProbeSmall(): Promise<string> {
+  const c = cloud()
+  if (!c) return 'облако недоступно'
+  const stamp = String(Date.now()).slice(-6)
+  await withTimeout(write(c, PROBE2_KEY, stamp), 2000, undefined)
+  const back = await withTimeout(read(c, PROBE2_KEY), 2000, null)
+  return back === null ? `записано ${stamp}, чтение пусто` : `в облаке: ${back}`
+}
+
+export async function readProbeSmall(): Promise<string> {
+  const c = cloud()
+  if (!c) return 'облако недоступно'
+  const raw = await withTimeout(read(c, PROBE2_KEY), 2000, null)
+  return raw === null ? 'пусто' : raw
+}
+
+/** Ссылка, которая отправляет код в «Избранное» — код переживёт любое устройство. */
+export function shareCodeLink(code: string): string {
+  const text = `Кишлак — код переноса\n${code}`
+  return `https://t.me/share/url?url=${encodeURIComponent('https://kishlak-tg.pages.dev')}&text=${encodeURIComponent(text)}`
 }
