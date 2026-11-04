@@ -2,39 +2,29 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from '@/app/App'
 import { initTelegram } from '@/app/telegram'
-import { warmOfflineCache } from '@/features/offline/warmCache'
 import '@/app/polarity'
 import '@/styles/index.css'
 
 initTelegram()
 
-// офлайн-оболочка: приложение открывается и без сети
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then(() => warmOfflineCache())
-      .catch(() => {})
-  })
+// офлайн-режим отключён: снимаем service worker и чистим его кэши один раз
+if ('serviceWorker' in navigator) {
+  void (async () => {
+    try {
+      const key = 'kishlak:sw-cleanup:v1'
+      if (localStorage.getItem(key) === '1') return
+      const registrations = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(registrations.map((r) => r.unregister()))
+      if ('caches' in window) {
+        const names = await caches.keys()
+        await Promise.all(names.filter((n) => n.startsWith('kishlak-')).map((n) => caches.delete(n)))
+      }
+      localStorage.setItem(key, '1')
+    } catch {
+      /* ничего страшного */
+    }
+  })()
 }
-
-// если React не смог стартовать, показываем причину вместо белого экрана
-function showFatal(message: string): void {
-  const host = document.getElementById('root')
-  if (!host) return
-  host.innerHTML = ''
-  const box = document.createElement('pre')
-  box.style.cssText = 'padding:20px;font:12px/1.5 monospace;color:#C0392B;white-space:pre-wrap;word-break:break-word'
-  box.textContent = `Приложение упало\n\n${message}`
-  host.appendChild(box)
-}
-
-window.addEventListener('error', (event) => {
-  showFatal(`${event.message}\n${event.filename}:${event.lineno}:${event.colno}`)
-})
-window.addEventListener('unhandledrejection', (event) => {
-  showFatal(String(event.reason))
-})
 
 const root = document.getElementById('root')
 if (!root) throw new Error('#root не найден в index.html')

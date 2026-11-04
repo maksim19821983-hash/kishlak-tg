@@ -19,8 +19,6 @@ import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
 import { remoteAvailable, syncRemote } from './remoteSync'
-import { autofillDownloads } from '@/features/offline/downloadSync'
-import { InstallHint } from '@/features/offline/InstallHint'
 import { ConnectGate } from '@/features/account/AccountScreen'
 import { deviceToken } from './pairing'
 import { ErrorOverlay } from './ErrorOverlay'
@@ -110,8 +108,6 @@ export function App() {
 
       await syncOnce()
       if (cancelled) return
-      const tracks = catalog.releases.flatMap((r) => r.tracks)
-      await autofillDownloads(tracks).catch(() => 0)
     })()
 
     // прогресс сохранился локально → через пару секунд отправляем на сервер
@@ -280,8 +276,6 @@ export function App() {
       )}
 
       <ErrorOverlay />
-
-      <InstallHint />
 
       <div className="flex-1 min-h-0 relative" style={{ zIndex: 1 }}>
         <div className="absolute inset-0 tab-pane" data-active={activeTab === 'player'}>

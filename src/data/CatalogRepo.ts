@@ -1,6 +1,5 @@
 import { parseManifest } from './manifest'
-import type { Catalog, Release } from './types'
-import { offlineReleases } from '@/features/offline/downloads'
+import type { Catalog } from './types'
 
 const MANIFEST_URL = '/content/manifest.json'
 
@@ -13,39 +12,11 @@ export class CatalogLoadError extends Error {
 
 let cache: Promise<Catalog> | null = null
 
-/** Каталог из скачанного: работает без сети и без манифеста. */
-export function offlineCatalog(): Catalog {
-  const groups = offlineReleases()
-  const releases: Release[] = groups.map(({ releaseId, tracks }) => {
-    const first = tracks[0]
-    return {
-      id: releaseId,
-      title: first?.title ?? 'скачанное',
-      artistId: 'kishlak',
-      year: new Date().getFullYear(),
-      type: 'single',
-      palette: { mode: 'dark', accent: '#8C5334' },
-      motif: 'cassette',
-      cover: first?.cover ?? '/content/covers/placeholder.jpg',
-      coverSmall: first?.cover ?? '/content/covers/placeholder.jpg',
-      tracks: tracks.map((t) => ({ ...t, artistId: 'kishlak' })),
-    }
-  })
-  return {
-    artist: { id: 'kishlak', name: 'Кишлак', aliases: [] },
-    generatedAt: new Date().toISOString(),
-    releases,
-  }
-}
-
 async function fetchCatalog(): Promise<Catalog> {
   let res: Response
   try {
     res = await fetch(MANIFEST_URL)
   } catch (cause) {
-    // сети нет — отдаём то, что скачано на устройство
-    const local = offlineCatalog()
-    if (local.releases.length > 0) return local
     throw new CatalogLoadError('Нет связи: каталог не загрузился', { cause })
   }
   if (!res.ok) {

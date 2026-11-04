@@ -9,9 +9,6 @@ import { sortReleases } from './sort'
 import { NowPlayingBar } from '@/ui/NowPlayingBar'
 import { IconTheme } from '@/ui/icons'
 import { SearchField } from '@/ui/SearchField'
-import { useDownloads } from '@/features/offline/downloads'
-import { useOnline } from '@/features/offline/useOnline'
-import { DownloadIcon, OfflineIcon } from '@/ui/icons'
 import { toggleTheme } from '@/features/polarity/usePolarity'
 import { haptic } from '@/app/telegram'
 
@@ -66,10 +63,6 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
 
   const catalog = load.status === 'ready' ? load.catalog : null
   const releases = sortReleases(catalog?.releases ?? [])
-  const online = useOnline()
-  const downloads = useDownloads((s) => s.records)
-  const savedIds = new Set(Object.values(downloads).map((r) => r.releaseId))
-  const savedBytes = Object.values(downloads).reduce((sum, r) => sum + r.bytes, 0)
   const q = query.trim().toLowerCase()
   const matches = (value: string): boolean => value.toLowerCase().includes(q)
   const filteredReleases = q === '' ? releases : releases.filter((r) => matches(r.title))
@@ -127,16 +120,7 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
 
       <SearchField value={query} onChange={setQuery} placeholder="поиск: альбом или трек" />
 
-      <p
-        className="font-mono uppercase text-dim flex items-center"
-        style={{ fontSize: 9, letterSpacing: '.16em', marginTop: 8, gap: 6 }}
-      >
-        {!online && <OfflineIcon size={11} color="var(--dim)" />}
-        <DownloadIcon size={11} color="var(--dim)" />
-        {savedIds.size === 0
-          ? 'офлайн: ничего не скачано'
-          : `офлайн: ${savedIds.size} из ${releases.length} · ${(savedBytes / 1024 / 1024).toFixed(0)} МБ`}
-      </p>
+
 
       <main className="flex-1 px-screen" style={{ paddingTop: 24, paddingBottom: 32 }}>
         <h1 className="font-display text-h1 uppercase text-ink mb-1">Каталог</h1>
@@ -199,7 +183,7 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
 
         {(load.status === 'ready' || load.status === 'offline') && filteredReleases.length > 0 && (
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-            {(online ? filteredReleases : filteredReleases.filter((r) => savedIds.has(r.id))).map((release) => (
+            {filteredReleases.map((release) => (
               <div key={release.id}>
               <Sleeve
                 release={release}

@@ -3,7 +3,6 @@ import type { AudioPort, PlaybackState } from './port'
 import { initialPlaybackState } from './port'
 import { shuffleOrder, nextIndex, prevIndex, clampIndex } from './queue'
 import { updateMediaMetadata, updatePositionState, setupMediaSession } from './mediaSession'
-import { localSrc, isDownloaded } from '@/features/offline/downloads'
 
 // Обложка альбома — пока хардкод, в Шаге 4 придёт через load()
 const FALLBACK_COVER = '/content/covers/vdps-2026.jpg'
@@ -48,10 +47,6 @@ class WebAudioEngine implements AudioPort {
   private pos = -1
   private lastNotify = 0
   private rafId = 0
-  private objectUrl: string | null = null
-  private fallbackTried: string | null = null
-  private sourceLoading = false
-  private playAfterLoad = false
   private cleanupMs: (() => void) | null = null
   /** Перерегистрирует обработчики Media Session — нужен повторный вызов для WKWebView */
   private wireMediaSession: () => void = () => {}
@@ -112,66 +107,13 @@ class WebAudioEngine implements AudioPort {
     this.patch({ queue: tracks, index: idx, track, status: 'loading', currentTime: 0, duration: 0, error: null })
     if (track) {
       this.applyMetadata(track)
-      void this.setSource(track)
-    }
-  }
-
-  /** Скачанный трек играем из кэша (blob), остальные — сетью. */
-  private async setSource(track: Track): Promise<void> {
-    this.sourceLoading = true
-    const cached = await localSrc(track).catch(() => null)
-    // пока читали кэш, трек могли переключить
-    if (this.state.track?.id !== track.id) {
-      this.sourceLoading = false
-      return
-    }
-
-    if (this.objectUrl !== null) {
-      URL.revokeObjectURL(this.objectUrl)
-      this.objectUrl = null
-    }
-
-    if (cached !== null) {
-      this.objectUrl = cached
-      this.el.src = cached
-    } else {
-      // без скачанной копии обращаемся к адресу: офлайн его отдаст service worker
-      this.el.src = track.audio
-    }
-    this.el.load()
-    this.sourceLoading = false
-
-    // если play() нажали раньше, чем нашёлся источник — запускаем сейчас
-    if (this.playAfterLoad) {
-      this.playAfterLoad = false
-      void this.el.play().catch(() => {})
-    }
-  }
-
-  /** Резервный источник, если основной не заиграл. */
-  private fallbackSource(): void {
-    const track = this.state.track
-    if (track === null) return
-    const natural = this.el.src
-    if (natural !== track.audio) {
-      if (this.objectUrl !== null) {
-        URL.revokeObjectURL(this.objectUrl)
-        this.objectUrl = null
-      }
       this.el.src = track.audio
       this.el.load()
-      void this.el.play().catch(() => {})
     }
   }
 
   play(): void {
     if (!this.state.track) return
-    // источник ещё подбирается (кэш/сеть): запустим сразу после него
-    if (this.sourceLoading) {
-      this.playAfterLoad = true
-      this.patch({ status: 'loading' })
-      return
-    }
     void this.el.play().catch((err: unknown) => {
       const name = err instanceof DOMException ? err.name : ''
       // AbortError — load() прервал предыдущий play(); не ошибка, игнорируем
@@ -398,18 +340,7 @@ class WebAudioEngine implements AudioPort {
 
     el.addEventListener('error', () => {
       this.diagCounters.error++
-      const code = this.el.error?.code ?? 0
-      const track = this.state.track
-      // скачанный трек: blob мог не проиграться — пробуем отдать его через service worker
-      if (track !== null && isDownloaded(track.id) && this.fallbackTried !== track.id) {
-        this.fallbackTried = track.id
-        this.fallbackSource()
-        return
-      }
-      this.patch({
-        status: 'error',
-        error: code === 4 ? 'формат не поддерживается' : code === 2 ? 'нет сети для этого трека' : 'трек недоступен',
-      })
+      this.patch({ status: 'error', error: 'Трек недоступен' })
     })
   }
 

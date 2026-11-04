@@ -9,8 +9,6 @@ import { Sleeve } from '@/ui/Sleeve'
 import { NowPlayingBar } from '@/ui/NowPlayingBar'
 import { TrackMenu } from '@/ui/TrackMenu'
 import { SearchField } from '@/ui/SearchField'
-import { useDownloads, downloadTrack } from '@/features/offline/downloads'
-import { DownloadIcon } from '@/ui/icons'
 import { IconMore, IconPlay } from '@/ui/icons'
 import { HeartButton } from '@/ui/HeartButton'
 import { releaseProgress } from '@/features/fan/derive'
@@ -27,8 +25,6 @@ type Props = { onOpenPlayer: () => void }
 export function FavoritesScreen({ onOpenPlayer }: Props) {
   const [catalog, setCatalog] = useState<Catalog | null>(null)
   const favoriteTracks = useFavorites((s) => s.tracks)
-  const downloads = useDownloads((s) => s.records)
-  const [downloading, setDownloading] = useState(0)
   const favoriteReleases = useFavorites((s) => s.releases)
   const toggleTrack = useFavorites((s) => s.toggleTrack)
   const toggleRelease = useFavorites((s) => s.toggleRelease)
@@ -65,20 +61,6 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
   // включить только любимое: очередь = любимые треки
   const playFavorites = () => startQueue(tracks, 0)
 
-  const pendingTracks = tracks.filter((t) => downloads[t.id] === undefined)
-
-  const downloadFavorites = async (): Promise<void> => {
-    const queue = [...pendingTracks]
-    setDownloading(queue.length)
-    for (const track of queue) {
-      try {
-        await downloadTrack(track, track.releaseId)
-      } catch {
-        /* пропускаем неудачную — остальные продолжаем */
-      }
-      setDownloading((n) => Math.max(0, n - 1))
-    }
-  }
 
   const playTrack = (track: Track) => {
     const idx = tracks.findIndex((t) => t.id === track.id)
@@ -138,20 +120,6 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
               Слушать любимое · {tracks.length}
             </span>
           </button>
-          {pendingTracks.length > 0 && (
-            <button
-              onClick={() => void downloadFavorites()}
-              className="w-full flex items-center justify-center gap-2 rounded-pill border border-line press mb-4"
-              style={{ height: 44, opacity: downloading > 0 ? 0.6 : 1 }}
-              aria-label="Скачать любимое"
-            >
-              <DownloadIcon size={14} color="var(--accent)" />
-              <span className="font-mono text-mono-label uppercase" style={{ color: 'var(--accent)' }}>
-                {downloading > 0 ? `качаю ${downloading}` : `скачать любимое · ${pendingTracks.length}`}
-              </span>
-            </button>
-          )}
-
           <p className="font-mono text-mono-label uppercase text-dim mb-1">треки</p>
           {visibleTracks.map((track) => {
             const isPlaying = track.id === currentId
@@ -176,7 +144,6 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
                       {releaseById.get(track.releaseId)?.title ?? ''}
                     </p>
                   </div>
-                  {downloads[track.id] !== undefined && <DownloadIcon size={13} color="var(--dim)" />}
                   <span className="font-mono text-mono-num tabular-nums text-dim shrink-0">
                     {fmt(track.duration)}
                   </span>
