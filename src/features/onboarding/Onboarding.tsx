@@ -2,9 +2,22 @@ import { useRef, useState } from 'react'
 import { HapticFeedback } from '@/app/telegram'
 import { Logo1111 } from '@/ui/Logo1111'
 
-const KEY = 'kishlak:onboard:v1'
+const KEY = 'kishlak:onboard:v2'
+
+/** Принудительный показ приветствия: `?onboard=1` или `startapp=onboard`. */
+export function onboardingForced(): boolean {
+  try {
+    const query = new URLSearchParams(window.location.search).get('onboard')
+    if (query === '1' || query === 'true') return true
+    const start = window.Telegram?.WebApp?.initDataUnsafe?.start_param
+    return start === 'onboard'
+  } catch {
+    return false
+  }
+}
 
 export function hasSeenOnboarding(): boolean {
+  if (onboardingForced()) return false
   try {
     return localStorage.getItem(KEY) === '1'
   } catch {

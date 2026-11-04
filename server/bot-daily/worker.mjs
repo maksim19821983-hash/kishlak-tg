@@ -52,7 +52,6 @@ async function postDay(env) {
       reply_markup: {
         inline_keyboard: [[
           { text: 'Слушать', url: `https://t.me/kishlak_music_bot?startapp=track_${encodeURIComponent(track.id)}` },
-          { text: 'Вся кассета', url: `https://t.me/kishlak_music_bot?startapp=release_${encodeURIComponent(track.releaseId)}` },
         ]],
       },
     }),
