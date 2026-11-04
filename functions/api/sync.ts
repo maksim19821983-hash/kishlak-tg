@@ -1,10 +1,16 @@
 /**
- * Синхронизация на том же домене, что и сайт (Cloudflare Pages Function).
- * Тот же путь /api/sync, никакого CORS: запрос идёт на собственный адрес.
- * Требует привязку KV как STATE и секрет BOT_TOKEN в настройках Pages.
+ * Синхронизация на своём домене (Cloudflare Pages Function), бесплатно.
+ *
+ * Хранилище: D1 (100 000 записей в сутки бесплатно) — этого хватает
+ * на несколько сотен человек. Если D1 не привязана, работает KV (1000 записей).
  */
 
-type Env = { STATE: KVNamespace; BOT_TOKEN: string }
+type D1Result<T> = { first: () => Promise<T | null>; run: () => Promise<unknown> }
+type D1Stmt = { bind: (...values: unknown[]) => D1Result<{ payload: string } | { ok: number }> }
+type D1Like = { prepare: (sql: string) => D1Stmt }
+type KVLike = { get: (key: string) => Promise<string | null>; put: (key: string, value: string) => Promise<void> }
+
+type Env = { DB?: D1Like; STATE?: KVLike; BOT_TOKEN: string }
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -55,39 +61,58 @@ async function verifyInitData(initData: string, botToken: string): Promise<numbe
   }
 }
 
-export const onRequest = async (context: { request: Request; env: Env }): Promise<Response> => {
-  try {
-    return await handle(context)
-  } catch (e) {
-    return json({ error: e instanceof Error ? e.message : String(e) }, 500)
+async function readState(env: Env, userId: number): Promise<unknown> {
+  if (env.DB !== undefined) {
+    const row = await env.DB.prepare('SELECT payload FROM sync_state WHERE user_id = ?1')
+      .bind(String(userId))
+      .first()
+    if (row === null || !('payload' in row)) return null
+    return JSON.parse(row.payload)
   }
+  if (env.STATE !== undefined) {
+    const raw = await env.STATE.get(`state:${userId}`)
+    return raw === null ? null : JSON.parse(raw)
+  }
+  throw new Error('нет хранилища: привяжите D1 (DB) или KV (STATE)')
+}
+
+async function writeState(env: Env, userId: number, payload: string): Promise<void> {
+  if (env.DB !== undefined) {
+    await env.DB.prepare(
+      'INSERT INTO sync_state (user_id, payload, updated_at) VALUES (?1, ?2, ?3) ' +
+        'ON CONFLICT(user_id) DO UPDATE SET payload = ?2, updated_at = ?3',
+    )
+      .bind(String(userId), payload, Date.now())
+      .run()
+    return
+  }
+  if (env.STATE !== undefined) {
+    await env.STATE.put(`state:${userId}`, payload)
+    return
+  }
+  throw new Error('нет хранилища: привяжите D1 (DB) или KV (STATE)')
 }
 
 const handle = async (context: { request: Request; env: Env }): Promise<Response> => {
   const { request, env } = context
   if (request.method === 'OPTIONS') return new Response(null, { headers: CORS })
 
-  // проверка настроек без подписи: открывается в браузере, показывает чего не хватает
   const url = new URL(request.url)
   if (url.searchParams.get('probe') === '1') {
     return json({
-      kv: env.STATE === undefined ? 'нет привязки STATE' : 'ок',
+      storage: env.DB !== undefined ? 'D1' : env.STATE !== undefined ? 'KV' : 'нет',
       botToken: (env.BOT_TOKEN ?? '') === '' ? 'нет токена' : `есть (${(env.BOT_TOKEN ?? '').length} символов)`,
     })
   }
 
-  if (env.STATE === undefined) return json({ error: 'KV не привязано к проекту' }, 503)
   if ((env.BOT_TOKEN ?? '') === '') return json({ error: 'нет секрета BOT_TOKEN' }, 503)
 
   const initData = request.headers.get('x-init-data') ?? ''
-  const userId = await verifyInitData(initData, env.BOT_TOKEN ?? '')
+  const userId = await verifyInitData(initData, env.BOT_TOKEN)
   if (userId === null) return json({ error: 'bad signature' }, 401)
 
-  const key = `state:${userId}`
-
   if (request.method === 'GET') {
-    const raw = await env.STATE.get(key)
-    return json({ state: raw === null ? null : JSON.parse(raw) })
+    return json({ state: await readState(env, userId) })
   }
 
   if (request.method === 'POST') {
@@ -95,9 +120,17 @@ const handle = async (context: { request: Request; env: Env }): Promise<Response
     if (body === null || typeof body !== 'object') return json({ error: 'bad body' }, 400)
     const text = JSON.stringify(body)
     if (text.length > 100_000) return json({ error: 'too large' }, 413)
-    await env.STATE.put(key, text)
+    await writeState(env, userId, text)
     return json({ ok: true, bytes: text.length })
   }
 
   return json({ error: 'method' }, 405)
+}
+
+export const onRequest = async (context: { request: Request; env: Env }): Promise<Response> => {
+  try {
+    return await handle(context)
+  } catch (e) {
+    return json({ error: e instanceof Error ? e.message : String(e) }, 500)
+  }
 }

@@ -1,9 +1,16 @@
-# Cloudflare Pages: сборка лежит в dist, функции — в functions/
+# Cloudflare Pages: сборка в dist, функции в functions/
 name = "kishlak-tg"
 pages_build_output_dir = "dist"
 compatibility_date = "2024-11-01"
 
-# KV для синхронизации: тот же namespace, что у воркера kishlak-sync
+# KV оставляем как резерв: функции предпочитают D1, если она привязана
 [[kv_namespaces]]
 binding = "STATE"
 id = "dae6476e1fef47f4b467ccc10b0dbcd2"
+
+# D1 для синхронизации: 100 000 записей в сутки бесплатно
+# раскомментируй после `wrangler d1 create kishlak-sync` и подставь database_id
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "kishlak-sync"
+# database_id = "ПОДСТАВИТЬ_ID"

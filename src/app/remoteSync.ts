@@ -101,6 +101,16 @@ export function markDirty(): void {
   dirty = true
 }
 
+/** Отправить накопленное прямо сейчас (например, когда приложение закрывают). */
+export async function flushRemote(): Promise<void> {
+  if (!dirty || !remoteAvailable()) return
+  try {
+    await syncRemote()
+  } catch {
+    /* дошлём при следующем запуске */
+  }
+}
+
 /** Есть ли неотправленные изменения. */
 export function hasPendingChanges(): boolean {
   return dirty

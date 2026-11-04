@@ -19,7 +19,7 @@ import { CatalogRepo } from '@/data/CatalogRepo'
 import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
-import { remoteAvailable, syncRemote, getSyncStatus, markSync, markDirty, hasPendingChanges } from './remoteSync'
+import { remoteAvailable, syncRemote, getSyncStatus, markSync, markDirty, hasPendingChanges, flushRemote } from './remoteSync'
 import { ErrorOverlay } from './ErrorOverlay'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
@@ -128,15 +128,17 @@ export function App() {
     const onVisible = (): void => {
       if (!ready) return
       void syncRemote({ push: false }).catch(() => {})
+      // вкладку прячут — досылаем изменения, чтобы не потерять правку
+      if (document.visibilityState === 'hidden') void flushRemote()
     }
     document.addEventListener('visibilitychange', onVisible)
 
-    // отправка: раз в 30 секунд, и только если действительно что-то изменилось
+    // отправка: раз в 2 минуты и только при реальных изменениях (бережём бесплатные лимиты)
     const pushTimer = setInterval(() => {
       if (!ready || !remoteAvailable()) return
       if (!hasPendingChanges()) return
       void syncOnce()
-    }, 30_000)
+    }, 120_000)
 
     // чтение изменений с других устройств: раз в 3 минуты
     const pullTimer = setInterval(() => {
