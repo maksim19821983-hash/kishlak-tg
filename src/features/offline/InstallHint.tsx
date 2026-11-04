@@ -9,6 +9,11 @@ function isStandalone(): boolean {
   )
 }
 
+/** Браузер внутри Телеграма: на iOS установка на домашний экран оттуда недоступна. */
+function inTelegramBrowser(): boolean {
+  return /Telegram/i.test(navigator.userAgent)
+}
+
 function inTelegram(): boolean {
   try {
     return (window.Telegram?.WebApp?.initData ?? '') !== ''
@@ -29,6 +34,8 @@ export function InstallHint() {
   const [expanded, setExpanded] = useState(false)
 
   if (hidden || inTelegram() || isStandalone()) return null
+
+  const telegramBrowser = inTelegramBrowser()
 
   const dismiss = (): void => {
     setHidden(true)
@@ -68,9 +75,19 @@ export function InstallHint() {
 
         {expanded ? (
           <p className="font-mono text-dim" style={{ fontSize: 10.5, lineHeight: 1.6, marginTop: 8 }}>
-            iPhone: кнопка «Поделиться» → «На экран „Домой“».
-            <br />
-            Android: меню браузера → «Установить приложение».
+            {telegramBrowser ? (
+              <>
+                Ты в браузере Телеграма — отсюда поставить нельзя.
+                <br />
+                Нажми «Поделиться» → «Открыть в Safari», дальше в Safari: «Поделиться» → «На экран „Домой“».
+              </>
+            ) : (
+              <>
+                iPhone: «Поделиться» → «На экран „Домой“».
+                <br />
+                Android: меню браузера → «Установить приложение».
+              </>
+            )}
           </p>
         ) : (
           <button
