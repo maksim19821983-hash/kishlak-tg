@@ -12,6 +12,7 @@ import { SearchField } from '@/ui/SearchField'
 import { useDownloads } from '@/features/offline/downloads'
 import { useOnline } from '@/features/offline/useOnline'
 import { DownloadIcon, OfflineIcon } from '@/ui/icons'
+import { InstallApp } from '@/features/offline/InstallApp'
 import { toggleTheme } from '@/features/polarity/usePolarity'
 import { haptic } from '@/app/telegram'
 
@@ -126,6 +127,8 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
       )}
 
       <SearchField value={query} onChange={setQuery} placeholder="поиск: альбом или трек" />
+
+      <InstallApp />
 
       <p
         className="font-mono uppercase text-dim flex items-center"
