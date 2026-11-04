@@ -392,8 +392,13 @@ export async function syncCompact(): Promise<string> {
     diag.keys = written
   }
 
+  // проверяем, что запись реально легла: читаем обратно первый кусок
+  const check = await withTimeout(read(c, `${STATE_PREFIX}0`), 2000, null)
+  const checkLen = check === null ? 0 : check.length
+
   diag.payload = `${chunks.reduce((sum, chunk) => sum + chunk.length, 0)} байт в ${chunks.length} частях`
-  diag.lastPush = `избранное ${useFavorites.getState().tracks.length}, треков ${Object.keys(getState().tracks).length}`
+  diag.lastPush = `избранное ${useFavorites.getState().tracks.length}, треков ${Object.keys(getState().tracks).length}, ` +
+    `проверка чтением: ${checkLen === 0 ? 'НЕ ПРОЧИТАЛОСЬ' : `прочитано ${checkLen} байт`}`
   diag.lastSyncAt = new Date().toLocaleTimeString('ru-RU')
-  return `${diag.lastPull} · ${diag.lastPush}`
+  return `${diag.lastPull} · ${diag.lastPush} · ошибка: ${diag.lastError}`
 }
