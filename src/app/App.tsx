@@ -18,7 +18,7 @@ import { CatalogRepo } from '@/data/CatalogRepo'
 import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
-import { remoteAvailable, syncRemote } from './remoteSync'
+import { remoteAvailable, syncRemote, getSyncStatus } from './remoteSync'
 import { ErrorOverlay } from './ErrorOverlay'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
@@ -81,6 +81,7 @@ export function App() {
   useEffect(() => {
     let cancelled = false
     let ready = false
+    let cleanupTimers: (() => void) | null = null
 
     const syncOnce = async (): Promise<void> => {
       if (!remoteAvailable()) return
@@ -120,6 +121,7 @@ export function App() {
     return () => {
       cancelled = true
       document.removeEventListener('visibilitychange', onVisible)
+      cleanupTimers?.()
       clearInterval(timer)
     }
   }, [])

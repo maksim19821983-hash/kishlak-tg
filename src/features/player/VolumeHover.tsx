@@ -48,62 +48,84 @@ export function VolumeHover() {
         <div
           style={{
             position: 'absolute',
-            bottom: '100%',
+            bottom: 'calc(100% + 6px)',
             left: '50%',
             transform: 'translateX(-50%)',
-            paddingBottom: 6,
-            zIndex: 20,
+            zIndex: 30,
           }}
         >
           <div
-            ref={trackRef}
-            role="slider"
-            aria-label="Громкость"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(volume * 100)}
-            onPointerDown={(e) => {
-              e.currentTarget.setPointerCapture(e.pointerId)
-              setFromPointer(e.clientY)
-            }}
-            onPointerMove={(e) => {
-              if (e.buttons === 0) return
-              setFromPointer(e.clientY)
-            }}
             style={{
-              position: 'relative',
-              width: 6,
-              height: 96,
-              borderRadius: 3,
-              background: 'var(--line)',
-              cursor: 'pointer',
-              margin: '0 12px',
+              padding: '12px 10px',
+              borderRadius: 14,
+              background: 'var(--panel)',
+              border: '1px solid var(--line)',
+              boxShadow: '0 8px 24px rgba(0,0,0,.28)',
             }}
           >
             <div
-              style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: `${volume * 100}%`,
-                borderRadius: 3,
-                background: 'var(--accent)',
+              ref={trackRef}
+              role="slider"
+              aria-label="Громкость"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(volume * 100)}
+              onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture(e.pointerId)
+                setFromPointer(e.clientY)
               }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                left: '50%',
-                bottom: `calc(${volume * 100}% - 6px)`,
-                width: 12,
-                height: 12,
-                borderRadius: 999,
-                background: 'var(--ink)',
-                transform: 'translateX(-50%)',
-                border: '2px solid var(--bg)',
+              onPointerMove={(e) => {
+                if (e.buttons === 0) return
+                setFromPointer(e.clientY)
               }}
-            />
+              style={{
+                position: 'relative',
+                width: 120,
+                height: 120,
+                cursor: 'pointer',
+                touchAction: 'none',
+              }}
+            >
+              {/* вертикальная дорожка */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: 10,
+                  bottom: 10,
+                  width: 8,
+                  marginLeft: -4,
+                  borderRadius: 4,
+                  background: 'var(--line)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  bottom: 10,
+                  width: 8,
+                  marginLeft: -4,
+                  height: `calc(${volume * 100}% - 20px * ${volume})`,
+                  borderRadius: 4,
+                  background: 'var(--accent)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  bottom: `calc(${volume * 100}% - ${volume * 20}px)`,
+                  width: 22,
+                  height: 22,
+                  borderRadius: 999,
+                  background: 'var(--ink)',
+                  transform: 'translate(-50%, 50%)',
+                  border: '3px solid var(--panel)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,.35)',
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
