@@ -6,6 +6,7 @@ import { updateMediaMetadata, updatePositionState, setupMediaSession } from './m
 
 /** Громкость запоминается между запусками. */
 const VOLUME_KEY = 'kishlak:volume:v1'
+const VOLUME_LAST_KEY = 'kishlak:volume-last:v1'
 
 // Обложка альбома — пока хардкод, в Шаге 4 придёт через load()
 const FALLBACK_COVER = '/content/covers/vdps-2026.jpg'
@@ -227,6 +228,8 @@ class WebAudioEngine implements AudioPort {
     // громкость запоминаем: на ПК ползунок не должен сбрасываться
     try {
       localStorage.setItem(VOLUME_KEY, String(vol))
+      // отдельно держим последнюю ненулевую: после выключения звука вернём её
+      if (vol > 0) localStorage.setItem(VOLUME_LAST_KEY, String(vol))
     } catch {
       /* приватный режим */
     }
@@ -349,9 +352,12 @@ class WebAudioEngine implements AudioPort {
 
     try {
       const saved = Number(localStorage.getItem(VOLUME_KEY))
-      if (Number.isFinite(saved) && saved >= 0 && saved <= 1) {
-        el.volume = saved
-        this.patch({ volume: saved })
+      const last = Number(localStorage.getItem(VOLUME_LAST_KEY))
+      // если в прошлый раз звук был выключен — тихо не стартуем, берём прежний уровень
+      const start = saved > 0 ? saved : Number.isFinite(last) && last > 0 ? last : 1
+      if (Number.isFinite(start) && start > 0 && start <= 1) {
+        el.volume = start
+        this.patch({ volume: start })
       }
     } catch {
       /* приватный режим */
