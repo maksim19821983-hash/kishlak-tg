@@ -391,9 +391,6 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
           >
             {track?.title ?? '—'}
           </p>
-          <p className="font-mono text-mono-label uppercase text-dim" style={{ marginTop: 8 }}>
-            {release?.title ?? ''}{release?.year !== undefined ? ` · ${release.year}` : ''}
-          </p>
         </div>
       )}
 
