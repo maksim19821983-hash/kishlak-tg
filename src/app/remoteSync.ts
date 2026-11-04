@@ -69,11 +69,19 @@ export function merge(remote: Payload): void {
 }
 
 async function call(method: 'GET' | 'POST', body?: Payload): Promise<Payload | null> {
-  const response = await fetch(REMOTE_URL, {
-    method,
-    headers: { 'x-init-data': initData(), 'content-type': 'application/json' },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  })
+  let response: Response
+  try {
+    response = await fetch(REMOTE_URL, {
+      method,
+      mode: 'cors',
+      headers: { 'x-init-data': initData(), 'content-type': 'application/json' },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    })
+  } catch (e) {
+    // сеть до сервера не дошла: показываем адрес, чтобы было что проверять
+    const reason = e instanceof Error ? e.message : String(e)
+    throw new Error(`нет связи с ${REMOTE_URL.replace('https://', '')} (${reason})`)
+  }
   if (!response.ok) throw new Error(`сервер ответил ${response.status}`)
   const data = (await response.json()) as { state?: Payload | null }
   return method === 'GET' ? (data.state ?? null) : null
