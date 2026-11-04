@@ -50,6 +50,8 @@ class WebAudioEngine implements AudioPort {
   private rafId = 0
   private objectUrl: string | null = null
   private fallbackTried: string | null = null
+  private sourceLoading = false
+  private playAfterLoad = false
   private cleanupMs: (() => void) | null = null
   /** Перерегистрирует обработчики Media Session — нужен повторный вызов для WKWebView */
   private wireMediaSession: () => void = () => {}
@@ -116,9 +118,13 @@ class WebAudioEngine implements AudioPort {
 
   /** Скачанный трек играем из кэша (blob), остальные — сетью. */
   private async setSource(track: Track): Promise<void> {
+    this.sourceLoading = true
     const cached = await localSrc(track).catch(() => null)
     // пока читали кэш, трек могли переключить
-    if (this.state.track?.id !== track.id) return
+    if (this.state.track?.id !== track.id) {
+      this.sourceLoading = false
+      return
+    }
 
     if (this.objectUrl !== null) {
       URL.revokeObjectURL(this.objectUrl)
@@ -133,6 +139,13 @@ class WebAudioEngine implements AudioPort {
       this.el.src = track.audio
     }
     this.el.load()
+    this.sourceLoading = false
+
+    // если play() нажали раньше, чем нашёлся источник — запускаем сейчас
+    if (this.playAfterLoad) {
+      this.playAfterLoad = false
+      void this.el.play().catch(() => {})
+    }
   }
 
   /** Резервный источник, если основной не заиграл. */
@@ -153,6 +166,12 @@ class WebAudioEngine implements AudioPort {
 
   play(): void {
     if (!this.state.track) return
+    // источник ещё подбирается (кэш/сеть): запустим сразу после него
+    if (this.sourceLoading) {
+      this.playAfterLoad = true
+      this.patch({ status: 'loading' })
+      return
+    }
     void this.el.play().catch((err: unknown) => {
       const name = err instanceof DOMException ? err.name : ''
       // AbortError — load() прервал предыдущий play(); не ошибка, игнорируем
