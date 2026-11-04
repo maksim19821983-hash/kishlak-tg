@@ -81,7 +81,10 @@ async function call(method: 'GET' | 'POST', body?: Payload): Promise<Payload | n
 
 /** Один цикл: забрать, слить, отправить. Возвращает короткий отчёт. */
 export async function syncRemote(): Promise<string> {
-  if (!remoteAvailable()) return 'сервер не настроен'
+  if (!remoteAvailable()) {
+    markSync(false, 'нет Telegram')
+    return 'синхронизация доступна только в Телеграме'
+  }
 
   const remote = await call('GET')
   if (remote !== null) merge(remote)
@@ -91,6 +94,7 @@ export async function syncRemote(): Promise<string> {
 
   const count = Object.keys(merged.facts).length
   const fav = merged.fav.tracks.length
+  markSync(true)
   return `сервер: избранное ${fav}, треков ${count}`
 }
 
@@ -107,4 +111,20 @@ export async function debugRemote(): Promise<string> {
   } catch (e) {
     return `ошибка запроса: ${String(e)}`
   }
+}
+
+
+type SyncStatus = { at: number; ok: boolean; error: string }
+
+const status: SyncStatus = { at: 0, ok: false, error: '' }
+
+export function getSyncStatus(): SyncStatus & { available: boolean } {
+  return { ...status, available: remoteAvailable() }
+}
+
+/** Помечает результат синхронизации для профиля. */
+export function markSync(ok: boolean, error = ''): void {
+  status.at = Date.now()
+  status.ok = ok
+  status.error = error
 }

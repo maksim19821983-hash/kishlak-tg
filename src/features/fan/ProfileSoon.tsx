@@ -2,6 +2,7 @@ import { NowPlayingBar } from '@/ui/NowPlayingBar'
 import { IconTheme } from '@/ui/icons'
 import { toggleTheme } from '@/features/polarity/usePolarity'
 import { haptic } from '@/app/telegram'
+import { getSyncStatus } from '@/app/remoteSync'
 
 type Props = { onOpenPlayer: () => void }
 
@@ -27,7 +28,15 @@ export function ProfileSoon({ onOpenPlayer }: Props) {
 
       <div className="px-screen" style={{ marginTop: 8, marginBottom: 16 }}>
         <p className="font-mono text-dim" style={{ fontSize: 10, lineHeight: 1.6 }}>
-          избранное и прослушивания синхронизируются между устройствами автоматически
+          {(() => {
+            const s = getSyncStatus()
+            if (!s.available) return 'синхронизация работает только внутри приложения Телеграма'
+            if (s.at === 0) return 'синхронизация: ожидание первого обмена'
+            const time = new Date(s.at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+            return s.ok
+              ? `синхронизация: всё отправлено в ${time}`
+              : `синхронизация: ошибка (${s.error}) в ${time}`
+          })()}
         </p>
       </div>
 
