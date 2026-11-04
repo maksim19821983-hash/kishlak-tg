@@ -11,7 +11,6 @@ import { haptic } from '@/app/telegram'
 import { parseLrc, getActiveLineIndex } from '@/features/lyrics/parseLrc'
 import type { Lyrics } from '@/features/lyrics/parseLrc'
 import { InsertScreen } from '@/features/lyrics/InsertScreen'
-import { shareTrack } from '@/features/telegram/share'
 import { getWebEngine } from '@/audio/webEngine'
 import { IconPrev, IconNext, IconPlay, IconPause, IconTheme, IconHeart, IconVolume, IconVolumeOff } from '@/ui/icons'
 import { getState } from '@/features/fan/state'
@@ -456,17 +455,6 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
           <span className="font-mono text-mono-num tabular-nums text-dim">{fmt(currentTime)}</span>
           <span className="font-mono text-mono-num tabular-nums text-dim">{fmtRemaining(currentTime, duration)}</span>
         </div>
-      </div>
-
-      <div className="px-screen pb-1 shrink-0">
-        <button
-          onClick={() => { if (track) shareTrack(track.id) }}
-          disabled={!track}
-          className="w-full font-mono text-mono-label uppercase border border-line rounded-pill text-ink disabled:opacity-40"
-          style={{ height: 34 }}
-        >
-          ПОДЕЛИТЬСЯ
-        </button>
       </div>
 
       {/* транспорт: шаффл · назад · play · вперёд · повтор · любимое (+громкость на десктопе) */}
