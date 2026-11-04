@@ -145,3 +145,25 @@ export function IconCheck({ size = 16, color = 'currentColor' }: { size?: number
     </svg>
   )
 }
+
+export function IconVolumeOff({ size = 22, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ display: 'block' }}>
+      <path d="M4 9.5h3l4-3.5v12l-4-3.5H4z" />
+      <path d="M15.5 9.5a4 4 0 0 1 0 5" />
+      <path d="M18 7a7.5 7.5 0 0 1 0 10" />
+      <path d="M3 21 21 3" />
+    </svg>
+  )
+}
+
+export function IconVolume({ size = 22, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ display: 'block' }}>
+      <path d="M4 9.5h3l4-3.5v12l-4-3.5H4z" />
+      <path d="M15.5 9.5a4 4 0 0 1 0 5" />
+      <path d="M18 7a7.5 7.5 0 0 1 0 10" />
+    </svg>
+  )
+}
+

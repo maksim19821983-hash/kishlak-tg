@@ -15,7 +15,7 @@ import { InsertScreen } from '@/features/lyrics/InsertScreen'
 import { shareTrack } from '@/features/telegram/share'
 import { SupportSheet } from '@/features/telegram/SupportSheet'
 import { getWebEngine } from '@/audio/webEngine'
-import { IconPrev, IconNext, IconPlay, IconPause, IconStar, IconTheme } from '@/ui/icons'
+import { IconPrev, IconNext, IconPlay, IconPause, IconStar, IconTheme, IconHeart, IconVolume, IconVolumeOff } from '@/ui/icons'
 import { getState } from '@/features/fan/state'
 import { isListened } from '@/features/fan/derive'
 import { toggleTheme, useCurrentPolarity } from '@/features/polarity/usePolarity'
@@ -76,6 +76,9 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
   const polarity = useCurrentPolarity()
   const [flatTracks, setFlatTracks] = useState<FlatTrack[]>([])
   const [menuTrackId, setMenuTrackId] = useState<string | null>(null)
+  const volume = useAudioStore((s) => s.volume)
+  const setVolume = useAudioStore((s) => s.setVolume)
+  const lastVolume = useRef(0.8)
   // кроссфейд строки в превью: сначала гасим старую, потом ставим новую
   const [shownLyric, setShownLyric] = useState('')
   const [lyricFading, setLyricFading] = useState(false)
@@ -424,16 +427,31 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         </div>
       </div>
 
-      {/* транспорт */}
+      {/* транспорт: громкость · шаффл · назад · play · вперёд · повтор · любимое */}
       <div className="px-screen py-2 flex items-center justify-between shrink-0">
-        <button onClick={() => { prevFn(); haptic('light') }} className="w-11 h-11 flex items-center justify-center text-ink" aria-label="Предыдущий трек">
-          <IconPrev />
+        <button
+          onClick={() => {
+            const current = useAudioStore.getState().volume
+            if (current > 0) {
+              lastVolume.current = current
+              setVolume(0)
+            } else {
+              setVolume(lastVolume.current > 0 ? lastVolume.current : 1)
+            }
+            haptic('light')
+          }}
+          className="flex items-center justify-center"
+          style={{ width: 40, height: 44, color: volume === 0 ? 'var(--accent-text)' : 'var(--dim)' }}
+          aria-label={volume === 0 ? 'Включить звук' : 'Выключить звук'}
+          aria-pressed={volume === 0}
+        >
+          {volume === 0 ? <IconVolumeOff size={21} /> : <IconVolume size={21} />}
         </button>
 
         <button
           onClick={() => { setShuffle(!shuffle); haptic('light') }}
           className="relative flex items-center justify-center"
-          style={{ width: 44, height: 44, color: shuffle ? 'var(--accent-text)' : 'var(--dim)' }}
+          style={{ width: 40, height: 44, color: shuffle ? 'var(--accent-text)' : 'var(--dim)' }}
           aria-label={shuffle ? 'Выключить перемешивание' : 'Перемешать'}
           aria-pressed={shuffle}
         >
@@ -444,13 +462,32 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         </button>
 
         <button
+          onClick={() => { prevFn(); haptic('light') }}
+          className="flex items-center justify-center"
+          style={{ width: 40, height: 44, color: 'var(--ink)' }}
+          aria-label="Предыдущий трек"
+        >
+          <IconPrev size={22} />
+        </button>
+
+        <button
           onClick={handleTap}
           className="rounded-full flex items-center justify-center text-bg press"
-          style={{ width: 52, height: 52, background: 'var(--ink)' }}
+          style={{ width: 56, height: 56, background: 'var(--ink)' }}
           aria-label={playing ? 'Пауза' : 'Воспроизвести'}
         >
           {playing ? <IconPause /> : <IconPlay />}
         </button>
+
+        <button
+          onClick={() => { nextFn('user'); haptic('light') }}
+          className="flex items-center justify-center"
+          style={{ width: 40, height: 44, color: 'var(--ink)' }}
+          aria-label="Следующий трек"
+        >
+          <IconNext size={22} />
+        </button>
+
         <button
           onClick={() => {
             const order: Array<typeof repeat> = ['off', 'all', 'one']
@@ -459,7 +496,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
             haptic('light')
           }}
           className="relative flex items-center justify-center"
-          style={{ width: 44, height: 44, color: repeat !== 'off' ? 'var(--accent-text)' : 'var(--dim)' }}
+          style={{ width: 40, height: 44, color: repeat !== 'off' ? 'var(--accent-text)' : 'var(--dim)' }}
           aria-label={`Повтор: ${repeat}`}
         >
           <IconRepeat size={20} />
@@ -467,12 +504,29 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
             <span className="absolute rounded-full" style={{ bottom: 2, width: 4, height: 4, background: 'var(--accent)' }} />
           )}
           {repeat === 'one' && (
-            <span className="absolute font-mono" style={{ top: 4, right: 6, fontSize: 8, color: 'var(--accent-text)' }}>1</span>
+            <span className="absolute font-mono" style={{ top: 4, right: 4, fontSize: 8, color: 'var(--accent-text)' }}>1</span>
           )}
         </button>
 
-        <button onClick={() => { nextFn('user'); haptic('light') }} className="w-11 h-11 flex items-center justify-center text-ink" aria-label="Следующий трек">
-          <IconNext />
+        <button
+          onClick={() => {
+            if (track) {
+              toggleFavorite(track.id)
+              haptic('light')
+            }
+          }}
+          disabled={!track}
+          className="flex items-center justify-center"
+          style={{
+            width: 40,
+            height: 44,
+            color: track && favoriteTracks.includes(track.id) ? 'var(--like)' : 'var(--dim)',
+            opacity: track ? 1 : 0.4,
+          }}
+          aria-label={track && favoriteTracks.includes(track.id) ? 'Убрать из любимого' : 'В любимое'}
+          aria-pressed={track !== null && favoriteTracks.includes(track.id)}
+        >
+          <IconHeart size={21} filled={track !== null && favoriteTracks.includes(track.id)} />
         </button>
       </div>
 
