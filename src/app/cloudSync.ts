@@ -14,8 +14,14 @@ type Cloud = {
   setItem: (key: string, value: string, cb?: (err: string | null) => void) => void
 }
 
-const FAV_KEY = 'fav.v1'
-const FAN_PREFIX = 'fan.'
+// CloudStorage разрешает только латиницу, цифры, дефис и подчёркивание: точки запрещены
+const FAV_KEY = 'fav_v1'
+const FAN_PREFIX = 'fan_'
+const MAX_KEY = 128
+
+function safeKey(releaseId: string): string {
+  return `${FAN_PREFIX}${releaseId.replace(/[^a-zA-Z0-9_-]/g, '_')}`.slice(0, MAX_KEY)
+}
 
 function cloud(): Cloud | null {
   try {
@@ -145,7 +151,7 @@ export async function pullAndMerge(releaseIds: string[]): Promise<void> {
 
   // прослушивания по релизам
   const remoteTracks: Record<string, TrackFact> = {}
-  const values = await Promise.all(releaseIds.map((id) => read(c, `${FAN_PREFIX}${id}`)))
+  const values = await Promise.all(releaseIds.map((id) => read(c, safeKey(id))))
   values.forEach((raw) => {
     if (!raw) return
     try {
@@ -171,7 +177,7 @@ export async function pushAll(): Promise<void> {
   await write(c, FAV_KEY, JSON.stringify({ tracks: fav.tracks, releases: fav.releases }))
 
   const groups = splitByRelease(getState())
-  await Promise.all(Object.entries(groups).map(([release, value]) => write(c, `${FAN_PREFIX}${release}`, value)))
+  await Promise.all(Object.entries(groups).map(([release, value]) => write(c, safeKey(release), value)))
   diag.keys = Object.keys(groups).length + 1
   diag.lastPush = `отправлено: избранное ${fav.tracks.length}, релизов ${groups ? Object.keys(groups).length : 0}`
 }
