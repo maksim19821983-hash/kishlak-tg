@@ -168,7 +168,7 @@ export function Onboarding({ onDone, onStart }: { onDone: () => void; onStart: (
       <div
         aria-hidden
         className="flex-1 min-h-0"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.18, pointerEvents: 'none' }}
+        style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', opacity: 0.2, pointerEvents: 'none', paddingBottom: 34 }}
       >
         <Logo1111 height={168} />
       </div>

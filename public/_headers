@@ -1,0 +1,17 @@
+# Документ приложения никогда не кэшируем: иначе Телеграм показывает старую версию.
+# Файлы с хешем в имени, наоборот, кэшируем навсегда.
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/content/covers/*
+  Cache-Control: public, max-age=604800
+
+/content/audio/*
+  Cache-Control: public, max-age=604800
