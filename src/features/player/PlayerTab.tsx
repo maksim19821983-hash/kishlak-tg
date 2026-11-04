@@ -3,7 +3,7 @@ import { useAudioStore } from '@/audio/store'
 import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Release, Track } from '@/data/types'
 import { Cassette } from './Cassette'
-import { VolumeControl } from './VolumeControl'
+import { VolumeHover } from './VolumeHover'
 import { IconShuffle, IconRepeat, IconMore } from '@/ui/icons'
 import { HeartButton } from '@/ui/HeartButton'
 import { TrackMenu } from '@/ui/TrackMenu'
@@ -15,7 +15,7 @@ import { InsertScreen } from '@/features/lyrics/InsertScreen'
 import { shareTrack } from '@/features/telegram/share'
 import { SupportSheet } from '@/features/telegram/SupportSheet'
 import { getWebEngine } from '@/audio/webEngine'
-import { IconPrev, IconNext, IconPlay, IconPause, IconStar, IconTheme, IconHeart, IconVolume, IconVolumeOff } from '@/ui/icons'
+import { IconPrev, IconNext, IconPlay, IconPause, IconStar, IconTheme, IconHeart } from '@/ui/icons'
 import { getState } from '@/features/fan/state'
 import { isListened } from '@/features/fan/derive'
 import { toggleTheme, useCurrentPolarity } from '@/features/polarity/usePolarity'
@@ -76,9 +76,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
   const polarity = useCurrentPolarity()
   const [flatTracks, setFlatTracks] = useState<FlatTrack[]>([])
   const [menuTrackId, setMenuTrackId] = useState<string | null>(null)
-  const volume = useAudioStore((s) => s.volume)
-  const setVolume = useAudioStore((s) => s.setVolume)
-  const lastVolume = useRef(0.8)
+  const [hoverCapable] = useState(() => window.matchMedia('(hover: hover) and (pointer: fine)').matches)
   // кроссфейд строки в превью: сначала гасим старую, потом ставим новую
   const [shownLyric, setShownLyric] = useState('')
   const [lyricFading, setLyricFading] = useState(false)
@@ -298,8 +296,6 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         />
       </div>
 
-      <VolumeControl />
-
       {/* превью текста */}
       {hasLyrics && (
         <div className="px-screen mt-2 shrink-0">
@@ -427,26 +423,9 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         </div>
       </div>
 
-      {/* транспорт: громкость · шаффл · назад · play · вперёд · повтор · любимое */}
+      {/* транспорт: шаффл · назад · play · вперёд · повтор · любимое (+громкость на десктопе) */}
       <div className="px-screen py-2 flex items-center justify-between shrink-0">
-        <button
-          onClick={() => {
-            const current = useAudioStore.getState().volume
-            if (current > 0) {
-              lastVolume.current = current
-              setVolume(0)
-            } else {
-              setVolume(lastVolume.current > 0 ? lastVolume.current : 1)
-            }
-            haptic('light')
-          }}
-          className="flex items-center justify-center"
-          style={{ width: 40, height: 44, color: volume === 0 ? 'var(--accent-text)' : 'var(--dim)' }}
-          aria-label={volume === 0 ? 'Включить звук' : 'Выключить звук'}
-          aria-pressed={volume === 0}
-        >
-          {volume === 0 ? <IconVolumeOff size={21} /> : <IconVolume size={21} />}
-        </button>
+        {hoverCapable && <VolumeHover />}
 
         <button
           onClick={() => { setShuffle(!shuffle); haptic('light') }}
@@ -464,16 +443,16 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         <button
           onClick={() => { prevFn(); haptic('light') }}
           className="flex items-center justify-center"
-          style={{ width: 40, height: 44, color: 'var(--ink)' }}
+          style={{ width: 56, height: 56, color: 'var(--ink)' }}
           aria-label="Предыдущий трек"
         >
-          <IconPrev size={22} />
+          <IconPrev size={30} />
         </button>
 
         <button
           onClick={handleTap}
           className="rounded-full flex items-center justify-center text-bg press"
-          style={{ width: 56, height: 56, background: 'var(--ink)' }}
+          style={{ width: 56, height: 56, background: 'var(--ink)', marginInline: 10 }}
           aria-label={playing ? 'Пауза' : 'Воспроизвести'}
         >
           {playing ? <IconPause /> : <IconPlay />}
@@ -482,10 +461,10 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         <button
           onClick={() => { nextFn('user'); haptic('light') }}
           className="flex items-center justify-center"
-          style={{ width: 40, height: 44, color: 'var(--ink)' }}
+          style={{ width: 56, height: 56, color: 'var(--ink)' }}
           aria-label="Следующий трек"
         >
-          <IconNext size={22} />
+          <IconNext size={30} />
         </button>
 
         <button
@@ -510,20 +489,19 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
 
         <button
           onClick={() => {
-            if (track) {
-              toggleFavorite(track.id)
-              haptic('light')
-            }
+            if (!track) return
+            toggleFavorite(track.id)
+            haptic('light')
           }}
           disabled={!track}
           className="flex items-center justify-center"
           style={{
             width: 40,
             height: 44,
-            color: track && favoriteTracks.includes(track.id) ? 'var(--like)' : 'var(--dim)',
-            opacity: track ? 1 : 0.4,
+            color: track !== null && favoriteTracks.includes(track.id) ? 'var(--like)' : 'var(--dim)',
+            opacity: track !== null ? 1 : 0.4,
           }}
-          aria-label={track && favoriteTracks.includes(track.id) ? 'Убрать из любимого' : 'В любимое'}
+          aria-label={track !== null && favoriteTracks.includes(track.id) ? 'Убрать из любимого' : 'В любимое'}
           aria-pressed={track !== null && favoriteTracks.includes(track.id)}
         >
           <IconHeart size={21} filled={track !== null && favoriteTracks.includes(track.id)} />
