@@ -1,9 +1,9 @@
 /* Офлайн-оболочка: страницу отдаём из кэша сразу, сеть обновляет её в фоне. */
 
-const SHELL_CACHE = 'kishlak-shell-v3'
-const ASSET_CACHE = 'kishlak-assets-v3'
+const SHELL_CACHE = 'kishlak-shell-v4'
+const ASSET_CACHE = 'kishlak-assets-v4'
 const AUDIO_CACHE = 'kishlak-audio-v1'
-const SHELL_FILES = ['/', '/index.html', '/manifest.json', '/icons/icon-192.png']
+const SHELL_FILES = ['/', '/manifest.json', '/icons/icon-192.png']
 
 self.addEventListener('install', (event) => {
   self.skipWaiting()
@@ -48,18 +48,26 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         const cache = await caches.open(SHELL_CACHE)
-        const cached = (await cache.match('/index.html')) ?? (await cache.match('/')) ?? (await cache.match(request))
+        const cached = (await cache.match('/')) ?? (await cache.match(request))
 
         const network = fetch(request)
           .then((response) => {
-            if (response.ok) cache.put('/index.html', response.clone()).catch(() => {})
+            // редиректы не кладём: иначе Safari откажется открывать страницу
+            if (response.ok && !response.redirected) cache.put('/', response.clone()).catch(() => {})
             return response
           })
           .catch(() => null)
 
         if (cached) {
-          // не ждём сеть: страница уже есть
           void network
+          // отдаём чистую 200-копию без флага редиректа
+          if (cached.redirected || cached.status >= 300) {
+            const body = await cached.blob()
+            return new Response(body, {
+              status: 200,
+              headers: { 'content-type': 'text/html; charset=utf-8' },
+            })
+          }
           return cached
         }
 

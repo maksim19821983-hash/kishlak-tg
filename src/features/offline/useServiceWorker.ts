@@ -5,8 +5,8 @@ export type SwStatus = {
   files: number
 }
 
-const ASSET_CACHE = 'kishlak-assets-v2'
-const SHELL_CACHE = 'kishlak-shell-v2'
+const ASSET_CACHE = 'kishlak-assets-v4'
+const SHELL_CACHE = 'kishlak-shell-v4'
 
 /**
  * Готовность офлайн-кэша: не только активность service worker, но и реальное число файлов.
@@ -42,7 +42,7 @@ export function useServiceWorker(): SwStatus {
         const cache = await caches.open(ASSET_CACHE)
         await Promise.all(files.map((file) => cache.add(file).catch(() => {})))
         const shell = await caches.open(SHELL_CACHE)
-        await Promise.all(['/', '/index.html'].map((file) => shell.add(file).catch(() => {})))
+        await Promise.all(['/'].map((file) => shell.add(file).catch(() => {})))
       } catch {
         /* прогреем позже при следующем открытии */
       }
