@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { HapticFeedback } from '@/app/telegram'
+import { Logo1111 } from '@/ui/Logo1111'
 
 const KEY = 'kishlak:onboard:v1'
 
@@ -24,10 +25,10 @@ type Slide = { kicker: string; title: string; lines: string[] }
 const SLIDES: Slide[] = [
   {
     kicker: '01 · архив',
-    title: 'Это архив',
+    title: 'Весь Кишлак',
     lines: [
-      '31 кассета, 116 песен — весь Кишлак в одном месте.',
-      'Каждая кассета — релиз: со своим годом, номером и цветом пластика.',
+      '31 кассета, 116 песен — всё в одном месте.',
+      'Каждая кассета — релиз: свой год, номер и цвет пластика.',
     ],
   },
   {
@@ -35,15 +36,26 @@ const SLIDES: Slide[] = [
     title: 'Один тап',
     lines: [
       'Нажми на кассету — музыка пойдёт.',
-      'Свайп по кассете листает треки, низ — очередь, шаффл и повтор.',
+      'Свайп по кассете листает треки. Ниже — очередь, шаффл и повтор.',
+      'Уголки в шапке разворачивают плеер на весь экран.',
     ],
   },
   {
     kicker: '03 · текст',
     title: 'Текст идёт за песней',
     lines: [
-      'Перед первой строкой появляется счётчик 3 · 2 · 1.',
-      'Свайп вверх по кассете открывает вкладыш с текстом и трек-листом.',
+      'Свайп вверх по кассете открывает вкладыш: текст и трек-лист.',
+      'Строки подсвечиваются сами, тап по строке — переход к моменту.',
+      'Текст пока готов не для всех песен — там стоит пометка «скоро будет текст».',
+    ],
+  },
+  {
+    kicker: '04 · своё',
+    title: 'Сердце и поиск',
+    lines: [
+      'Сердце добавляет песню в «Любимое» — вкладка рядом с плеером.',
+      'В каталоге есть поиск по альбомам и трекам.',
+      'Избранное и прослушивания синхронизируются между устройствами в Телеграме.',
     ],
   },
 ]
@@ -77,14 +89,31 @@ export function Onboarding({ onDone, onStart }: { onDone: () => void; onStart: (
   return (
     <div className="fixed inset-0 z-[55] bg-bg flex flex-col">
       <div className="px-screen" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 28px)' }}>
-        <p className="font-mono uppercase text-dim" style={{ fontSize: 9.5, letterSpacing: '.2em' }}>
-          Кишлак · АПФС
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="font-mono uppercase text-dim" style={{ fontSize: 9.5, letterSpacing: '.2em' }}>
+            Кишлак · АПФС
+          </p>
+          <button
+            onClick={() => finish(false)}
+            className="font-mono uppercase text-dim"
+            style={{ fontSize: 9.5, letterSpacing: '.16em', minHeight: 32, paddingLeft: 8, paddingRight: 8 }}
+          >
+            пропустить
+          </button>
+        </div>
+      </div>
+
+      <div
+        aria-hidden
+        className="flex-1 min-h-0"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.18, pointerEvents: 'none' }}
+      >
+        <Logo1111 height={168} />
       </div>
 
       <div
         ref={trackRef}
-        className="flex-1 min-h-0 flex overflow-x-auto"
+        className="flex min-h-0 overflow-x-auto shrink-0"
         style={{ scrollSnapType: 'x mandatory', scrollbarWidth: 'none' }}
         onScroll={(e) => {
           const el = e.currentTarget
@@ -96,7 +125,7 @@ export function Onboarding({ onDone, onStart }: { onDone: () => void; onStart: (
           <div
             key={slide.title}
             className="shrink-0 px-screen flex flex-col justify-center"
-            style={{ width: '100%', scrollSnapAlign: 'center' }}
+            style={{ width: '100%', scrollSnapAlign: 'center', minHeight: '42vh', paddingBottom: 8 }}
           >
             <p className="font-mono uppercase text-dim" style={{ fontSize: 10, letterSpacing: '.2em' }}>
               {slide.kicker}

@@ -1,0 +1,11 @@
+name = "kishlak-daily"
+main = "worker.mjs"
+compatibility_date = "2024-11-01"
+
+# 07:00 UTC = 10:00 МСК
+[triggers]
+crons = ["0 7 * * *"]
+
+[vars]
+CHANNEL_ID = "-1003977368931"
+APP_URL = "https://kishlak-tg.pages.dev"

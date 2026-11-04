@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Grain } from '@/ui/Grain'
 import { usePolarity } from '@/features/polarity/usePolarity'
 import { useAudioStore } from '@/audio/store'
@@ -23,6 +23,9 @@ import { remoteAvailable, syncRemote, getSyncStatus, markSync, markDirty, hasPen
 import { ErrorOverlay } from './ErrorOverlay'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
+import { GateScreen } from '@/features/gate/GateScreen'
+import { checkGate } from './gate'
+import { haptic, useTelegramStatus } from './telegram'
 
 function firstUnlistenedIndex(release: Release): number {
   const fanState = getState()
@@ -73,6 +76,50 @@ export function App() {
   const [bootProgress, setBootProgress] = useState(0.06)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
+
+  // шлагбаум: без подписки на канал плеер не открывается
+  const tgStatus = useTelegramStatus()
+  const [gateStatus, setGateStatus] = useState<'idle' | 'checking' | 'allowed' | 'blocked' | 'error'>('idle')
+  const gateRef = useRef(gateStatus)
+  useEffect(() => { gateRef.current = gateStatus }, [gateStatus])
+
+  const recheckGate = useCallback(async (): Promise<void> => {
+    setGateStatus('checking')
+    const result = await checkGate()
+    setGateStatus(result)
+    if (result === 'allowed') haptic('success')
+  }, [])
+
+  useEffect(() => {
+    if (tgStatus === 'loading') return
+    if (tgStatus === 'browser') {
+      setGateStatus('allowed')
+      return
+    }
+
+    let cancelled = false
+    void (async () => {
+      setGateStatus('checking')
+      const result = await checkGate()
+      if (!cancelled) setGateStatus(result)
+    })()
+
+    // вернулись из канала — перепроверяем, но только если ещё не пустили
+    const onVisible = (): void => {
+      if (document.visibilityState !== 'visible') return
+      if (gateRef.current !== 'blocked' && gateRef.current !== 'error') return
+      void checkGate().then((result) => {
+        if (cancelled) return
+        setGateStatus(result)
+        if (result === 'allowed') haptic('success')
+      })
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [tgStatus])
 
 
   useEffect(() => {
@@ -353,6 +400,13 @@ export function App() {
           </div>
           <SpikePage />
         </div>
+      )}
+
+      {tgStatus === 'ready' && gateStatus !== 'allowed' && gateStatus !== 'idle' && (
+        <GateScreen
+          status={gateStatus === 'checking' ? 'checking' : gateStatus}
+          onCheck={() => { void recheckGate() }}
+        />
       )}
 
       <BootScreen done={!booting} progress={bootProgress} />

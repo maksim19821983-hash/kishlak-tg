@@ -96,7 +96,7 @@ async function webhook() {
   await call('setWebhook', {
     url,
     secret_token: secret,
-    allowed_updates: ['message'],
+    allowed_updates: ['message', 'callback_query'],
     drop_pending_updates: false,
   })
   const info = await call('getWebhookInfo', {})
