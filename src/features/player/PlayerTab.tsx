@@ -653,7 +653,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
                     onSelect: () => { void removeDownload(menuTrack); haptic('light') },
                   }
                 : {
-                    label: 'Скачать для офлайна',
+                    label: 'Скачать',
                     onSelect: () => {
                       void downloadTrack(menuTrack, menuTrack.releaseId)
                       haptic('medium')
