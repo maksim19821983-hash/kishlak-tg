@@ -298,8 +298,17 @@ function ReleaseDownload({ release }: { release: { id: string; tracks: { id: str
     await removeReleaseDownloads(release as never)
   }
 
+  const inTelegram = (() => {
+    try {
+      return (window.Telegram?.WebApp?.initData ?? '') !== ''
+    } catch {
+      return false
+    }
+  })()
+
   return (
-    <div className="flex items-center justify-between mb-4" style={{ minHeight: 32 }}>
+    <div className="mb-4">
+    <div className="flex items-center justify-between" style={{ minHeight: 32 }}>
       <span className="font-mono uppercase text-dim" style={{ fontSize: 9.5, letterSpacing: '.16em' }}>
         {saved.length === 0
           ? 'не скачано'
@@ -325,6 +334,13 @@ function ReleaseDownload({ release }: { release: { id: string; tracks: { id: str
           {busyCount > 0 ? `качаю ${busyCount}` : saved.length > 0 ? 'скачать остальное' : 'скачать альбом'}
         </button>
       )}
+    </div>
+
+    {inTelegram && saved.length > 0 && (
+      <p className="font-mono text-dim" style={{ fontSize: 9, lineHeight: 1.5, marginTop: 2 }}>
+        скачано для Телеграма · для офлайна качай в приложении с домашнего экрана
+      </p>
+    )}
     </div>
   )
 }
