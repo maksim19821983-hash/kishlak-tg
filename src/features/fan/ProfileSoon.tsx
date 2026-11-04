@@ -26,14 +26,7 @@ export function ProfileSoon({ onOpenPlayer }: Props) {
       <NowPlayingBar onOpen={onOpenPlayer} />
 
       <div className="flex-1 flex flex-col justify-center px-screen pb-16">
-        <p className="font-mono text-mono-label uppercase text-dim mb-3">профиль</p>
         <h1 className="font-display text-h1 uppercase text-ink leading-[0.95]">Скоро</h1>
-        <p
-          className="font-mono text-mono-label uppercase text-dim mt-4"
-          style={{ maxWidth: 260, lineHeight: 1.6 }}
-        >
-          Переделываем: титул, статистика и коллекция переезжают в новый вид
-        </p>
       </div>
     </div>
   )
