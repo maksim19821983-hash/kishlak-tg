@@ -93,8 +93,41 @@ async function call(method: 'GET' | 'POST', body?: Payload): Promise<Payload | n
   return method === 'GET' ? (data.state ?? null) : null
 }
 
-/** Один цикл: забрать, слить, отправить. Возвращает короткий отчёт. */
-export async function syncRemote(): Promise<string> {
+const LAST_PUSH_KEY = 'kishlak:sync:last'
+let dirty = false
+
+/** Помечает, что локальные данные изменились и их надо отправить. */
+export function markDirty(): void {
+  dirty = true
+}
+
+/** Есть ли неотправленные изменения. */
+export function hasPendingChanges(): boolean {
+  return dirty
+}
+
+function lastPushed(): string {
+  try {
+    return localStorage.getItem(LAST_PUSH_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+function rememberPush(signature: string): void {
+  try {
+    localStorage.setItem(LAST_PUSH_KEY, signature)
+  } catch {
+    /* ничего */
+  }
+  dirty = false
+}
+
+/**
+ * Синхронизация с экономией квоты KV: читаем часто, пишем только при изменениях.
+ * У Cloudflare на бесплатном тарифе 1000 записей в сутки.
+ */
+export async function syncRemote(options: { push?: boolean } = {}): Promise<string> {
   if (!remoteAvailable()) {
     markSync(false, 'нет Telegram')
     return 'синхронизация доступна только в Телеграме'
@@ -104,12 +137,20 @@ export async function syncRemote(): Promise<string> {
   if (remote !== null) merge(remote)
 
   const merged = pack()
-  await call('POST', merged)
+  const signature = JSON.stringify(merged)
+  const needPush = options.push !== false && (dirty || signature !== lastPushed())
+
+  if (needPush) {
+    await call('POST', merged)
+    rememberPush(signature)
+  }
 
   const count = Object.keys(merged.facts).length
   const fav = merged.fav.tracks.length
-  markSync(true)
-  return `сервер: избранное ${fav}, треков ${count}`
+  markSync(true, needPush ? '' : 'без изменений')
+  return needPush
+    ? `сервер: отправлено — избранное ${fav}, треков ${count}`
+    : `сервер: без изменений (избранное ${fav}, треков ${count})`
 }
 
 

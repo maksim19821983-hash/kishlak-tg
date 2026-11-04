@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Grain } from '@/ui/Grain'
 import { usePolarity } from '@/features/polarity/usePolarity'
 import { useAudioStore } from '@/audio/store'
+import { useFavorites } from '@/features/favorites/store'
 import { mixHex } from '@/features/polarity/accent'
 import { PlayerTab } from '@/features/player/PlayerTab'
 import { CatalogScreen } from '@/features/catalog/CatalogScreen'
@@ -18,7 +19,7 @@ import { CatalogRepo } from '@/data/CatalogRepo'
 import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
-import { remoteAvailable, syncRemote, getSyncStatus, markSync } from './remoteSync'
+import { remoteAvailable, syncRemote, getSyncStatus, markSync, markDirty, hasPendingChanges } from './remoteSync'
 import { ErrorOverlay } from './ErrorOverlay'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
@@ -74,7 +75,11 @@ export function App() {
 
   useEffect(() => {
     const cleanup = initTrackListener()
-    return cleanup
+    const unsubscribeFavorites = useFavorites.subscribe(() => markDirty())
+    return () => {
+      cleanup()
+      unsubscribeFavorites()
+    }
   }, [])
 
   // синхронизация через свой сервер: при старте, при возврате в приложение и раз в 90 секунд
@@ -114,27 +119,44 @@ export function App() {
       await syncOnce()
     })()
 
-    // прогресс сохранился локально → через пару секунд отправляем на сервер
-    onPersist(() => {
-      window.setTimeout(() => { if (!cancelled && ready) void syncOnce() }, 2000)
-    })
+    // прогресс изменился — пометили и отправим одним пакетом позже
+    onPersist(() => markDirty())
 
-    const onVisible = (): void => { if (ready) void syncOnce() }
+    // открыл приложение — только читаем, писать будем если есть изменения
+    const onVisible = (): void => {
+      if (!ready) return
+      void syncRemote({ push: false }).catch(() => {})
+    }
     document.addEventListener('visibilitychange', onVisible)
 
-    // пока не прошёл первый обмен — пробуем чаще
-    const retry = setInterval(() => {
-      if (!ready) return
-      if (getSyncStatus().at === 0 && remoteAvailable()) void syncOnce()
-    }, 15_000)
+    // отправка: раз в 30 секунд, и только если действительно что-то изменилось
+    const pushTimer = setInterval(() => {
+      if (!ready || !remoteAvailable()) return
+      if (!hasPendingChanges()) return
+      void syncOnce()
+    }, 30_000)
 
-    const timer = setInterval(() => { if (ready) void syncOnce() }, 90_000)
+    // чтение изменений с других устройств: раз в 3 минуты
+    const pullTimer = setInterval(() => {
+      if (!ready || !remoteAvailable()) return
+      void syncRemote({ push: false }).catch(() => {})
+    }, 180_000)
+
+    // пока не прошёл первый обмен — пробуем, но не чаще раза в минуту
+    let attempts = 0
+    const retry = setInterval(() => {
+      if (!ready || !remoteAvailable()) return
+      if (getSyncStatus().at !== 0 || attempts >= 10) return
+      attempts += 1
+      void syncOnce()
+    }, 60_000)
 
     return () => {
       cancelled = true
       document.removeEventListener('visibilitychange', onVisible)
       clearInterval(retry)
-      clearInterval(timer)
+      clearInterval(pullTimer)
+      clearInterval(pushTimer)
     }
   }, [])
 
