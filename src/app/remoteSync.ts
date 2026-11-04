@@ -85,7 +85,10 @@ async function call(method: 'GET' | 'POST', body?: Payload): Promise<Payload | n
     const reason = e instanceof Error ? e.message : String(e)
     throw new Error(`нет связи с ${REMOTE_URL.replace('https://', '')} (${reason})`)
   }
-  if (!response.ok) throw new Error(`сервер ответил ${response.status}`)
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '')
+    throw new Error(`${REMOTE_URL} ответил ${response.status}${detail === '' ? '' : `: ${detail.slice(0, 80)}`}`)
+  }
   const data = (await response.json()) as { state?: Payload | null }
   return method === 'GET' ? (data.state ?? null) : null
 }

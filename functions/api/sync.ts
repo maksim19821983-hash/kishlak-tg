@@ -56,6 +56,14 @@ async function verifyInitData(initData: string, botToken: string): Promise<numbe
 }
 
 export const onRequest = async (context: { request: Request; env: Env }): Promise<Response> => {
+  try {
+    return await handle(context)
+  } catch (e) {
+    return json({ error: e instanceof Error ? e.message : String(e) }, 500)
+  }
+}
+
+const handle = async (context: { request: Request; env: Env }): Promise<Response> => {
   const { request, env } = context
   if (request.method === 'OPTIONS') return new Response(null, { headers: CORS })
 
