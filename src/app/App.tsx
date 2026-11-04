@@ -97,8 +97,11 @@ export function App() {
 
     const sync = (): void => {
       if (cancelled || !ready) return
-      if (remoteAvailable()) void syncRemote()
-      else void syncCompact()
+      if (remoteAvailable()) {
+        void syncRemote().catch(() => { void syncCompact() })
+      } else {
+        void syncCompact()
+      }
     }
 
     const onVisible = (): void => {
