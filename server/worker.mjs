@@ -80,6 +80,7 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS })
 
     const initData = request.headers.get('x-init-data') ?? ''
+    const url = new URL(request.url)
 
     // диагностика подписи: видно, какой длины токен в секрете и совпадают ли хеши
     if (url.pathname === '/debug') {
@@ -91,7 +92,6 @@ export default {
     if (userId === null) return json({ error: 'bad signature' }, 401)
 
     const key = `state:${userId}`
-    const url = new URL(request.url)
 
     if (request.method === 'GET') {
       const raw = await env.STATE.get(key)
