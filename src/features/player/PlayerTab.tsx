@@ -12,7 +12,7 @@ import { parseLrc, getActiveLineIndex } from '@/features/lyrics/parseLrc'
 import type { Lyrics } from '@/features/lyrics/parseLrc'
 import { InsertScreen } from '@/features/lyrics/InsertScreen'
 import { getWebEngine } from '@/audio/webEngine'
-import { IconPrev, IconNext, IconPlay, IconPause, IconTheme, IconHeart, IconVolume, IconVolumeOff } from '@/ui/icons'
+import { IconPrev, IconNext, IconPlay, IconPause, IconTheme, IconHeart, IconVolume, IconVolumeOff, IconExpand, IconCollapse } from '@/ui/icons'
 import { getState } from '@/features/fan/state'
 import { isListened } from '@/features/fan/derive'
 import { toggleTheme, useCurrentPolarity } from '@/features/polarity/usePolarity'
@@ -110,6 +110,13 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
   const [flatTracks, setFlatTracks] = useState<FlatTrack[]>([])
   const [menuTrackId, setMenuTrackId] = useState<string | null>(null)
   const [hoverCapable] = useState(() => window.matchMedia('(hover: hover) and (pointer: fine)').matches)
+  const [listOpen, setListOpen] = useState(() => {
+    try {
+      return localStorage.getItem('kishlak:player:list') !== '0'
+    } catch {
+      return true
+    }
+  })
   // кроссфейд строки в превью: сначала гасим старую, потом ставим новую
   const [shownLyric, setShownLyric] = useState('')
   const [lyricFading, setLyricFading] = useState(false)
@@ -302,6 +309,19 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
             {track && totalCount > 0 ? `${String(globalIndex + 1).padStart(2, '0')} / ${String(totalCount).padStart(2, '0')}` : '—'}
           </span>
           <button
+            onClick={() => {
+              const next = !listOpen
+              setListOpen(next)
+              try { localStorage.setItem('kishlak:player:list', next ? '1' : '0') } catch {}
+              haptic('light')
+            }}
+            className="flex items-center justify-center text-dim"
+            style={{ width: 40, height: 44 }}
+            aria-label={listOpen ? 'Развернуть плеер на весь экран' : 'Показать список треков'}
+          >
+            {listOpen ? <IconExpand size={18} /> : <IconCollapse size={18} />}
+          </button>
+          <button
             onClick={() => { toggleTheme(); haptic('light') }}
             className="flex items-center justify-center text-dim"
             style={{ width: 44, height: 44 }}
@@ -312,9 +332,19 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         </div>
       </div>
 
+      <div
+        className="flex flex-col min-h-0"
+        style={{
+          flex: listOpen ? '0 0 auto' : '1 1 auto',
+          justifyContent: listOpen ? 'flex-start' : 'space-between',
+          paddingTop: listOpen ? 0 : 16,
+          paddingBottom: listOpen ? 0 : 'calc(env(safe-area-inset-bottom) + 16px)',
+        }}
+      >
       {/* кассета */}
       <div
         className="px-screen shrink-0 mt-2"
+        style={listOpen ? undefined : { transform: 'scale(1.06)', transformOrigin: 'center' }}
         onTouchStart={handleCassetteTouchStart}
         onTouchEnd={handleCassetteTouchEnd}
       >
@@ -329,6 +359,23 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
           polarity={polarity}
         />
       </div>
+
+      {!listOpen && (
+        <div
+          className="px-screen"
+          style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 0 }}
+        >
+          <p
+            className="font-display uppercase text-ink"
+            style={{ fontSize: 30, lineHeight: 1.05, letterSpacing: '-.02em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          >
+            {track?.title ?? '—'}
+          </p>
+          <p className="font-mono text-mono-label uppercase text-dim" style={{ marginTop: 8 }}>
+            {release?.title ?? ''}{release?.year !== undefined ? ` · ${release.year}` : ''}
+          </p>
+        </div>
+      )}
 
       {/* превью текста */}
       {hasLyrics && (
@@ -541,6 +588,9 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
       </div>
 
       {/* список треков */}
+      </div>
+
+      {listOpen && (
       <div
         className="flex-1 overflow-y-auto overscroll-contain"
         style={{
@@ -610,6 +660,8 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         {/* отступ под TabBar */}
         <div style={{ height: 8 }} />
       </div>
+      )}
+
 
       {errorText !== null && errorText !== '' && (
         <div className="px-screen" style={{ marginTop: 6 }}>

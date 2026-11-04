@@ -281,7 +281,7 @@ export function App() {
               backgroundImage: `url(${cover})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center top',
-              filter: 'blur(5px) saturate(1.22)',
+              filter: 'blur(2px) saturate(1.18)',
               transform: 'scale(1.25)',
               opacity: polarity === 'paper' ? (coverIsLight ? 0.95 : 0.82) : 0.68,
               transition: 'opacity 600ms ease',

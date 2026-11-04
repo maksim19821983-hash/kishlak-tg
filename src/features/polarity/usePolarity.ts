@@ -21,12 +21,12 @@ function applyToDOM(mode: 'paper' | 'dark', accent: string, aText: string): void
 
   // фон и поверхность подкрашиваем цветом обложки: общий тон меняется вместе с альбомом
   const base = mode === 'paper' ? PAPER_BG_HEX : DARK_BG_HEX
-  el.style.setProperty('--bg', mixHex(accent, base, mode === 'paper' ? 0.11 : 0.16))
+  el.style.setProperty('--bg', mixHex(accent, base, mode === 'paper' ? 0.08 : 0.14))
   el.style.setProperty(
     '--surface',
-    mixHex(accent, mode === 'paper' ? '#E4DDD0' : '#17171A', mode === 'paper' ? 0.14 : 0.2),
+    mixHex(accent, mode === 'paper' ? '#E4DDD0' : '#17171A', mode === 'paper' ? 0.1 : 0.18),
   )
-  el.style.setProperty('--cassette-tint', mixHex(accent, mode === 'paper' ? '#1E1C1A' : '#E4DED2', mode === 'paper' ? 0.3 : 0.22))
+  el.style.setProperty('--cassette-tint', mixHex(accent, mode === 'paper' ? '#1E1C1A' : '#E4DED2', mode === 'paper' ? 0.26 : 0.2))
 }
 
 export function toggleTheme(): void {

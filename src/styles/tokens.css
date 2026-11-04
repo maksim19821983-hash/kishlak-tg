@@ -5,8 +5,8 @@
   --paper-bg: #ede7dc;
   --paper-surface: #e4ddd0;
   --paper-ink: #131211;
-  --paper-dim: rgba(19, 18, 17, 0.55);
-  --paper-line: rgba(19, 18, 17, 0.18);
+  --paper-dim: rgba(19, 18, 17, 0.68);
+  --paper-line: rgba(19, 18, 17, 0.24);
 
   /* п. 2 — чернота */
   --dark-bg: #0b0b0c;
