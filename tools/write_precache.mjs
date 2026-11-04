@@ -1,9 +1,10 @@
 /**
- * После сборки пишет dist/precache.json — список файлов оболочки,
- * которые service worker положит в кэш при установке. Аудио не входит.
+ * После сборки пишет dist/precache.json:
+ *   { build, files: [...] } — какие файлы оболочки класть в кэш.
+ * build служит версией кэша: пока файлы не сохранены целиком, новая версия не активна.
  */
 
-import { readdirSync, statSync, writeFileSync } from 'node:fs'
+import { readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const DIST = 'dist'
@@ -14,7 +15,6 @@ function walk(dir, base = '') {
     const full = join(dir, entry.name)
     const rel = `${base}/${entry.name}`
     if (entry.isDirectory()) {
-      // контент не предзагружаем: аудио сотни мегабайт, обложки грузятся по ходу
       if (rel.startsWith('/content')) continue
       if (rel.startsWith('/dev')) continue
       walk(full, rel)
@@ -26,5 +26,7 @@ function walk(dir, base = '') {
 }
 
 walk(DIST)
-writeFileSync(join(DIST, 'precache.json'), JSON.stringify(list, null, 2))
-console.log(`precache: ${list.length} файлов`)
+
+const build = `${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '')}`
+writeFileSync(join(DIST, 'precache.json'), JSON.stringify({ build, files: list }, null, 2))
+console.log(`precache: ${list.length} файлов, сборка ${build}`)

@@ -5,8 +5,8 @@ export type SwStatus = {
   files: number
 }
 
-const ASSET_CACHE = 'kishlak-assets-v5'
-const SHELL_CACHE = 'kishlak-shell-v5'
+const META_CACHE = 'kishlak-meta-v1'
+const ACTIVE_KEY = '/__active'
 
 /**
  * Готовность офлайн-кэша: не только активность service worker, но и реальное число файлов.
@@ -21,14 +21,13 @@ export function useServiceWorker(): SwStatus {
 
     const countFiles = async (): Promise<number> => {
       try {
-        const names = await caches.keys()
-        let total = 0
-        for (const name of names) {
-          if (name !== ASSET_CACHE && name !== SHELL_CACHE) continue
-          const cache = await caches.open(name)
-          total += (await cache.keys()).length
-        }
-        return total
+        const meta = await caches.open(META_CACHE)
+        const active = await meta.match(ACTIVE_KEY)
+        if (!active) return 0
+        const build = (await active.text()).trim()
+        const assets = await caches.open(`kishlak-assets-${build}`)
+        const shell = await caches.open(`kishlak-shell-${build}`)
+        return (await assets.keys()).length + (await shell.keys()).length
       } catch {
         return 0
       }
@@ -38,13 +37,21 @@ export function useServiceWorker(): SwStatus {
       try {
         const response = await fetch('/precache.json', { cache: 'no-store' })
         if (!response.ok) return
-        const files = (await response.json()) as string[]
-        const cache = await caches.open(ASSET_CACHE)
-        await Promise.all(files.map((file) => cache.add(file).catch(() => {})))
-        const shell = await caches.open(SHELL_CACHE)
+        const { build, files } = (await response.json()) as { build: string; files: string[] }
+        if (!build || !Array.isArray(files)) return
+
+        const assets = await caches.open(`kishlak-assets-${build}`)
+        await Promise.all(files.map((file) => assets.add(file).catch(() => {})))
+
+        const shell = await caches.open(`kishlak-shell-${build}`)
         await Promise.all(['/'].map((file) => shell.add(file).catch(() => {})))
+
+        if ((await assets.keys()).length >= Math.ceil(files.length / 2)) {
+          const meta = await caches.open(META_CACHE)
+          await meta.put(ACTIVE_KEY, new Response(build))
+        }
       } catch {
-        /* прогреем позже при следующем открытии */
+        /* прогреем при следующем открытии */
       }
     }
 
