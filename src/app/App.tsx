@@ -19,6 +19,7 @@ import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
 import { remoteAvailable, syncRemote } from './remoteSync'
+import { autofillDownloads } from '@/features/offline/downloadSync'
 import { InstallHint } from '@/features/offline/InstallHint'
 import { ConnectGate } from '@/features/account/AccountScreen'
 import { deviceToken } from './pairing'
@@ -95,10 +96,13 @@ export function App() {
     }
 
     void (async () => {
-      await CatalogRepo.load()
+      const catalog = await CatalogRepo.load()
       if (cancelled) return
       ready = true
       await syncOnce()
+      if (cancelled) return
+      const tracks = catalog.releases.flatMap((r) => r.tracks)
+      await autofillDownloads(tracks).catch(() => 0)
     })()
 
     // прогресс сохранился локально → через пару секунд отправляем на сервер

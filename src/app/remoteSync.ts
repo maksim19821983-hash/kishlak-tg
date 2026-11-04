@@ -6,6 +6,7 @@
 import { useFavorites } from '@/features/favorites/store'
 import { getState, setState, saveStateNow, type TrackFact } from '@/features/fan/state'
 import { deviceToken } from './pairing'
+import { localDownloadIds, saveRemoteDownloadIds, remoteDownloadIds } from '@/features/offline/downloadSync'
 
 /** Заполняется после деплоя воркера: адрес вида https://kishlak-sync.<аккаунт>.workers.dev */
 export const REMOTE_URL: string = (import.meta.env.VITE_SYNC_URL as string | undefined) ?? ''
@@ -13,6 +14,7 @@ export const REMOTE_URL: string = (import.meta.env.VITE_SYNC_URL as string | und
 type Payload = {
   fav: { tracks: string[]; releases: string[] }
   facts: Record<string, TrackFact>
+  downloads?: string[]
 }
 
 export function remoteAvailable(): boolean {
@@ -44,6 +46,7 @@ export function pack(): Payload {
   return {
     fav: { tracks: fav.tracks, releases: fav.releases },
     facts: getState().tracks,
+    downloads: Array.from(new Set([...localDownloadIds(), ...remoteDownloadIds()])),
   }
 }
 
@@ -70,6 +73,9 @@ export function merge(remote: Payload): void {
   }
   setState({ ...getState(), tracks: facts })
   saveStateNow()
+
+  // список скачанного запоминаем, чтобы догрузить на этом устройстве
+  if (Array.isArray(remote.downloads)) saveRemoteDownloadIds(remote.downloads)
 }
 
 async function call(method: 'GET' | 'POST', body?: Payload): Promise<Payload | null> {
