@@ -11,6 +11,7 @@ import { IconTheme } from '@/ui/icons'
 import { SearchField } from '@/ui/SearchField'
 import { useDownloads } from '@/features/offline/downloads'
 import { useOnline } from '@/features/offline/useOnline'
+import { useServiceWorker } from '@/features/offline/useServiceWorker'
 import { DownloadIcon, OfflineIcon } from '@/ui/icons'
 import { toggleTheme } from '@/features/polarity/usePolarity'
 import { haptic } from '@/app/telegram'
@@ -67,6 +68,7 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
   const catalog = load.status === 'ready' ? load.catalog : null
   const releases = sortReleases(catalog?.releases ?? [])
   const online = useOnline()
+  const swStatus = useServiceWorker()
   const downloads = useDownloads((s) => s.records)
   const savedIds = new Set(Object.values(downloads).map((r) => r.releaseId))
   const savedBytes = Object.values(downloads).reduce((sum, r) => sum + r.bytes, 0)
@@ -136,6 +138,7 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
         {savedIds.size === 0
           ? 'офлайн: ничего не скачано'
           : `офлайн: ${savedIds.size} из ${releases.length} · ${(savedBytes / 1024 / 1024).toFixed(0)} МБ`}
+        {` · ${swStatus === 'ready' ? 'кэш готов' : swStatus === 'installing' ? 'кэш сохраняется' : 'без кэша'}`}
       </p>
 
       <main className="flex-1 px-screen" style={{ paddingTop: 24, paddingBottom: 32 }}>
