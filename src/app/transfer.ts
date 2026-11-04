@@ -5,7 +5,7 @@ import { getState, setState, saveStateNow, type TrackFact, type FanState } from 
 
 type Transfer = {
   v: 1
-  fav: { tracks: string[]; releases: string[] }
+  fav: { tracks: string[]; releases: string[]; updatedAt?: number }
   facts: Record<string, TrackFact>
 }
 
@@ -33,7 +33,11 @@ function mergeFan(local: FanState, remote: Record<string, TrackFact>): FanState 
 
 export function exportCode(): string {
   const fav = useFavorites.getState()
-  const data: Transfer = { v: 1, fav: { tracks: fav.tracks, releases: fav.releases }, facts: getState().tracks }
+  const data: Transfer = {
+    v: 1,
+    fav: { tracks: fav.tracks, releases: fav.releases, updatedAt: fav.updatedAt },
+    facts: getState().tracks,
+  }
   const json = JSON.stringify(data)
   const bytes = new TextEncoder().encode(json)
   let binary = ''
@@ -49,10 +53,14 @@ export async function importCode(code: string): Promise<string> {
     const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Transfer
     if (parsed.v !== 1) return 'неизвестная версия кода'
 
-    const fav = useFavorites.getState()
-    const tracks = Array.from(new Set([...(parsed.fav?.tracks ?? []), ...fav.tracks]))
-    const releases = Array.from(new Set([...(parsed.fav?.releases ?? []), ...fav.releases]))
-    useFavorites.setState({ tracks, releases })
+    if (parsed.fav !== undefined) {
+      useFavorites.getState().applyRemote({
+        tracks: parsed.fav.tracks ?? [],
+        releases: parsed.fav.releases ?? [],
+        updatedAt: parsed.fav.updatedAt ?? 0,
+      })
+    }
+    const tracks = useFavorites.getState().tracks
 
     const merged = mergeFan(getState(), parsed.facts ?? {})
     setState(merged)

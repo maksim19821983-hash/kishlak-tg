@@ -10,7 +10,7 @@ import { getState, setState, saveStateNow, type TrackFact } from '@/features/fan
 export const REMOTE_URL: string = (import.meta.env.VITE_SYNC_URL as string | undefined) ?? ''
 
 type Payload = {
-  fav: { tracks: string[]; releases: string[] }
+  fav: { tracks: string[]; releases: string[]; updatedAt?: number }
   facts: Record<string, TrackFact>
 }
 
@@ -34,17 +34,20 @@ function initData(): string {
 export function pack(): Payload {
   const fav = useFavorites.getState()
   return {
-    fav: { tracks: fav.tracks, releases: fav.releases },
+    fav: { tracks: fav.tracks, releases: fav.releases, updatedAt: fav.updatedAt },
     facts: getState().tracks,
   }
 }
 
 export function merge(remote: Payload): void {
-  const fav = useFavorites.getState()
-  useFavorites.setState({
-    tracks: Array.from(new Set([...(remote.fav?.tracks ?? []), ...fav.tracks])),
-    releases: Array.from(new Set([...(remote.fav?.releases ?? []), ...fav.releases])),
-  })
+  // избранное не объединяем: удаление должно доезжать между устройствами
+  if (remote.fav !== undefined) {
+    useFavorites.getState().applyRemote({
+      tracks: remote.fav.tracks ?? [],
+      releases: remote.fav.releases ?? [],
+      updatedAt: remote.fav.updatedAt ?? 0,
+    })
+  }
 
   const facts: Record<string, TrackFact> = { ...getState().tracks }
   for (const [id, fact] of Object.entries(remote.facts ?? {})) {
