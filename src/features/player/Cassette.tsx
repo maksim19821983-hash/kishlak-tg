@@ -3,6 +3,9 @@ import { useAudioStore } from '@/audio/store'
 import { Motif } from '@/ui/Motifs'
 
 const COPPER    = '#8C5334'
+const TAPE_HI   = '#C08A5E'
+const TAPE_LO   = '#5E3722'
+const TAPE_SHADOW = '#3B2216'
 const REEL_SIZE = 72
 const TAPE_MIN  = 10
 const TAPE_MAX  = 30
@@ -154,50 +157,42 @@ export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, m
           boxShadow: 'inset 0 2px 6px rgba(0,0,0,.5)',
         }}
       >
-        {/* левая катушка — диск ленты по прогрессу */}
+        {/* левая катушка — лента намотана по прогрессу */}
         <div
           className="relative flex items-center justify-center"
           style={{ width: REEL_SIZE, height: REEL_SIZE }}
         >
-          <div
-            className="absolute rounded-full"
-            style={{ width: leftR * 2, height: leftR * 2, background: COPPER }}
-          />
-          <div
-            ref={leftHubRef}
-            className="absolute rounded-full"
-            style={{ width: 16, height: 16, background: hubColor }}
-          >
-            <Spokes color={bodyBg} />
-          </div>
+          <Reel radius={leftR} hubColor={hubColor} bodyColor={bodyBg} hubRef={leftHubRef} />
         </div>
 
-        {/* лента — начинается на правом краю левого диска, кончается на левом краю правого */}
+        {/* лента между катушками */}
         <div style={{
           flex: 1,
-          height: 2,
-          background: COPPER,
+          height: 3,
+          borderRadius: 2,
+          background: `linear-gradient(180deg, ${TAPE_HI} 0%, ${TAPE_LO} 55%, ${TAPE_SHADOW} 100%)`,
           marginLeft: leftR - REEL_SIZE / 2,
           marginRight: rightR - REEL_SIZE / 2,
+          boxShadow: '0 1px 1px rgba(0,0,0,.35)',
         }} />
 
-        {/* правая катушка — диск ленты по прогрессу */}
+        {/* правая катушка */}
         <div
           className="relative flex items-center justify-center"
           style={{ width: REEL_SIZE, height: REEL_SIZE }}
         >
-          <div
-            className="absolute rounded-full"
-            style={{ width: rightR * 2, height: rightR * 2, background: COPPER }}
-          />
-          <div
-            ref={rightHubRef}
-            className="absolute rounded-full"
-            style={{ width: 16, height: 16, background: hubColor }}
-          >
-            <Spokes color={bodyBg} />
-          </div>
+          <Reel radius={rightR} hubColor={hubColor} bodyColor={bodyBg} hubRef={rightHubRef} />
         </div>
+
+        {/* стекло: мягкий блик сверху */}
+        <div
+          aria-hidden
+          className="absolute pointer-events-none rounded-md"
+          style={{
+            inset: 0,
+            background: 'linear-gradient(160deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.03) 22%, transparent 45%)',
+          }}
+        />
       </div>
 
       {/* вторичный цвет обложки: тонкая линия под подписями */}
@@ -234,10 +229,80 @@ export function Cassette({ side, onTap, trackTitle, releaseTitle, releaseYear, m
   )
 }
 
+/** Катушка: намотанная лента с кольцами, ступица с зубцами и блик. */
+function Reel({
+  radius,
+  hubColor,
+  bodyColor,
+  hubRef,
+}: {
+  radius: number
+  hubColor: string
+  bodyColor: string
+  hubRef: React.RefObject<HTMLDivElement | null>
+}) {
+  return (
+    <>
+      {/* слой ленты */}
+      <div
+        className="absolute rounded-full"
+        style={{
+          width: radius * 2,
+          height: radius * 2,
+          background: `radial-gradient(circle at 34% 28%, ${TAPE_HI} 0%, ${COPPER} 46%, ${TAPE_LO} 100%)`,
+          boxShadow: 'inset 0 2px 6px rgba(0,0,0,.45), inset 0 -2px 4px rgba(0,0,0,.35), 0 1px 3px rgba(0,0,0,.35)',
+        }}
+      />
+
+      {/* кольца намотки */}
+      <div
+        className="absolute rounded-full"
+        style={{
+          width: radius * 2,
+          height: radius * 2,
+          background:
+            'repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,.13) 0 1.5px, rgba(255,255,255,.04) 1.5px 3px)',
+          opacity: 0.6,
+        }}
+      />
+
+      {/* блик по ленте */}
+      <div
+        className="absolute rounded-full"
+        style={{
+          width: radius * 2,
+          height: radius * 2,
+          background: 'linear-gradient(145deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 35%, transparent 55%)',
+        }}
+      />
+
+      {/* ступица с зубцами — вращается */}
+      <div
+        ref={hubRef}
+        className="absolute rounded-full"
+        style={{
+          width: 18,
+          height: 18,
+          background: `radial-gradient(circle at 40% 35%, ${hubColor} 0%, ${hubColor} 55%, rgba(0,0,0,.55) 100%)`,
+          boxShadow: '0 0 0 1px rgba(0,0,0,.35), inset 0 1px 2px rgba(255,255,255,.35)',
+          display: 'grid',
+          placeItems: 'center',
+        }}
+      >
+        <Spokes color={bodyColor} />
+        <div
+          className="rounded-full"
+          style={{ width: 6, height: 6, background: bodyColor, boxShadow: 'inset 0 1px 2px rgba(0,0,0,.6)' }}
+        />
+      </div>
+    </>
+  )
+}
+
 function Spokes({ color }: { color: string }) {
   return (
     <>
-      {[0, 60, 120].map((deg) => (
+      {[0, 60, 120, 180, 240, 300].map((deg) => (
         <div key={deg} className="absolute inset-0 flex items-center justify-center">
           <div style={{ width: 2, height: 12, background: color, borderRadius: 1, transform: `rotate(${deg}deg)` }} />
         </div>

@@ -55,7 +55,7 @@ body {
 
 /* вкладки: плавная смена без перемонтирования */
 .tab-pane {
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition: opacity 260ms cubic-bezier(.22,.8,.28,1), transform 260ms cubic-bezier(.22,.8,.28,1);
 }
 .tab-pane[data-active='false'] {
   opacity: 0;
@@ -171,4 +171,46 @@ body {
 @media (hover: hover) and (pointer: fine) {
   html, body { scrollbar-width: none; }
   *::-webkit-scrollbar { width: 0; height: 0; }
+}
+
+
+/* ── общий слой плавности ─────────────────────────────────────────────────── */
+
+/* любые интерактивные элементы меняют состояние мягко, а не рывком */
+button,
+a,
+input,
+[role='slider'] {
+  transition:
+    background-color 200ms cubic-bezier(.22,.8,.28,1),
+    border-color 200ms cubic-bezier(.22,.8,.28,1),
+    color 200ms cubic-bezier(.22,.8,.28,1),
+    opacity 200ms cubic-bezier(.22,.8,.28,1),
+    transform 200ms cubic-bezier(.22,.8,.28,1);
+}
+
+/* нажатие — всегда лёгкое сжатие, даже там, где не задан .press */
+button:active {
+  transform: scale(.97);
+}
+
+/* список треков появляется и исчезает плавно */
+.list-fade-in {
+  animation: list-fade-in 320ms cubic-bezier(.22,.8,.28,1);
+}
+
+@keyframes list-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* плавная смена размера кассеты в полноэкранном режиме */
+.cassette-grow {
+  transition: transform 380ms cubic-bezier(.22,.8,.28,1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:active { transform: none; }
+  .list-fade-in { animation: none; }
+  .cassette-grow { transition: none; }
 }

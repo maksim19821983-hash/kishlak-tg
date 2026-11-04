@@ -343,7 +343,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
       >
       {/* кассета */}
       <div
-        className="px-screen shrink-0 mt-2"
+        className="px-screen shrink-0 mt-2 cassette-grow"
         style={listOpen ? undefined : { transform: 'scale(1.06)', transformOrigin: 'center' }}
         onTouchStart={handleCassetteTouchStart}
         onTouchEnd={handleCassetteTouchEnd}
@@ -592,7 +592,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
 
       {listOpen && (
       <div
-        className="flex-1 overflow-y-auto overscroll-contain"
+        className="flex-1 overflow-y-auto overscroll-contain list-fade-in"
         style={{
           background: 'var(--panel)',
           borderTop: '1px solid var(--line)',
