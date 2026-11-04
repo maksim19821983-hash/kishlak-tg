@@ -360,41 +360,18 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         />
       </div>
 
-      {!listOpen && release?.cover !== undefined && (
-        <div
-          aria-hidden
-          style={{ flex: '1 1 auto', minHeight: 0, position: 'relative', marginTop: 10 }}
-        >
-          {/* обложка занимает всё свободное место, от края до края */}
-          <img
-            src={release.cover}
-            alt=""
-            draggable={false}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
-
-          {/* растворяем обложку в фоне: сверху и снизу */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background:
-                'linear-gradient(to bottom, var(--bg) 0%, rgba(0,0,0,0) 16%, rgba(0,0,0,0) 62%, color-mix(in srgb, var(--bg) 55%, transparent) 82%, var(--bg) 100%)',
-              opacity: 0.92,
-            }}
-          />
-        </div>
-      )}
-
       {!listOpen && (
-        <div className="px-screen" style={{ paddingTop: 12 }}>
+        <div
+          className="px-screen"
+          style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 0 }}
+        >
           <p
             className="font-display uppercase text-ink"
-            style={{ fontSize: 26, lineHeight: 1.05, letterSpacing: '-.02em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+            style={{ fontSize: 30, lineHeight: 1.05, letterSpacing: '-.02em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
           >
             {track?.title ?? '—'}
           </p>
-          <p className="font-mono text-mono-label uppercase text-dim" style={{ marginTop: 4 }}>
+          <p className="font-mono text-mono-label uppercase text-dim" style={{ marginTop: 8 }}>
             {release?.title ?? ''}{release?.year !== undefined ? ` · ${release.year}` : ''}
           </p>
         </div>
