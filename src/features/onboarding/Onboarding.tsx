@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react'
 import { HapticFeedback } from '@/app/telegram'
 
-const KEY = 'kishlak:onboard:v2'
+/** Версия приветствия: поднимай, когда его текст меняется — тогда его увидят все снова. */
+const ONBOARDING_VERSION = 3
+const KEY = `kishlak:onboard:v${ONBOARDING_VERSION}`
 
 /** Принудительный показ приветствия: `?onboard=1` или `startapp=onboard`. */
 export function onboardingForced(): boolean {
