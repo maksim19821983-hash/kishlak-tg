@@ -6,6 +6,7 @@
  */
 
 import { ensureSdk } from './telegram'
+import { remoteAvailable, syncRemote } from './remoteSync'
 import { useFavorites } from '@/features/favorites/store'
 import { getState, setState, saveStateNow, type FanState, type TrackFact } from '@/features/fan/state'
 
@@ -226,7 +227,12 @@ export function schedulePush(delayMs = 2500): void {
   if (pushTimer) clearTimeout(pushTimer)
   pushTimer = setTimeout(() => {
     pushTimer = null
-    void syncCompact()
+    // главный путь — свой сервер; облако Телеграма остаётся запасным
+    if (remoteAvailable()) {
+      void syncRemote().catch(() => { void syncCompact() })
+    } else {
+      void syncCompact()
+    }
   }, delayMs)
 }
 
