@@ -14,6 +14,24 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   })
 }
 
+// если React не смог стартовать, показываем причину вместо белого экрана
+function showFatal(message: string): void {
+  const host = document.getElementById('root')
+  if (!host) return
+  host.innerHTML = ''
+  const box = document.createElement('pre')
+  box.style.cssText = 'padding:20px;font:12px/1.5 monospace;color:#C0392B;white-space:pre-wrap;word-break:break-word'
+  box.textContent = `Приложение упало\n\n${message}`
+  host.appendChild(box)
+}
+
+window.addEventListener('error', (event) => {
+  showFatal(`${event.message}\n${event.filename}:${event.lineno}:${event.colno}`)
+})
+window.addEventListener('unhandledrejection', (event) => {
+  showFatal(String(event.reason))
+})
+
 const root = document.getElementById('root')
 if (!root) throw new Error('#root не найден в index.html')
 

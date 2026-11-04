@@ -4,6 +4,10 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // Safari 15+ (iOS 15) — базовая цель для PWA
+    target: ['safari15', 'chrome100', 'firefox100'],
+  },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
