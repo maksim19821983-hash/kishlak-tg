@@ -5,7 +5,11 @@ const ASSET_CACHE = 'kishlak-assets-v1'
 
 self.addEventListener('install', (event) => {
   self.skipWaiting()
-  event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(['/', '/index.html']).catch(() => {})))
+  event.waitUntil(
+    caches.open(SHELL_CACHE).then((cache) =>
+      cache.addAll(['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png']).catch(() => {}),
+    ),
+  )
 })
 
 self.addEventListener('activate', (event) => {

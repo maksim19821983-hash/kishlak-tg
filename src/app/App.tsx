@@ -19,6 +19,7 @@ import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
 import { remoteAvailable, syncRemote } from './remoteSync'
+import { InstallHint } from '@/features/offline/InstallHint'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
 
@@ -241,6 +242,8 @@ export function App() {
           />
         </>
       )}
+
+      <InstallHint />
 
       <div className="flex-1 min-h-0 relative" style={{ zIndex: 1 }}>
         <div className="absolute inset-0 tab-pane" data-active={activeTab === 'player'}>
