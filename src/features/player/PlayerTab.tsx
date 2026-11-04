@@ -12,9 +12,8 @@ import { parseLrc, getActiveLineIndex } from '@/features/lyrics/parseLrc'
 import type { Lyrics } from '@/features/lyrics/parseLrc'
 import { InsertScreen } from '@/features/lyrics/InsertScreen'
 import { shareTrack } from '@/features/telegram/share'
-import { SupportSheet } from '@/features/telegram/SupportSheet'
 import { getWebEngine } from '@/audio/webEngine'
-import { IconPrev, IconNext, IconPlay, IconPause, IconStar, IconTheme, IconHeart, IconVolume, IconVolumeOff } from '@/ui/icons'
+import { IconPrev, IconNext, IconPlay, IconPause, IconTheme, IconHeart, IconVolume, IconVolumeOff } from '@/ui/icons'
 import { getState } from '@/features/fan/state'
 import { isListened } from '@/features/fan/derive'
 import { toggleTheme, useCurrentPolarity } from '@/features/polarity/usePolarity'
@@ -107,7 +106,6 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
   const setShuffle = useAudioStore((st) => st.setShuffle)
   const setRepeat = useAudioStore((st) => st.setRepeat)
   const [insertOpen, setInsertOpen] = useState(false)
-  const [supportOpen, setSupportOpen] = useState(false)
   const [lyrics, setLyrics] = useState<Lyrics | null>(null)
   const polarity = useCurrentPolarity()
   const [flatTracks, setFlatTracks] = useState<FlatTrack[]>([])
@@ -460,12 +458,23 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         </div>
       </div>
 
+      <div className="px-screen pb-1 shrink-0">
+        <button
+          onClick={() => { if (track) shareTrack(track.id) }}
+          disabled={!track}
+          className="w-full font-mono text-mono-label uppercase border border-line rounded-pill text-ink disabled:opacity-40"
+          style={{ height: 34 }}
+        >
+          ПОДЕЛИТЬСЯ
+        </button>
+      </div>
+
       {/* транспорт: шаффл · назад · play · вперёд · повтор · любимое (+громкость на десктопе) */}
       <div className="px-screen py-2 flex items-center justify-between shrink-0">
         <button
           onClick={() => { setShuffle(!shuffle); haptic('light') }}
           className="relative flex items-center justify-center"
-          style={{ width: 40, height: 44, color: shuffle ? 'var(--accent-text)' : 'var(--dim)' }}
+          style={{ width: 36, height: 44, color: shuffle ? 'var(--accent-text)' : 'var(--dim)' }}
           aria-label={shuffle ? 'Выключить перемешивание' : 'Перемешать'}
           aria-pressed={shuffle}
         >
@@ -478,16 +487,16 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         <button
           onClick={() => { prevFn(); haptic('light') }}
           className="flex items-center justify-center"
-          style={{ width: 56, height: 56, color: 'var(--ink)' }}
+          style={{ width: 48, height: 52, color: 'var(--ink)' }}
           aria-label="Предыдущий трек"
         >
-          <IconPrev size={30} />
+          <IconPrev size={26} />
         </button>
 
         <button
           onClick={handleTap}
           className="rounded-full flex items-center justify-center text-bg press"
-          style={{ width: 56, height: 56, background: 'var(--ink)', marginInline: 10 }}
+          style={{ width: 52, height: 52, background: 'var(--ink)', marginInline: 6 }}
           aria-label={playing ? 'Пауза' : 'Воспроизвести'}
         >
           {playing ? <IconPause /> : <IconPlay />}
@@ -496,10 +505,10 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         <button
           onClick={() => { nextFn('user'); haptic('light') }}
           className="flex items-center justify-center"
-          style={{ width: 56, height: 56, color: 'var(--ink)' }}
+          style={{ width: 48, height: 52, color: 'var(--ink)' }}
           aria-label="Следующий трек"
         >
-          <IconNext size={30} />
+          <IconNext size={26} />
         </button>
 
         <button
@@ -510,7 +519,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
             haptic('light')
           }}
           className="relative flex items-center justify-center"
-          style={{ width: 40, height: 44, color: repeat !== 'off' ? 'var(--accent-text)' : 'var(--dim)' }}
+          style={{ width: 36, height: 44, color: repeat !== 'off' ? 'var(--accent-text)' : 'var(--dim)' }}
           aria-label={`Повтор: ${repeat}`}
         >
           <IconRepeat size={20} />
@@ -531,7 +540,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
           disabled={!track}
           className="flex items-center justify-center"
           style={{
-            width: 40,
+            width: 36,
             height: 44,
             color: track !== null && favoriteTracks.includes(track.id) ? 'var(--like)' : 'var(--dim)',
             opacity: track !== null ? 1 : 0.4,
@@ -540,23 +549,6 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
           aria-pressed={track !== null && favoriteTracks.includes(track.id)}
         >
           <IconHeart size={21} filled={track !== null && favoriteTracks.includes(track.id)} />
-        </button>
-      </div>
-
-      {/* действия */}
-      <div className="px-screen pb-2 flex items-center gap-3 shrink-0">
-        <button
-          onClick={() => { if (track) shareTrack(track.id) }}
-          disabled={!track}
-          className="flex-1 font-mono text-mono-label uppercase border border-line h-[34px] rounded-pill text-ink disabled:opacity-40"
-        >
-          ПОДЕЛИТЬСЯ
-        </button>
-        <button
-          onClick={() => setSupportOpen(true)}
-          className="flex-1 font-mono text-mono-label uppercase border border-line h-[34px] rounded-pill text-ink flex items-center justify-center gap-1.5"
-        >
-          ПОДДЕРЖАТЬ <IconStar size={18} />
         </button>
       </div>
 
@@ -649,7 +641,6 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
           onClose={() => setInsertOpen(false)}
         />
       )}
-      {supportOpen && <SupportSheet onClose={() => setSupportOpen(false)} />}
 
       {(() => {
         const menuTrack = menuTrackId ? flatTracks.find((f) => f.track.id === menuTrackId)?.track ?? null : null

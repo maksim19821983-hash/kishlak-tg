@@ -171,18 +171,18 @@ export function App() {
     // шрифты не должны держать загрузку: на iOS промис иногда не завершается
     const fontsReady = document.fonts?.ready
     if (fontsReady !== undefined) {
-      void Promise.race([fontsReady, new Promise((resolve) => setTimeout(resolve, 2500))]).then(() => { loaded = true })
+      void Promise.race([fontsReady, new Promise((resolve) => setTimeout(resolve, 1200))]).then(() => { loaded = true })
     } else {
       loaded = true
     }
 
-    const total = 1600
+    const total = 1200
     // страховка: через 5 секунд показываем приложение при любом состоянии загрузки
     const hardStop = setTimeout(() => {
       if (cancelled) return
       setBootProgress(1)
       setBooting(false)
-    }, 5000)
+    }, 3200)
 
     const id = setInterval(() => {
       if (cancelled) return
