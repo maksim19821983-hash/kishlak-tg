@@ -28,6 +28,7 @@ async function loadTracks(env) {
 }
 
 async function postDay(env) {
+  const token = String(env.BOT_TOKEN ?? '').trim()
   const tracks = await loadTracks(env)
   if (tracks.length === 0) throw new Error('каталог пуст')
 
@@ -40,7 +41,7 @@ async function postDay(env) {
     `${escapeHtml(track.releaseTitle)} · ${track.year}`,
   ].join('\n')
 
-  const response = await fetch(`${API}/bot${env.BOT_TOKEN}/sendPhoto`, {
+  const response = await fetch(`${API}/bot${token}/sendPhoto`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -50,8 +51,8 @@ async function postDay(env) {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [[
-          { text: 'Слушать', web_app: { url: `${env.APP_URL}/?track=${encodeURIComponent(track.id)}` } },
-          { text: 'Вся кассета', web_app: { url: `${env.APP_URL}/?release=${encodeURIComponent(track.releaseId)}` } },
+          { text: 'Слушать', url: `https://t.me/kishlak_music_bot?startapp=track_${encodeURIComponent(track.id)}` },
+          { text: 'Вся кассета', url: `https://t.me/kishlak_music_bot?startapp=release_${encodeURIComponent(track.releaseId)}` },
         ]],
       },
     }),
@@ -73,7 +74,7 @@ export default {
     const url = new URL(request.url)
     if (url.pathname === '/run') {
       const key = url.searchParams.get('key') ?? ''
-      if (key === '' || key !== env.CRON_KEY) return new Response('forbidden', { status: 403 })
+      if (key === '' || key !== String(env.CRON_KEY ?? '').trim()) return new Response('forbidden', { status: 403 })
       try {
         return Response.json(await postDay(env))
       } catch (e) {
@@ -81,10 +82,11 @@ export default {
       }
     }
     if (url.pathname === '/debug') {
-      if (url.searchParams.get('key') !== env.CRON_KEY) return new Response('forbidden', { status: 403 })
-      const me = await fetch(`${API}/bot${env.BOT_TOKEN}/getMe`).then((r) => r.json()).catch(() => null)
+      if (url.searchParams.get('key') !== String(env.CRON_KEY ?? '').trim()) return new Response('forbidden', { status: 403 })
+      const token = String(env.BOT_TOKEN ?? '').trim()
+      const me = await fetch(`${API}/bot${token}/getMe`).then((r) => r.json()).catch(() => null)
       return Response.json({
-        tokenLength: (env.BOT_TOKEN ?? '').length,
+        tokenLength: token.length,
         keyLength: (env.CRON_KEY ?? '').length,
         getMe: me?.ok === true ? me.result.username : me?.description ?? 'no answer',
       })

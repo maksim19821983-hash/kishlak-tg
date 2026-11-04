@@ -41,7 +41,25 @@ const SLIDES: Slide[] = [
     ],
   },
   {
-    kicker: '03 · текст',
+    kicker: '03 · проявление',
+    title: 'Альбомы открываются',
+    lines: [
+      'В каталоге обложки сначала приглушены.',
+      'Слушаешь песни — обложка заливается цветом снизу вверх.',
+      'Соберёшь весь альбом — на конверте появится штамп ✓.',
+    ],
+  },
+  {
+    kicker: '04 · своё',
+    title: 'Сердце и поиск',
+    lines: [
+      'Сердце в плеере или у трека добавляет песню в «Любимое».',
+      'Там же можно убрать её одним тапом, если разонравилась.',
+      'В каталоге есть поиск по альбомам и трекам.',
+    ],
+  },
+  {
+    kicker: '05 · текст',
     title: 'Текст идёт за песней',
     lines: [
       'Свайп вверх по кассете открывает вкладыш: текст и трек-лист.',
@@ -49,16 +67,47 @@ const SLIDES: Slide[] = [
       'Текст пока готов не для всех песен — там стоит пометка «скоро будет текст».',
     ],
   },
-  {
-    kicker: '04 · своё',
-    title: 'Сердце и поиск',
-    lines: [
-      'Сердце добавляет песню в «Любимое» — вкладка рядом с плеером.',
-      'В каталоге есть поиск по альбомам и трекам.',
-      'Избранное и прослушивания синхронизируются между устройствами в Телеграме.',
-    ],
-  },
 ]
+
+/** Живая миниатюра: обложка заливается цветом по мере прослушивания. */
+function RevealDemo() {
+  const cover = '/content/covers/02-06-2022-400.jpg'
+  return (
+    <div className="flex items-end" style={{ gap: 10, marginTop: 18 }}>
+      {[0.18, 0.55, 1].map((p) => (
+        <div key={p} style={{ position: 'relative', width: 58, height: 58, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--line)' }}>
+          <img
+            src={cover}
+            alt=""
+            aria-hidden
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(.3)' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, clipPath: `inset(${(1 - p) * 100}% 0 0 0)` }}>
+            <img
+              src={cover}
+              alt=""
+              aria-hidden
+              style={{ width: '100%', height: '100%', objectFit: 'cover', filter: `saturate(${0.3 + 0.7 * p})` }}
+            />
+          </div>
+          {p === 1 && (
+            <div
+              style={{
+                position: 'absolute', top: 3, right: 3, width: 16, height: 16, borderRadius: 4,
+                background: 'var(--accent)', color: 'var(--bg)', display: 'grid', placeItems: 'center', fontSize: 10,
+              }}
+            >
+              ✓
+            </div>
+          )}
+        </div>
+      ))}
+      <span className="font-mono text-dim" style={{ fontSize: 9, letterSpacing: '.14em', marginLeft: 4 }}>
+        0 → 100%
+      </span>
+    </div>
+  )
+}
 
 export function Onboarding({ onDone, onStart }: { onDone: () => void; onStart: () => void }) {
   const [index, setIndex] = useState(0)
@@ -143,6 +192,7 @@ export function Onboarding({ onDone, onStart }: { onDone: () => void; onStart: (
                 </p>
               ))}
             </div>
+            {slide.kicker.startsWith('03') && <RevealDemo />}
           </div>
         ))}
       </div>
