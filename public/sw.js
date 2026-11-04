@@ -1,19 +1,39 @@
 /* Оболочка приложения для офлайна: сеть в приоритете, кэш — как запасной путь. */
 
-const SHELL_CACHE = 'kishlak-shell-v1'
-const ASSET_CACHE = 'kishlak-assets-v1'
+const SHELL_CACHE = 'kishlak-shell-v2'
+const ASSET_CACHE = 'kishlak-assets-v2'
 
 self.addEventListener('install', (event) => {
   self.skipWaiting()
   event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) =>
-      cache.addAll(['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png']).catch(() => {}),
-    ),
+    (async () => {
+      const shell = await caches.open(SHELL_CACHE)
+      await shell.addAll(['/', '/index.html', '/manifest.json', '/icons/icon-192.png']).catch(() => {})
+      // весь бандл приложения: без этого офлайн открывался пустой экран
+      const assets = await caches.open(ASSET_CACHE)
+      try {
+        const response = await fetch('/precache.json', { cache: 'no-store' })
+        if (response.ok) {
+          const files = await response.json()
+          await Promise.all(files.map((file) => assets.add(file).catch(() => {})))
+        }
+      } catch {
+        /* предзагрузка не удалась — кэшируем по ходу работы */
+      }
+    })(),
   )
 })
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim())
+  const keep = new Set([SHELL_CACHE, ASSET_CACHE, 'kishlak-audio-v1'])
+  event.waitUntil(
+    (async () => {
+      // старые кэши удаляем: иначе офлайн отдаёт устаревшую оболочку
+      const names = await caches.keys()
+      await Promise.all(names.filter((name) => !keep.has(name)).map((name) => caches.delete(name)))
+      await self.clients.claim()
+    })(),
+  )
 })
 
 self.addEventListener('fetch', (event) => {
