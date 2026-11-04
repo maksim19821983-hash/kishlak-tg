@@ -54,6 +54,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
   const queue       = useAudioStore((s) => s.queue)
   const index       = useAudioStore((s) => s.index)
   const status      = useAudioStore((s) => s.status)
+  const errorText   = useAudioStore((s) => s.error)
   const currentTime = useAudioStore((s) => s.currentTime)
   const duration    = useAudioStore((s) => s.duration)
   const playing     = status === 'playing'
@@ -597,6 +598,14 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         {/* отступ под TabBar */}
         <div style={{ height: 8 }} />
       </div>
+
+      {errorText !== null && errorText !== '' && (
+        <div className="px-screen" style={{ marginTop: 6 }}>
+          <p className="font-mono text-dim" style={{ fontSize: 10, letterSpacing: '.06em' }}>
+            {errorText}
+          </p>
+        </div>
+      )}
 
       {offlineNotice !== null && (
         <div
