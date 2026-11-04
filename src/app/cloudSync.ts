@@ -370,9 +370,7 @@ export async function syncCompact(): Promise<string> {
     raws.push(raw)
   }
 
-  // маркер: если после перезапуска он пуст — облако не сохраняет данные между сессиями
-  const probe = await withTimeout(read(c, PROBE_KEY), 1500, null)
-  diag.probe = probe === null ? 'пусто' : new Date(Number(probe) * 1000).toLocaleString('ru-RU')
+  diag.probe = await readProbe()
 
   const remote = mergeChunks(raws)
   if (remote) {
@@ -402,8 +400,6 @@ export async function syncCompact(): Promise<string> {
     diag.keys = written
   }
 
-  await withTimeout(write(c, PROBE_KEY, String(Math.floor(Date.now() / 1000))), 1500, undefined)
-
   // проверяем, что запись реально легла: читаем обратно первый кусок
   const check = await withTimeout(read(c, `${STATE_PREFIX}0`), 2000, null)
   const checkLen = check === null ? 0 : check.length
@@ -413,4 +409,26 @@ export async function syncCompact(): Promise<string> {
     `проверка чтением: ${checkLen === 0 ? 'НЕ ПРОЧИТАЛОСЬ' : `прочитано ${checkLen} байт`}`
   diag.lastSyncAt = new Date().toLocaleTimeString('ru-RU')
   return `${diag.lastPull} · ${diag.lastPush} · ошибка: ${diag.lastError}`
+}
+
+
+/** Читает маркер, который пишется только вручную — служит проверкой сохранности. */
+export async function readProbe(): Promise<string> {
+  const c = cloud()
+  if (!c) return 'облако недоступно'
+  const raw = await withTimeout(read(c, PROBE_KEY), 1500, null)
+  if (raw === null) return 'пусто'
+  const date = new Date(Number(raw) * 1000)
+  return Number.isFinite(date.getTime()) ? date.toLocaleString('ru-RU') : raw
+}
+
+/** Пишет маркер и сразу читает обратно: проверка записи без влияния синхронизации. */
+export async function writeProbe(): Promise<string> {
+  const c = cloud()
+  if (!c) return 'облако недоступно'
+  const stamp = String(Math.floor(Date.now() / 1000))
+  await withTimeout(write(c, PROBE_KEY, stamp), 2000, undefined)
+  const back = await withTimeout(read(c, PROBE_KEY), 2000, null)
+  if (back === null) return `записано ${stamp}, но чтение вернуло пусто`
+  return back === stamp ? `записано и прочитано: ${new Date(Number(stamp) * 1000).toLocaleString('ru-RU')}` : `в облаке другое значение: ${back}`
 }

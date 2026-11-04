@@ -7,7 +7,7 @@ import { getSessionDiag, subscribeFan } from '@/features/fan/trackListen'
 import { getState } from '@/features/fan/state'
 import { getMediaActionLog, getMediaSessionInfo } from '@/audio/mediaSession'
 import { isListened, releaseProgress } from '@/features/fan/derive'
-import { getCloudDiag, initCloud, syncCompact, exportCode, importCode } from '@/app/cloudSync'
+import { getCloudDiag, initCloud, syncCompact, exportCode, importCode, readProbe, writeProbe } from '@/app/cloudSync'
 
 function fmt(s: number): string {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
@@ -114,6 +114,7 @@ function CloudPanel() {
         probe: d.probe,
       })
     }
+    void readProbe().then((value) => setInfo((p) => ({ ...p, probe: value })))
     tick()
     const id = setInterval(tick, 1200)
     return () => { alive = false; clearInterval(id) }
@@ -182,6 +183,12 @@ function CloudPanel() {
           const result = await syncCompact()
           return result
         }), busy === 'облако')}
+
+        {btn('тест записи', () => void run('тест', async () => {
+          const res = await writeProbe()
+          setInfo((p) => ({ ...p, probe: res }))
+          return res
+        }), busy === 'тест')}
 
         {btn('отправить в облако', () => void run('отправка', async () => {
           const ok = await initCloud()
