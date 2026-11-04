@@ -11,7 +11,7 @@ import { CHANNEL_URL, isSubscribed } from '../_lib/channel'
 type Env = { BOT_TOKEN: string }
 
 const APP_URL = 'https://kishlak-tg.pages.dev'
-const WELCOME_IMAGE = `${APP_URL}/bot/welcome.jpg`
+const WELCOME_IMAGE = `${APP_URL}/bot/welcome.jpg?v=2`
 
 const WELCOME_TEXT = [
   '<b>Весь Кишлак в одном месте</b>',

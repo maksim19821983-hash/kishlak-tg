@@ -177,8 +177,6 @@ def welcome():
 
     ft = fnt('unbounded.ttf', 112, 'Black')
     d.text((m - 6, 150), 'КИШЛАК', font=ft, fill=INK)
-    fs = fnt('jbmono-medium.ttf', 22)
-    tracked(d, (m, 300), 'ПЛЕЕР-КАССЕТА · 31 КАССЕТА · 116 ПЕСЕН', fs, (110, 103, 94), 3.5)
 
     # конверт и кассета
     sleeve = Image.new('RGBA', (640, 640), (0, 0, 0, 0))
@@ -188,10 +186,8 @@ def welcome():
     paste_center(img, cass, 600, 985, angle=5, shadow_alpha=.45)
 
     d.line([m, 1190, W - m, 1190], fill=(19, 18, 17, 60), width=1)
-    fw = fnt('unbounded.ttf', 30, 'SemiBold')
-    d.text((m, 1218), 'ВЕСЬ АРХИВ', font=fw, fill=INK)
-    fe = fnt('jbmono-regular.ttf', 18)
-    tracked(d, (m, 1268), 'НАЖМИ «ОТКРЫТЬ ПЛЕЕР» — И СЛУШАЙ', fe, (120, 112, 102), 3)
+    fe = fnt('jbmono-regular.ttf', 20)
+    tracked(d, (m, 1236), 'НАЖМИ «ОТКРЫТЬ ПЛЕЕР» — И СЛУШАЙ', fe, (120, 112, 102), 4)
     grain(img.convert('RGB'), 9, .05).save(f'{OUT}/welcome-1080x1350.jpg', quality=92)
 
 
