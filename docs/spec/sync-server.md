@@ -1,0 +1,48 @@
+# Своя синхронизация: Cloudflare Worker + KV
+
+Облако Телеграма (`CloudStorage`) в клиенте iOS не сохраняет данные между сеансами мини-аппа,
+поэтому состояние живёт на нашем сервере.
+
+## Что делает сервер
+
+- `GET /` — вернуть состояние пользователя по подписи `initData`;
+- `POST /` — сохранить состояние (до 100 КБ);
+- авторизация: `x-init-data` проверяется HMAC-подписью токеном бота;
+- хранение: KV, ключ `state:<telegram user id>`.
+
+Клиент: `src/app/remoteSync.ts`, адрес берётся из `VITE_SYNC_URL` при сборке.
+
+## Развёртывание (один раз)
+
+```bash
+cd ~/Desktop/kishlak-tg/server
+
+# 1. создать namespace для данных
+npx wrangler kv namespace create STATE
+#    скопируй id в wrangler.toml → [[kv_namespaces]] id
+
+# 2. положить токен бота секретом (он никогда не попадёт в клиент)
+npx wrangler secret put BOT_TOKEN
+
+# 3. опубликовать
+npx wrangler deploy
+#    в ответе будет адрес вида https://kishlak-sync.<аккаунт>.workers.dev
+```
+
+## Подключение клиента
+
+```bash
+cd ~/Desktop/kishlak-tg
+VITE_SYNC_URL="https://kishlak-sync.<аккаунт>.workers.dev" npm run build
+npx wrangler pages deploy dist --project-name kishlak-tg
+```
+
+После этого автосинхронизация идёт через сервер: при старте, при возврате в приложение,
+раз в 90 секунд и через 2 секунды после прослушивания.
+
+## Как проверить
+
+Диагностика в приложении (долгое нажатие на «КИШЛАК») → блок «облако и перенос данных»:
+
+- строка `server` — адрес воркера;
+- кнопка «сервер: синхронизировать» → в плашке `сервер: избранное N, треков M`.

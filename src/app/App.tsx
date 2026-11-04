@@ -19,6 +19,7 @@ import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
 import { initCloud, schedulePush, watchFavorites, syncCompact } from './cloudSync'
+import { remoteAvailable, syncRemote } from './remoteSync'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
 
@@ -96,7 +97,8 @@ export function App() {
 
     const sync = (): void => {
       if (cancelled || !ready) return
-      void syncCompact()
+      if (remoteAvailable()) void syncRemote()
+      else void syncCompact()
     }
 
     const onVisible = (): void => {

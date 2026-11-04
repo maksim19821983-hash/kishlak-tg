@@ -8,6 +8,7 @@ import { getState } from '@/features/fan/state'
 import { getMediaActionLog, getMediaSessionInfo } from '@/audio/mediaSession'
 import { isListened, releaseProgress } from '@/features/fan/derive'
 import { getCloudDiag, initCloud, syncCompact, exportCode, importCode, readProbe, writeProbe, readProbeSmall, writeProbeSmall, shareCodeLink } from '@/app/cloudSync'
+import { REMOTE_URL, remoteAvailable, syncRemote } from '@/app/remoteSync'
 
 function fmt(s: number): string {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
@@ -110,6 +111,7 @@ function CloudPanel() {
         remoteFav: d.remoteFav,
         error: d.lastError,
         payload: d.payload,
+        server: REMOTE_URL === '' ? 'не задан' : REMOTE_URL,
         sync: d.lastSyncAt,
         probe: d.probe,
       })
@@ -178,6 +180,11 @@ function CloudPanel() {
       </p>
 
       <div className="flex" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+        {btn('сервер: синхронизировать', () => void run('сервер', async () => {
+          if (!remoteAvailable()) return `адрес сервера не задан: «${REMOTE_URL}»`
+          return syncRemote()
+        }), busy === 'сервер')}
+
         {btn('забрать из облака', () => void run('облако', async () => {
           const ok = await initCloud()
           if (!ok) return 'CloudStorage недоступен'
