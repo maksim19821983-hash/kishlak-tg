@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
 import { HapticFeedback } from '@/app/telegram'
-import { Logo1111 } from '@/ui/Logo1111'
 
 const KEY = 'kishlak:onboard:v2'
 
@@ -149,7 +148,7 @@ export function Onboarding({ onDone, onStart }: { onDone: () => void; onStart: (
   }
 
   return (
-    <div className="fixed inset-0 z-[55] bg-bg flex flex-col">
+    <div className="fixed inset-0 z-[55] bg-bg flex flex-col" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
       <div className="px-screen" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 28px)' }}>
         <div className="flex items-center justify-between">
           <p className="font-mono uppercase text-dim" style={{ fontSize: 9.5, letterSpacing: '.2em' }}>
@@ -166,16 +165,8 @@ export function Onboarding({ onDone, onStart }: { onDone: () => void; onStart: (
       </div>
 
       <div
-        aria-hidden
-        className="flex-1 min-h-0"
-        style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', opacity: 0.2, pointerEvents: 'none', paddingBottom: 34 }}
-      >
-        <Logo1111 height={168} />
-      </div>
-
-      <div
         ref={trackRef}
-        className="flex min-h-0 overflow-x-auto shrink-0"
+        className="flex-1 min-h-0 flex overflow-x-auto"
         style={{ scrollSnapType: 'x mandatory', scrollbarWidth: 'none' }}
         onScroll={(e) => {
           const el = e.currentTarget
@@ -187,7 +178,7 @@ export function Onboarding({ onDone, onStart }: { onDone: () => void; onStart: (
           <div
             key={slide.title}
             className="shrink-0 px-screen flex flex-col justify-center"
-            style={{ width: '100%', scrollSnapAlign: 'center', minHeight: '42vh', paddingBottom: 8 }}
+            style={{ width: '100%', scrollSnapAlign: 'center', minHeight: '100%', paddingBottom: 8 }}
           >
             <p className="font-mono uppercase text-dim" style={{ fontSize: 10, letterSpacing: '.2em' }}>
               {slide.kicker}
