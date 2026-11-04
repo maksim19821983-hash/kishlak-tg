@@ -16,7 +16,19 @@ export function parseDeepLink(param: string | null): DeepLinkResult {
 
 /** Применяет deep link при старте: загружает трек в движок, возвращает releaseId для открытия */
 export async function applyDeepLink(): Promise<{ openPlayer: boolean; releaseId: string | null }> {
-  const param = getStartParam()
+  const fromQuery = (() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const track = params.get('track')
+      if (track !== null) return `track_${track}`
+      const release = params.get('release')
+      if (release !== null) return `release_${release}`
+      return null
+    } catch {
+      return null
+    }
+  })()
+  const param = getStartParam() ?? fromQuery
   const link = parseDeepLink(param)
 
   if (link.type === 'none') return { openPlayer: false, releaseId: null }
