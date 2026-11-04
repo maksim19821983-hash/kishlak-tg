@@ -13,4 +13,4 @@ id = "dae6476e1fef47f4b467ccc10b0dbcd2"
 [[d1_databases]]
 binding = "DB"
 database_name = "kishlak-sync"
-# database_id = "e7df503d-2a3c-42c3-926c-cdc15a1595ff"
+database_id = "e7df503d-2a3c-42c3-926c-cdc15a1595ff"
