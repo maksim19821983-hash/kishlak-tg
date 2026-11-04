@@ -81,7 +81,6 @@ export function App() {
   useEffect(() => {
     let cancelled = false
     let ready = false
-    let cleanupTimers: (() => void) | null = null
 
     const syncOnce = async (): Promise<void> => {
       if (!remoteAvailable()) return
@@ -93,19 +92,22 @@ export function App() {
     }
 
     void (async () => {
-      const catalog = await CatalogRepo.load()
+      try {
+        const catalog = await CatalogRepo.load()
+        if (cancelled) return
+
+        // если ничего не играло — подставляем первую песню каталога
+        const engine = getWebEngine()
+        if (useAudioStore.getState().track === null) {
+          const all = catalog.releases.flatMap((r) => r.tracks)
+          if (all.length > 0) engine.load(all, 0)
+        }
+      } catch {
+        /* каталог не загрузился — синхронизации это не мешает */
+      }
       if (cancelled) return
       ready = true
-
-      // если ничего не играло — показываем первую песню каталога (в офлайне это скачанное)
-      const engine = getWebEngine()
-      if (useAudioStore.getState().track === null) {
-        const all = catalog.releases.flatMap((r) => r.tracks)
-        if (all.length > 0) engine.load(all, 0)
-      }
-
       await syncOnce()
-      if (cancelled) return
     })()
 
     // прогресс сохранился локально → через пару секунд отправляем на сервер
@@ -116,12 +118,18 @@ export function App() {
     const onVisible = (): void => { if (ready) void syncOnce() }
     document.addEventListener('visibilitychange', onVisible)
 
+    // пока не прошёл первый обмен — пробуем чаще
+    const retry = setInterval(() => {
+      if (!ready) return
+      if (getSyncStatus().at === 0 && remoteAvailable()) void syncOnce()
+    }, 15_000)
+
     const timer = setInterval(() => { if (ready) void syncOnce() }, 90_000)
 
     return () => {
       cancelled = true
       document.removeEventListener('visibilitychange', onVisible)
-      cleanupTimers?.()
+      clearInterval(retry)
       clearInterval(timer)
     }
   }, [])
