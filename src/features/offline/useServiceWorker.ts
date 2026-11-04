@@ -5,8 +5,8 @@ export type SwStatus = {
   files: number
 }
 
-const ASSET_CACHE = 'kishlak-assets-v4'
-const SHELL_CACHE = 'kishlak-shell-v4'
+const ASSET_CACHE = 'kishlak-assets-v5'
+const SHELL_CACHE = 'kishlak-shell-v5'
 
 /**
  * Готовность офлайн-кэша: не только активность service worker, но и реальное число файлов.

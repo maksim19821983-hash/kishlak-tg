@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Кишлак — офлайн</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #ede7dc; color: #131211; }
+      body {
+        display: flex; flex-direction: column; justify-content: center;
+        padding: 24px calc(24px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+      }
+      .kicker { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; opacity: .6; }
+      h1 { font-size: 28px; line-height: 1.1; margin: 10px 0 14px; font-weight: 700; }
+      p { font-size: 13px; line-height: 1.6; opacity: .8; margin: 0 0 10px; max-width: 320px; }
+      button {
+        margin-top: 18px; height: 48px; border-radius: 999px; border: 1px solid #131211;
+        background: #131211; color: #ede7dc; font: inherit; font-size: 12px;
+        letter-spacing: .14em; text-transform: uppercase; width: 220px;
+      }
+    </style>
+  </head>
+  <body>
+    <p class="kicker">Кишлак · архив</p>
+    <h1>Нет сети,<br />и приложение ещё не сохранено</h1>
+    <p>Открой приложение один раз с интернетом — после этого оно будет запускаться без сети.</p>
+    <p>Если это происходит в браузере, а не в приложении с домашнего экрана, офлайн может быть недоступен вовсе.</p>
+    <button onclick="location.reload()">Попробовать снова</button>
+  </body>
+</html>

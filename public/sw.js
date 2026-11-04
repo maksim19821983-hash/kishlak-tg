@@ -1,9 +1,9 @@
 /* Офлайн-оболочка: страницу отдаём из кэша сразу, сеть обновляет её в фоне. */
 
-const SHELL_CACHE = 'kishlak-shell-v4'
-const ASSET_CACHE = 'kishlak-assets-v4'
+const SHELL_CACHE = 'kishlak-shell-v5'
+const ASSET_CACHE = 'kishlak-assets-v5'
 const AUDIO_CACHE = 'kishlak-audio-v1'
-const SHELL_FILES = ['/', '/manifest.json', '/icons/icon-192.png']
+const SHELL_FILES = ['/', '/offline.html', '/manifest.json', '/icons/icon-192.png']
 
 self.addEventListener('install', (event) => {
   self.skipWaiting()
@@ -72,10 +72,12 @@ self.addEventListener('fetch', (event) => {
         }
 
         const response = await network
-        return response ?? new Response('приложение не сохранено для офлайна', {
-          status: 503,
-          headers: { 'content-type': 'text/plain; charset=utf-8' },
-        })
+        if (response) return response
+
+        // ни сети, ни сохранённой оболочки — показываем понятную страницу
+        const fallback = await cache.match('/offline.html')
+        if (fallback) return fallback
+        return new Response('нет сети', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } })
       })(),
     )
     return
