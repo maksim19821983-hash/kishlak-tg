@@ -118,10 +118,22 @@ def paste_center(canvas, layer, cx, cy, angle=0, shadow_alpha=.4):
 
 
 def avatar(size=512):
-    side = k_square(900).resize((size, size), Image.LANCZOS)
-    img = grain(side)
+    """Аватар из рисунка 11:11: чёрное поле, знак по центру."""
+    src = Image.open(os.path.join(OUT, 'avatar-source-1111.jpg')).convert('RGB')
+    a = np.array(src).astype(int)
+    ys, xs = np.where(a.max(axis=2) > 40)
+    x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max()
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    # знак занимает ~78% ширины: в круге остаётся воздух по краям
+    side = int(max(x1 - x0, y1 - y0) / .78)
+    sq = src.crop((int(cx - side / 2), int(cy - side / 2), int(cx + side / 2), int(cy + side / 2)))
+    # чистый чёрный запрещён системой — сдвигаем поле в #0B0B0C
+    arr = np.array(sq)
+    dark = arr.max(axis=2) < 12
+    arr[dark] = (11, 11, 12)
+    img = Image.fromarray(arr).resize((size, size), Image.LANCZOS)
     img.save(f'{OUT}/avatar-512.png')
-    img.save(f'{OUT}/avatar-512.jpg', quality=93)
+    img.save(f'{OUT}/avatar-512.jpg', quality=94)
     img.resize((128, 128), Image.LANCZOS).save(f'{OUT}/avatar-128.png')
     img.resize((64, 64), Image.LANCZOS).save(f'{OUT}/avatar-64.png')
     mask = Image.new('L', (size, size), 0)
