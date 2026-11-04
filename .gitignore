@@ -15,3 +15,5 @@ public/audio/
 vdps/
 public/content/
 .wrangler/
+__pycache__/
+*.pyc
