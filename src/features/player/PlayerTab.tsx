@@ -258,6 +258,19 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
     touchStartRef.current = null
     if (!end) return
 
+    // горизонтальный свайп — переключение трека
+    if (info !== null) {
+      const dx = end.clientX - info.x
+      const dy = end.clientY - info.y
+      if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        suppressTapRef.current = true
+        if (dx < 0) nextFn('user')
+        else prevFn()
+        haptic('light')
+        return
+      }
+    }
+
     // свайп вверх — открыть вкладыш
     if (start !== null && start - end.clientY > 60 && hasLyrics) {
       suppressTapRef.current = true
@@ -350,8 +363,10 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
       {/* кассета */}
       <div
         className="px-screen shrink-0 mt-2"
+        style={{ touchAction: 'none' }}
         onTouchStart={handleCassetteTouchStart}
         onTouchEnd={handleCassetteTouchEnd}
+        onTouchCancel={() => { cassetteTouchStartY.current = null; touchStartRef.current = null }}
       >
         <Cassette
           side="A"

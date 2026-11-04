@@ -38,7 +38,6 @@ async function postDay(env) {
   const caption = [
     '<b>Трек дня</b>',
     `<b>${escapeHtml(track.title)}</b>`,
-    `${escapeHtml(track.releaseTitle)} · ${track.year}`,
   ].join('\n')
 
   const response = await fetch(`${API}/bot${token}/sendPhoto`, {

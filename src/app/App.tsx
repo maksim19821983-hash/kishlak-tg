@@ -10,7 +10,7 @@ import { ProfileSoon } from '@/features/fan/ProfileSoon'
 import { FavoritesScreen } from '@/features/favorites/FavoritesScreen'
 import { TabBar, type Tab } from '@/ui/TabBar'
 import { initTrackListener } from '@/features/fan/trackListen'
-import { applyDeepLink } from './deepLink'
+import { applyDeepLink, hasDeepLink } from './deepLink'
 import { getWebEngine } from '@/audio/webEngine'
 import { isListened } from '@/features/fan/derive'
 import { getState } from '@/features/fan/state'
@@ -156,7 +156,8 @@ export function App() {
 
         // если ничего не играло — подставляем первую песню каталога
         const engine = getWebEngine()
-        if (useAudioStore.getState().track === null) {
+        // если открыли по ссылке на трек — не подставляем первый трек каталога
+        if (useAudioStore.getState().track === null && !hasDeepLink()) {
           const all = catalog.releases.flatMap((r) => r.tracks)
           if (all.length > 0) engine.load(all, 0)
         }

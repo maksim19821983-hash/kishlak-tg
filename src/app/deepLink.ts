@@ -7,6 +7,20 @@ export type DeepLinkResult =
   | { type: 'release'; releaseId: string }
   | { type: 'none' }
 
+/** Есть ли в запуске ссылка на конкретный трек/релиз. */
+export function hasDeepLink(): boolean {
+  const fromQuery = (() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      return params.get('track') !== null || params.get('release') !== null
+    } catch {
+      return false
+    }
+  })()
+  const start = getStartParam()
+  return (start !== null && start !== '') || fromQuery
+}
+
 export function parseDeepLink(param: string | null): DeepLinkResult {
   if (!param) return { type: 'none' }
   if (param.startsWith('track_')) return { type: 'track', trackId: param.slice(6) }
@@ -28,7 +42,8 @@ export async function applyDeepLink(): Promise<{ openPlayer: boolean; releaseId:
       return null
     }
   })()
-  const param = getStartParam() ?? fromQuery
+  const start = getStartParam()
+  const param = start !== null && start !== '' ? start : fromQuery
   const link = parseDeepLink(param)
 
   if (link.type === 'none') return { openPlayer: false, releaseId: null }
