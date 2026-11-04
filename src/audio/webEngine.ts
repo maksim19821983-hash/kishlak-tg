@@ -4,6 +4,9 @@ import { initialPlaybackState } from './port'
 import { shuffleOrder, nextIndex, prevIndex, clampIndex } from './queue'
 import { updateMediaMetadata, updatePositionState, setupMediaSession } from './mediaSession'
 
+/** Громкость запоминается между запусками. */
+const VOLUME_KEY = 'kishlak:volume:v1'
+
 // Обложка альбома — пока хардкод, в Шаге 4 придёт через load()
 const FALLBACK_COVER = '/content/covers/vdps-2026.jpg'
 
@@ -221,6 +224,12 @@ class WebAudioEngine implements AudioPort {
     const vol = Math.min(1, Math.max(0, v))
     this.el.volume = vol
     this.patch({ volume: vol })
+    // громкость запоминаем: на ПК ползунок не должен сбрасываться
+    try {
+      localStorage.setItem(VOLUME_KEY, String(vol))
+    } catch {
+      /* приватный режим */
+    }
   }
 
   subscribeEnded(fn: (track: Track, duration: number) => void): () => void {
@@ -337,6 +346,16 @@ class WebAudioEngine implements AudioPort {
     })
 
     el.addEventListener('ended', () => this.handleNaturalEnd())
+
+    try {
+      const saved = Number(localStorage.getItem(VOLUME_KEY))
+      if (Number.isFinite(saved) && saved >= 0 && saved <= 1) {
+        el.volume = saved
+        this.patch({ volume: saved })
+      }
+    } catch {
+      /* приватный режим */
+    }
 
     el.addEventListener('error', () => {
       this.diagCounters.error++
