@@ -110,6 +110,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
   const [flatTracks, setFlatTracks] = useState<FlatTrack[]>([])
   const [menuTrackId, setMenuTrackId] = useState<string | null>(null)
   const [hoverCapable] = useState(() => window.matchMedia('(hover: hover) and (pointer: fine)').matches)
+  const [listAnimating, setListAnimating] = useState(false)
   const [listOpen, setListOpen] = useState(() => {
     try {
       return localStorage.getItem('kishlak:player:list') !== '0'
@@ -311,8 +312,10 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
           <button
             onClick={() => {
               const next = !listOpen
+              setListAnimating(true)
               setListOpen(next)
               try { localStorage.setItem('kishlak:player:list', next ? '1' : '0') } catch {}
+              window.setTimeout(() => setListAnimating(false), 280)
               haptic('light')
             }}
             className="flex items-center justify-center text-dim"
@@ -338,7 +341,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
           flexGrow: listOpen ? 0 : 1,
           flexShrink: 0,
           flexBasis: 'auto',
-          transition: 'flex-grow 360ms cubic-bezier(.22,.8,.28,1)',
+          transition: 'flex-grow 260ms cubic-bezier(.3,.7,.3,1)',
           justifyContent: listOpen ? 'flex-start' : 'space-between',
           paddingTop: listOpen ? 0 : 16,
           paddingBottom: listOpen ? 0 : 'calc(env(safe-area-inset-bottom) + 16px)',
@@ -346,8 +349,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
       >
       {/* кассета */}
       <div
-        className="px-screen shrink-0 mt-2 cassette-grow"
-        style={listOpen ? undefined : { transform: 'scale(1.06)', transformOrigin: 'center' }}
+        className="px-screen shrink-0 mt-2"
         onTouchStart={handleCassetteTouchStart}
         onTouchEnd={handleCassetteTouchEnd}
       >
@@ -607,27 +609,29 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
       <div
         className="overflow-hidden overscroll-contain"
         style={{
+          contain: 'layout paint',
           flexGrow: listOpen ? 1 : 0,
           flexShrink: 1,
           flexBasis: 0,
           minHeight: 0,
           opacity: listOpen ? 1 : 0,
           transition:
-            'flex-grow 360ms cubic-bezier(.22,.8,.28,1), opacity 260ms cubic-bezier(.22,.8,.28,1)',
+            'flex-grow 260ms cubic-bezier(.3,.7,.3,1)',
           pointerEvents: listOpen ? 'auto' : 'none',
         }}
       >
       <div
         className="h-full overflow-y-auto overscroll-contain"
         style={{
+          contentVisibility: listAnimating ? 'hidden' : 'visible',
           background: 'var(--panel)',
           borderTop: '1px solid var(--line)',
           borderTopLeftRadius: 14,
           borderTopRightRadius: 14,
           marginTop: 4,
           boxShadow: '0 -10px 24px rgba(0,0,0,.06)',
-          transform: listOpen ? 'none' : 'translateY(56px)',
-          transition: 'transform 380ms cubic-bezier(.22,.8,.28,1)',
+          transform: listOpen ? 'none' : 'translateY(48px)',
+          transition: 'transform 260ms cubic-bezier(.3,.7,.3,1)',
         }}
       >
         <div className="px-screen py-2 border-t border-line">
