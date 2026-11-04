@@ -335,7 +335,10 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
       <div
         className="flex flex-col min-h-0"
         style={{
-          flex: listOpen ? '0 0 auto' : '1 1 auto',
+          flexGrow: listOpen ? 0 : 1,
+          flexShrink: 0,
+          flexBasis: 'auto',
+          transition: 'flex-grow 360ms cubic-bezier(.22,.8,.28,1)',
           justifyContent: listOpen ? 'flex-start' : 'space-between',
           paddingTop: listOpen ? 0 : 16,
           paddingBottom: listOpen ? 0 : 'calc(env(safe-area-inset-bottom) + 16px)',
@@ -601,9 +604,21 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
       {/* список треков */}
       </div>
 
-      {listOpen && (
       <div
-        className="flex-1 overflow-y-auto overscroll-contain list-fade-in"
+        className="overflow-hidden overscroll-contain"
+        style={{
+          flexGrow: listOpen ? 1 : 0,
+          flexShrink: 1,
+          flexBasis: 0,
+          minHeight: 0,
+          opacity: listOpen ? 1 : 0,
+          transition:
+            'flex-grow 360ms cubic-bezier(.22,.8,.28,1), opacity 260ms cubic-bezier(.22,.8,.28,1)',
+          pointerEvents: listOpen ? 'auto' : 'none',
+        }}
+      >
+      <div
+        className="h-full overflow-y-auto overscroll-contain"
         style={{
           background: 'var(--panel)',
           borderTop: '1px solid var(--line)',
@@ -611,6 +626,8 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
           borderTopRightRadius: 14,
           marginTop: 4,
           boxShadow: '0 -10px 24px rgba(0,0,0,.06)',
+          transform: listOpen ? 'none' : 'translateY(56px)',
+          transition: 'transform 380ms cubic-bezier(.22,.8,.28,1)',
         }}
       >
         <div className="px-screen py-2 border-t border-line">
@@ -671,7 +688,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         {/* отступ под TabBar */}
         <div style={{ height: 8 }} />
       </div>
-      )}
+      </div>
 
 
       {errorText !== null && errorText !== '' && (

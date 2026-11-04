@@ -1,0 +1,21 @@
+{
+  "routes": [
+    {
+      "routePath": "/api/bot",
+      "mountPath": "/api",
+      "method": "",
+      "module": [
+        "api/bot.ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/api/sync",
+      "mountPath": "/api",
+      "method": "",
+      "module": [
+        "api/sync.ts:onRequest"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}
