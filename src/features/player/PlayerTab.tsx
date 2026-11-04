@@ -360,20 +360,32 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         />
       </div>
 
-      {!listOpen && (
+      {!listOpen && release?.cover !== undefined && (
         <div
           className="px-screen"
-          style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 0 }}
+          style={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column', paddingTop: 12 }}
         >
-          <p
-            className="font-display uppercase text-ink"
-            style={{ fontSize: 30, lineHeight: 1.05, letterSpacing: '-.02em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-          >
-            {track?.title ?? '—'}
-          </p>
-          <p className="font-mono text-mono-label uppercase text-dim" style={{ marginTop: 8 }}>
-            {release?.title ?? ''}{release?.year !== undefined ? ` · ${release.year}` : ''}
-          </p>
+          <div style={{ flex: '1 1 auto', minHeight: 0, borderRadius: 12, overflow: 'hidden', boxShadow: '0 10px 28px rgba(0,0,0,.22)' }}>
+            <img
+              src={release.cover}
+              alt=""
+              aria-hidden
+              draggable={false}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <p
+              className="font-display uppercase text-ink"
+              style={{ fontSize: 24, lineHeight: 1.05, letterSpacing: '-.02em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+            >
+              {track?.title ?? '—'}
+            </p>
+            <p className="font-mono text-mono-label uppercase text-dim" style={{ marginTop: 4 }}>
+              {release?.title ?? ''}{release?.year !== undefined ? ` · ${release.year}` : ''}
+            </p>
+          </div>
         </div>
       )}
 
