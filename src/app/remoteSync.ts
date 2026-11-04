@@ -5,7 +5,6 @@
 
 import { useFavorites } from '@/features/favorites/store'
 import { getState, setState, saveStateNow, type TrackFact } from '@/features/fan/state'
-import { deviceToken } from './pairing'
 
 /** Заполняется после деплоя воркера: адрес вида https://kishlak-sync.<аккаунт>.workers.dev */
 export const REMOTE_URL: string = (import.meta.env.VITE_SYNC_URL as string | undefined) ?? ''
@@ -17,18 +16,11 @@ type Payload = {
 
 export function remoteAvailable(): boolean {
   if (REMOTE_URL === '') return false
-  if (deviceToken() !== '') return true
   try {
     return (window.Telegram?.WebApp?.initData ?? '') !== ''
   } catch {
     return false
   }
-}
-
-function authHeaders(): Record<string, string> {
-  const token = deviceToken()
-  if (token !== '') return { 'x-device-token': token }
-  return { 'x-init-data': initData() }
 }
 
 function initData(): string {
@@ -76,7 +68,7 @@ export function merge(remote: Payload): void {
 async function call(method: 'GET' | 'POST', body?: Payload): Promise<Payload | null> {
   const response = await fetch(REMOTE_URL, {
     method,
-    headers: { ...authHeaders(), 'content-type': 'application/json' },
+    headers: { 'x-init-data': initData(), 'content-type': 'application/json' },
     ...(body ? { body: JSON.stringify(body) } : {}),
   })
   if (!response.ok) throw new Error(`сервер ответил ${response.status}`)
@@ -105,7 +97,7 @@ export async function debugRemote(): Promise<string> {
   if (REMOTE_URL === '') return 'адрес сервера не задан'
   try {
     const response = await fetch(`${REMOTE_URL.replace(/\/$/, '')}/debug`, {
-      headers: authHeaders(),
+      headers: { 'x-init-data': initData() },
     })
     const data = (await response.json()) as Record<string, unknown>
     return Object.entries(data).map(([k, v]) => `${k}: ${String(v)}`).join(' · ')

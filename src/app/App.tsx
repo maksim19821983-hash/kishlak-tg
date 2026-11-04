@@ -19,8 +19,6 @@ import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
 import { remoteAvailable, syncRemote } from './remoteSync'
-import { ConnectGate } from '@/features/account/AccountScreen'
-import { deviceToken } from './pairing'
 import { ErrorOverlay } from './ErrorOverlay'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
@@ -72,7 +70,6 @@ export function App() {
   const [bootProgress, setBootProgress] = useState(0.06)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
-  const [gateOpen, setGateOpen] = useState(false)
 
 
   useEffect(() => {
@@ -162,9 +159,6 @@ export function App() {
         setBootProgress(1)
         setTimeout(() => {
           if (cancelled) return
-          const inTg = (window.Telegram?.WebApp?.initData ?? '') !== ''
-          const skipped = (() => { try { return localStorage.getItem('kishlak:gate:skip') === '1' } catch { return false } })()
-          if (!inTg && deviceToken() === '' && !skipped) setGateOpen(true)
           setBooting(false)
           // ждём, пока логотип погаснет, и только потом показываем онбординг
           setTimeout(() => {
@@ -319,15 +313,6 @@ export function App() {
           </div>
           <SpikePage />
         </div>
-      )}
-
-      {gateOpen && (
-        <ConnectGate
-          onDone={() => {
-            try { localStorage.setItem('kishlak:gate:skip', '1') } catch {}
-            setGateOpen(false)
-          }}
-        />
       )}
 
       <BootScreen done={!booting} progress={bootProgress} />

@@ -75,16 +75,7 @@ async function verifyInitData(initData, botToken) {
   }
 }
 
-function randomCode(length = 6) {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  const bytes = crypto.getRandomValues(new Uint8Array(length))
-  return [...bytes].map((b) => alphabet[b % alphabet.length]).join('')
-}
 
-function randomToken() {
-  const bytes = crypto.getRandomValues(new Uint8Array(24))
-  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')
-}
 
 export default {
   async fetch(request, env) {
@@ -99,39 +90,7 @@ export default {
       return json(info)
     }
 
-    // ── привязка устройства (браузер без Телеграма) ──────────────────────────
-    if (url.pathname === '/pair/create') {
-      const ownerId = await verifyInitData(initData, env.BOT_TOKEN)
-      if (ownerId === null) return json({ error: 'bad signature' }, 401)
-      const code = randomCode()
-      await env.STATE.put(`pair:${code}`, JSON.stringify({ userId: ownerId, at: Date.now() }), {
-        expirationTtl: 600,
-      })
-      return json({ code })
-    }
-
-    if (url.pathname === '/pair/claim' && request.method === 'POST') {
-      const body = await request.json().catch(() => null)
-      const code = String(body?.code ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-      if (code.length < 4) return json({ error: 'bad code' }, 400)
-      const raw = await env.STATE.get(`pair:${code}`)
-      if (raw === null) return json({ error: 'code expired' }, 404)
-      const { userId: ownerId } = JSON.parse(raw)
-      const token = randomToken()
-      await env.STATE.put(`device:${token}`, String(ownerId))
-      await env.STATE.delete(`pair:${code}`)
-      return json({ token })
-    }
-
-    // кто перед нами: подпись Телеграма или токен устройства из браузера
-    const deviceToken = request.headers.get('x-device-token') ?? ''
-    let userId = null
-    if (deviceToken !== '') {
-      const stored = await env.STATE.get(`device:${deviceToken}`)
-      userId = stored === null ? null : Number(stored)
-    } else {
-      userId = await verifyInitData(initData, env.BOT_TOKEN)
-    }
+    const userId = await verifyInitData(initData, env.BOT_TOKEN)
     if (userId === null) return json({ error: 'bad signature' }, 401)
 
     const key = `state:${userId}`
