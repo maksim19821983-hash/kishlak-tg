@@ -148,10 +148,17 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
                     {fmt(track.duration)}
                   </span>
                 </button>
+                <HeartButton
+                  active
+                  onToggle={() => { toggleTrack(track.id); haptic('light') }}
+                  size={17}
+                  box={40}
+                  label={`Убрать из любимого: ${track.title}`}
+                />
                 <button
                   onClick={() => { setMenuTrack(track); haptic('light') }}
                   className="flex items-center justify-center text-dim"
-                  style={{ width: 44, height: 44 }}
+                  style={{ width: 40, height: 44 }}
                   aria-label={`Действия: ${track.title}`}
                 >
                   <IconMore size={18} />
