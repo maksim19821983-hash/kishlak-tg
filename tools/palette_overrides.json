@@ -1,8 +1,46 @@
 {
   "_комментарий": "Ручные акценты: цвет берётся с обложки глазами, а не алгоритмом. Применяется после gen_palette.py",
-  "11-11-2020":         { "accent": "#3FA96F", "secondary": "#E0578C", "mono": false, "why": "зелёный LED-экран 11:11, розовые волосы" },
-  "boleyu-toboy-2023":  { "accent": "#D9537F", "secondary": "#B07A4A", "mono": false, "why": "неоновая вывеска на дереве" },
-  "emo-rap-2022":       { "accent": "#3E6E8C", "secondary": "#8FA6B2", "mono": false, "why": "ночной город, синие огни" },
-  "kogda-ya-umer-2026": { "accent": "#3A3A3C", "secondary": "#8C8880", "mono": true,  "why": "чёрная обложка — нужен приём, не цвет" },
-  "lava-2021":          { "accent": "#C98A6A", "secondary": "#D98CA6", "mono": false, "why": "песочная тетрадь и розовая шляпа" }
+  "11-11-2020": {
+    "accent": "#3FA96F",
+    "secondary": "#E0578C",
+    "mono": false,
+    "why": "зелёный LED-экран 11:11, розовые волосы"
+  },
+  "boleyu-toboy-2023": {
+    "accent": "#D9537F",
+    "secondary": "#B07A4A",
+    "mono": false,
+    "why": "неоновая вывеска на дереве"
+  },
+  "emo-rap-2022": {
+    "accent": "#2B2D31",
+    "secondary": "#63676D",
+    "mono": false,
+    "why": "ночной город и чёрная одежда: мрачный графит вместо синих огней"
+  },
+  "kogda-ya-umer-2026": {
+    "accent": "#1E1E1F",
+    "secondary": "#4A4A4C",
+    "mono": true,
+    "backdrop": false,
+    "why": "обложка — чёрный квадрат: чистый чёрный экран без фото-подложки"
+  },
+  "lava-2021": {
+    "accent": "#C98A6A",
+    "secondary": "#D98CA6",
+    "mono": false,
+    "why": "песочная тетрадь и розовая шляпа"
+  },
+  "kto-ya-2020": {
+    "accent": "#4E5652",
+    "secondary": "#6B736E",
+    "mono": false,
+    "why": "туман и графика кадра; красные волосы не должны красить экран"
+  },
+  "ya-uebyvayu-v-dzhaz-2021": {
+    "accent": "#2B2D31",
+    "secondary": "#6E7176",
+    "mono": false,
+    "why": "чёрно-белый кадр, как «Пацанский эмо-рэп»: тот же мрачный графит"
+  }
 }

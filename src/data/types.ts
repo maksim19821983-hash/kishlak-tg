@@ -23,6 +23,10 @@ export type Track = {
   /** Акцент релиза — задаёт цветовую гамму всего экрана */
   accent?: string
   lrc?: string
+  /** Релиз просит не показывать фото-фон: нужен чистый чёрный (или бумага) */
+  noBackdrop?: boolean
+  /** Акцент выставлен руками: не трогаем его алгоритмом */
+  curated?: boolean
 }
 
 export type Release = {
@@ -37,7 +41,7 @@ export type Release = {
   series?: { index: number; total: number }
   /** Знак релиза: печатается на кассете и в кадре релиза */
   motif?: string
-  palette: { mode: Polarity; accent: string; secondary?: string; mono?: boolean }
+  palette: { mode: Polarity; accent: string; secondary?: string; mono?: boolean; backdrop?: boolean }
   cover: string
   coverSmall: string
   tracks: Track[]

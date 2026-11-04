@@ -81,6 +81,11 @@ def build() -> dict:
                 "releaseId": rid,
                 "artistId": out["artistId"],
             }
+            # релиз может требовать чистый фон: без фото-подложки
+            if out["palette"].get("backdrop") is False:
+                t_out["noBackdrop"] = True
+            if out["palette"].get("curated") is True:
+                t_out["curated"] = True
             audio_src = src_dir / track.get("audio", "")
             if audio_src.exists():
                 t_out["audio"] = copy(audio_src, PUBLIC / "audio" / rid / audio_src.name)

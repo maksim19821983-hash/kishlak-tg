@@ -55,7 +55,9 @@ export function usePolarity(): void {
   const track = useAudioStore((s) => s.track)
   const releaseId = track?.releaseId ?? null
   const prevReleaseId = useRef<string | null>(null)
-  const accent = boostAccent(track?.accent ?? FALLBACK_ACCENT)
+  // ручная палитра задана глазами — не искажаем её «усилением» насыщенности
+  const accent =
+    track?.curated === true ? (track.accent ?? FALLBACK_ACCENT) : boostAccent(track?.accent ?? FALLBACK_ACCENT)
   const mode = useCurrentPolarity()
 
   // цветовая гамма следует за обложкой играющего релиза

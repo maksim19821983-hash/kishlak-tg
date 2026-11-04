@@ -79,6 +79,8 @@ function parseTrack(v: unknown, p: string, release: { id: string; artistId: stri
   if (lockArt !== undefined) track.lockArt = lockArt
   const accent = optStr(o, 'accent', p)
   if (accent !== undefined) track.accent = accent
+  if (o.noBackdrop === true) track.noBackdrop = true
+  if (o.curated === true) track.curated = true
   if (track.artistId !== release.artistId) throw new ManifestError(`${p}.artistId`, `"${release.artistId}"`)
   return track
 }
@@ -109,6 +111,7 @@ function parseRelease(v: unknown, i: number, artistId: string): Release {
       accent: str(palette, 'accent', `${p}.palette`),
       ...(palette.secondary !== undefined ? { secondary: str(palette, 'secondary', `${p}.palette`) } : {}),
       ...(palette.mono !== undefined ? { mono: palette.mono === true } : {}),
+      ...(palette.backdrop !== undefined ? { backdrop: palette.backdrop === true } : {}),
     },
     cover: str(o, 'cover', p),
     coverSmall: str(o, 'coverSmall', p),

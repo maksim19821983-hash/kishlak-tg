@@ -45,6 +45,8 @@ export function App() {
   const cover = useAudioStore((s) => s.track?.cover)
   const polarity = (document.documentElement.dataset.polarity as 'paper' | 'dark') ?? 'paper'
   const accent = useAudioStore((s) => s.track?.accent)
+  // у некоторых релизов фон должен быть чистым, без фотографии
+  const noBackdrop = useAudioStore((s) => s.track?.noBackdrop === true)
 
   // светлота обложки: на тёмных обложках скрим плотнее, иначе текст проваливается
   const coverIsLight = (() => {
@@ -271,7 +273,7 @@ export function App() {
     >
       <Grain />
 
-      {COVER_BACKDROP && cover !== undefined && (
+      {COVER_BACKDROP && cover !== undefined && !noBackdrop && (
         <>
           <div
             aria-hidden
