@@ -61,7 +61,7 @@ def cassette(draw, cx, cy, scale=1.0):
     rw = width_tracked(draw, right, f2, 2 * scale)
     tracked(draw, (lx0 + lw - 16 * scale - rw, ly0 + 11 * scale), right, f2, (90, 84, 78), 2 * scale)
     f3 = font(MB, int(11 * scale))
-    tracked(draw, (lx0 + 16 * scale, ly0 + 52 * scale), 'ПЛЕЕР · АПФС', f3, (120, 112, 104), 3 * scale)
+    tracked(draw, (lx0 + 16 * scale, ly0 + 52 * scale), 'ПЛЕЕР', f3, (120, 112, 104), 3 * scale)
     # window
     wx0, wy0 = x0 + 20 * scale, y0 + 116 * scale
     ww, wh = w - 40 * scale, 62 * scale

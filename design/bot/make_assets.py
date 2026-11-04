@@ -92,7 +92,7 @@ def cassette_layer(w=560):
     r = '11:11'
     tracked(d, (lx + lw - 18 * s - tw(d, r, f2, 2 * s), ly + 12 * s), r, f2, (95, 88, 80), 2 * s)
     f3 = fnt('jbmono-medium.ttf', int(12 * s))
-    tracked(d, (lx + 18 * s, ly + 60 * s), 'ПЛЕЕР · АПФС · С-60', f3, (128, 119, 109), 3 * s)
+    tracked(d, (lx + 18 * s, ly + 60 * s), 'ПЛЕЕР · С-60', f3, (128, 119, 109), 3 * s)
 
     wx, wy = x0 + 24 * s, y0 + 138 * s
     ww, wh = w - 48 * s, 74 * s
@@ -171,7 +171,7 @@ def welcome():
     d = ImageDraw.Draw(img)
     m = 84
     f = fnt('jbmono-medium.ttf', 22)
-    tracked(d, (m, 86), 'КИШЛАК · АПФС', f, (110, 103, 94), 6)
+    tracked(d, (m, 86), 'КИШЛАК', f, (110, 103, 94), 6)
     r = '11:11'
     tracked(d, (W - m - tw(d, r, f, 4), 86), r, f, (110, 103, 94), 4)
 

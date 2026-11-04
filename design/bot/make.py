@@ -60,7 +60,7 @@ def cassette(d, cx, cy, s=1.0, big=False):
     r = '11:11'
     tracked(d, (lx + lw - 18 * s - tw(d, r, f2, 2 * s), ly + 12 * s), r, f2, (95, 88, 80), 2 * s)
     f3 = fnt(MB, int(12 * s))
-    tracked(d, (lx + 18 * s, ly + 60 * s), 'ПЛЕЕР · АПФС · С-60', f3, (128, 119, 109), 3 * s)
+    tracked(d, (lx + 18 * s, ly + 60 * s), 'ПЛЕЕР · С-60', f3, (128, 119, 109), 3 * s)
 
     wx, wy = x0 + 24 * s, y0 + 138 * s
     ww, wh = w - 48 * s, 74 * s
