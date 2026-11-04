@@ -7,8 +7,15 @@ import { analyzeCover } from './analyzeCover'
 export const AUTO_POLARITY = false
 const STORAGE_KEY = 'kishlak:theme'
 
+/** По умолчанию — тёмная тема; светлую выбирают вручную и она запоминается. */
 function getStoredTheme(): 'paper' | 'dark' {
-  try { return localStorage.getItem(STORAGE_KEY) === 'dark' ? 'dark' : 'paper' } catch { return 'paper' }
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved === 'paper') return 'paper'
+    return 'dark'
+  } catch {
+    return 'dark'
+  }
 }
 
 const FALLBACK_ACCENT = '#8C5334'

@@ -12,7 +12,7 @@ function apply(mode: Polarity): void {
 }
 
 export const usePolarity = create<PolarityState>((set) => ({
-  mode: 'paper',
+  mode: 'dark',
   setMode: (mode) => {
     apply(mode)
     set({ mode })
