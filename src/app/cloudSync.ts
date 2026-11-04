@@ -54,6 +54,26 @@ export function getCloudDiag(): Diag {
   return { ...diag, available: cloudSyncAvailable(), sdkPlatform: (window.Telegram?.WebApp?.platform ?? '-') }
 }
 
+/** Колбэк CloudStorage может не прийти вовсе — страхуемся таймаутом. */
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    let done = false
+    const timer = setTimeout(() => {
+      if (!done) {
+        done = true
+        diag.lastError = `таймаут ${ms} мс`
+        resolve(fallback)
+      }
+    }, ms)
+    void promise.then((value) => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      resolve(value)
+    })
+  })
+}
+
 function read(c: Cloud, key: string): Promise<string | null> {
   return new Promise((resolve) => {
     try {
@@ -133,6 +153,7 @@ export async function pullAndMerge(releaseIds: string[]): Promise<void> {
     diag.lastPull = 'нет CloudStorage'
     return
   }
+  diag.lastError = '—'
 
   // избранное
   const favRaw = await read(c, FAV_KEY)
@@ -151,15 +172,15 @@ export async function pullAndMerge(releaseIds: string[]): Promise<void> {
 
   // прослушивания по релизам
   const remoteTracks: Record<string, TrackFact> = {}
-  const values = await Promise.all(releaseIds.map((id) => read(c, safeKey(id))))
-  values.forEach((raw) => {
-    if (!raw) return
+  for (const id of releaseIds) {
+    const raw = await withTimeout(read(c, safeKey(id)), 1200, null)
+    if (!raw) continue
     try {
       Object.assign(remoteTracks, JSON.parse(raw) as Record<string, TrackFact>)
     } catch {
       /* пропускаем битый ключ */
     }
-  })
+  }
   const merged = mergeFan(getState(), remoteTracks)
   setState(merged)
   saveStateNow()
@@ -173,13 +194,20 @@ export async function pushAll(): Promise<void> {
     return
   }
 
+  diag.lastError = '—'
   const fav = useFavorites.getState()
-  await write(c, FAV_KEY, JSON.stringify({ tracks: fav.tracks, releases: fav.releases }))
+  await withTimeout(write(c, FAV_KEY, JSON.stringify({ tracks: fav.tracks, releases: fav.releases })), 1200, undefined)
 
+  // пишем по одному: параллельные вызовы CloudStorage подвешивают колбэки
   const groups = splitByRelease(getState())
-  await Promise.all(Object.entries(groups).map(([release, value]) => write(c, safeKey(release), value)))
-  diag.keys = Object.keys(groups).length + 1
-  diag.lastPush = `отправлено: избранное ${fav.tracks.length}, релизов ${groups ? Object.keys(groups).length : 0}`
+  const entries = Object.entries(groups)
+  let written = 0
+  for (const [release, value] of entries) {
+    await withTimeout(write(c, safeKey(release), value), 1200, undefined)
+    written += 1
+    diag.keys = written + 1
+  }
+  diag.lastPush = `избранное ${fav.tracks.length}, записано релизов ${written} из ${entries.length}`
 }
 
 let pushTimer: ReturnType<typeof setTimeout> | null = null
