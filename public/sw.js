@@ -1,15 +1,16 @@
-/* Оболочка приложения для офлайна: сеть в приоритете, кэш — как запасной путь. */
+/* Офлайн-оболочка: страницу отдаём из кэша сразу, сеть обновляет её в фоне. */
 
-const SHELL_CACHE = 'kishlak-shell-v2'
-const ASSET_CACHE = 'kishlak-assets-v2'
+const SHELL_CACHE = 'kishlak-shell-v3'
+const ASSET_CACHE = 'kishlak-assets-v3'
+const AUDIO_CACHE = 'kishlak-audio-v1'
+const SHELL_FILES = ['/', '/index.html', '/manifest.json', '/icons/icon-192.png']
 
 self.addEventListener('install', (event) => {
   self.skipWaiting()
   event.waitUntil(
     (async () => {
       const shell = await caches.open(SHELL_CACHE)
-      await shell.addAll(['/', '/index.html', '/manifest.json', '/icons/icon-192.png']).catch(() => {})
-      // весь бандл приложения: без этого офлайн открывался пустой экран
+      await shell.addAll(SHELL_FILES).catch(() => {})
       const assets = await caches.open(ASSET_CACHE)
       try {
         const response = await fetch('/precache.json', { cache: 'no-store' })
@@ -18,17 +19,16 @@ self.addEventListener('install', (event) => {
           await Promise.all(files.map((file) => assets.add(file).catch(() => {})))
         }
       } catch {
-        /* предзагрузка не удалась — кэшируем по ходу работы */
+        /* кэш прогреется из приложения */
       }
     })(),
   )
 })
 
 self.addEventListener('activate', (event) => {
-  const keep = new Set([SHELL_CACHE, ASSET_CACHE, 'kishlak-audio-v1'])
+  const keep = new Set([SHELL_CACHE, ASSET_CACHE, AUDIO_CACHE])
   event.waitUntil(
     (async () => {
-      // старые кэши удаляем: иначе офлайн отдаёт устаревшую оболочку
       const names = await caches.keys()
       await Promise.all(names.filter((name) => !keep.has(name)).map((name) => caches.delete(name)))
       await self.clients.claim()
@@ -43,41 +43,62 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
 
-  // страницы: сначала сеть, при её отсутствии — кэш
-  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
+  // страницы: сначала кэш (мгновенно и без сети), обновление — в фоне
+  if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone()
-          void caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy)).catch(() => {})
-          return response
+      (async () => {
+        const cache = await caches.open(SHELL_CACHE)
+        const cached = (await cache.match('/index.html')) ?? (await cache.match('/')) ?? (await cache.match(request))
+
+        const network = fetch(request)
+          .then((response) => {
+            if (response.ok) cache.put('/index.html', response.clone()).catch(() => {})
+            return response
+          })
+          .catch(() => null)
+
+        if (cached) {
+          // не ждём сеть: страница уже есть
+          void network
+          return cached
+        }
+
+        const response = await network
+        return response ?? new Response('приложение не сохранено для офлайна', {
+          status: 503,
+          headers: { 'content-type': 'text/plain; charset=utf-8' },
         })
-        .catch(async () => {
-          const cache = await caches.open(SHELL_CACHE)
-          return (await cache.match(request)) ?? (await cache.match('/index.html')) ?? new Response('офлайн', { status: 503 })
-        }),
+      })(),
     )
     return
   }
 
-  // статика, манифест, обложки, тексты: кэш в приоритете
-  const cacheable = ['/assets/', '/content/'].some((part) => url.pathname.startsWith(part)) || url.pathname === '/content/manifest.json'
+  const cacheable =
+    ['/assets/', '/content/'].some((part) => url.pathname.startsWith(part)) ||
+    url.pathname === '/content/manifest.json'
   if (!cacheable) return
 
   event.respondWith(
-    caches.open(ASSET_CACHE).then(async (cache) => {
+    (async () => {
+      const cache = await caches.open(ASSET_CACHE)
       const cached = await cache.match(request)
-      if (cached) return cached
+      if (cached) {
+        // обновляем в фоне, не задерживая ответ
+        void fetch(request)
+          .then((response) => { if (response.ok) cache.put(request, response.clone()) })
+          .catch(() => {})
+        return cached
+      }
       try {
         const response = await fetch(request)
         if (response.ok) cache.put(request, response.clone()).catch(() => {})
         return response
-      } catch (e) {
-        const audioCache = await caches.open('kishlak-audio-v1')
-        const hit = await audioCache.match(request)
-        if (hit) return hit
-        throw e
+      } catch (error) {
+        const audio = await caches.open(AUDIO_CACHE)
+        const local = await audio.match(request)
+        if (local) return local
+        throw error
       }
-    }),
+    })(),
   )
 })
