@@ -199,11 +199,8 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
 
         {(load.status === 'ready' || load.status === 'offline') && filteredReleases.length > 0 && (
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-            {filteredReleases.map((release) => (
-              <div
-                key={release.id}
-                style={{ opacity: !online && !savedIds.has(release.id) ? 0.45 : 1, transition: 'opacity 240ms ease' }}
-              >
+            {(online ? filteredReleases : filteredReleases.filter((r) => savedIds.has(r.id))).map((release) => (
+              <div key={release.id}>
               <Sleeve
                 release={release}
                 progress={getProgress(release.id, catalog)}

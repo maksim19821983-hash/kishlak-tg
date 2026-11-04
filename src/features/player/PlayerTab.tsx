@@ -532,10 +532,10 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
       >
         <div className="px-screen py-2 border-t border-line">
           <p className="font-mono text-mono-label uppercase text-dim">
-            ВСЕ ТРЕКИ · {totalCount}
+            {online ? 'ВСЕ ТРЕКИ' : 'СКАЧАНО'} · {online ? totalCount : flatTracks.filter((ft) => downloads[ft.track.id] !== undefined).length}
           </p>
         </div>
-        {flatTracks.map((ft, globalIdx) => {
+        {(online ? flatTracks : flatTracks.filter((ft) => downloads[ft.track.id] !== undefined)).map((ft, globalIdx) => {
           const isPlaying = track?.id === ft.track.id
           const saved = downloads[ft.track.id] !== undefined
           const unavailable = !online && !saved

@@ -21,6 +21,7 @@ export type DownloadRecord = {
   duration?: number
   audio?: string
   cover?: string
+  coverSmall?: string
   lrc?: string
 }
 
@@ -115,6 +116,12 @@ export async function downloadTrack(track: Track, releaseId: string): Promise<nu
     if (track.cover !== undefined) {
       const cover = await fetch(track.cover).catch(() => null)
       if (cover?.ok) await cache.put(track.cover, cover.clone())
+      // в каталоге используется уменьшенная обложка
+      const small = track.cover.replace(/\/covers\/([^/]+)\.jpg$/, '/covers/$1-400.jpg')
+      if (small !== track.cover) {
+        const smallRes = await fetch(small).catch(() => null)
+        if (smallRes?.ok) await cache.put(small, smallRes.clone())
+      }
     }
 
     const record: DownloadRecord = {
