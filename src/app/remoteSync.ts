@@ -89,3 +89,18 @@ export async function syncRemote(): Promise<string> {
   const fav = merged.fav.tracks.length
   return `сервер: избранное ${fav}, треков ${count}`
 }
+
+
+/** Диагностика подписи на сервере: покажет, сходится ли хеш и какой длины токен. */
+export async function debugRemote(): Promise<string> {
+  if (REMOTE_URL === '') return 'адрес сервера не задан'
+  try {
+    const response = await fetch(`${REMOTE_URL.replace(/\/$/, '')}/debug`, {
+      headers: { 'x-init-data': initData() },
+    })
+    const data = (await response.json()) as Record<string, unknown>
+    return Object.entries(data).map(([k, v]) => `${k}: ${String(v)}`).join(' · ')
+  } catch (e) {
+    return `ошибка запроса: ${String(e)}`
+  }
+}

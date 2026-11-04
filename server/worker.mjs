@@ -33,6 +33,24 @@ function toHex(bytes) {
 }
 
 /** Проверяет подпись initData и возвращает id пользователя. */
+async function inspectInitData(initData, botToken) {
+  const params = new URLSearchParams(initData)
+  const hash = params.get('hash') ?? ''
+  params.delete('hash')
+  const dataCheckString = [...params.entries()].map(([k, v]) => `${k}=${v}`).sort().join('\n')
+  const secret = await hmac('WebAppData', botToken)
+  const expected = toHex(await hmac(secret, dataCheckString))
+  return {
+    fields: [...params.keys()],
+    hashLength: hash.length,
+    dataLength: dataCheckString.length,
+    tokenLength: botToken.length,
+    matches: expected === hash,
+    expectedPrefix: expected.slice(0, 10),
+    receivedPrefix: hash.slice(0, 10),
+  }
+}
+
 async function verifyInitData(initData, botToken) {
   const params = new URLSearchParams(initData)
   const hash = params.get('hash')
@@ -62,6 +80,13 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS })
 
     const initData = request.headers.get('x-init-data') ?? ''
+
+    // диагностика подписи: видно, какой длины токен в секрете и совпадают ли хеши
+    if (url.pathname === '/debug') {
+      const info = await inspectInitData(initData, env.BOT_TOKEN ?? '')
+      return json(info)
+    }
+
     const userId = await verifyInitData(initData, env.BOT_TOKEN)
     if (userId === null) return json({ error: 'bad signature' }, 401)
 
