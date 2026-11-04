@@ -20,7 +20,8 @@ import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
 import { remoteAvailable, syncRemote } from './remoteSync'
 import { InstallHint } from '@/features/offline/InstallHint'
-import { AccountLinkBrowser } from '@/features/offline/AccountLink'
+import { ConnectGate } from '@/features/account/AccountScreen'
+import { deviceToken } from './pairing'
 import { ErrorOverlay } from './ErrorOverlay'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
@@ -72,6 +73,7 @@ export function App() {
   const [bootProgress, setBootProgress] = useState(0.06)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
+  const [gateOpen, setGateOpen] = useState(false)
 
   useEffect(() => {
     const cleanup = initTrackListener()
@@ -136,6 +138,9 @@ export function App() {
         setBootProgress(1)
         setTimeout(() => {
           if (cancelled) return
+          const inTg = (window.Telegram?.WebApp?.initData ?? '') !== ''
+          const skipped = (() => { try { return localStorage.getItem('kishlak:gate:skip') === '1' } catch { return false } })()
+          if (!inTg && deviceToken() === '' && !skipped) setGateOpen(true)
           setBooting(false)
           // ждём, пока логотип погаснет, и только потом показываем онбординг
           setTimeout(() => {
@@ -247,8 +252,6 @@ export function App() {
 
       <ErrorOverlay />
 
-      <AccountLinkBrowser />
-
       <InstallHint />
 
       <div className="flex-1 min-h-0 relative" style={{ zIndex: 1 }}>
@@ -293,6 +296,15 @@ export function App() {
           </div>
           <SpikePage />
         </div>
+      )}
+
+      {gateOpen && (
+        <ConnectGate
+          onDone={() => {
+            try { localStorage.setItem('kishlak:gate:skip', '1') } catch {}
+            setGateOpen(false)
+          }}
+        />
       )}
 
       <BootScreen done={!booting} progress={bootProgress} />

@@ -2,6 +2,7 @@ import { NowPlayingBar } from '@/ui/NowPlayingBar'
 import { IconTheme } from '@/ui/icons'
 import { toggleTheme } from '@/features/polarity/usePolarity'
 import { haptic } from '@/app/telegram'
+import { AccountBlock } from '@/features/account/AccountScreen'
 
 type Props = { onOpenPlayer: () => void }
 
@@ -24,6 +25,10 @@ export function ProfileSoon({ onOpenPlayer }: Props) {
       </div>
 
       <NowPlayingBar onOpen={onOpenPlayer} />
+
+      <div className="px-screen" style={{ marginTop: 8, marginBottom: 16 }}>
+        <AccountBlock />
+      </div>
 
       <div className="flex-1 flex flex-col justify-center px-screen pb-16">
         <p className="font-mono text-mono-label uppercase text-dim mb-3">профиль</p>
