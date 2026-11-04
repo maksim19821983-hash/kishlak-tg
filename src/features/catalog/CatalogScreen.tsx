@@ -138,7 +138,7 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
         {savedIds.size === 0
           ? 'офлайн: ничего не скачано'
           : `офлайн: ${savedIds.size} из ${releases.length} · ${(savedBytes / 1024 / 1024).toFixed(0)} МБ`}
-        {` · ${swStatus === 'ready' ? 'кэш готов' : swStatus === 'installing' ? 'кэш сохраняется' : 'без кэша'}`}
+        {` · ${swStatus.state === 'ready' ? `кэш готов · ${swStatus.files} файлов` : swStatus.state === 'installing' ? 'кэш сохраняется' : 'без кэша'}`}
       </p>
 
       <main className="flex-1 px-screen" style={{ paddingTop: 24, paddingBottom: 32 }}>
