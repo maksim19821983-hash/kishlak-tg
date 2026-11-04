@@ -223,8 +223,18 @@ export function schedulePush(delayMs = 2500): void {
 
 /** Подписка на изменения избранного: сразу планируем отправку в облако. */
 export function watchFavorites(): () => void {
-  if (!cloudSyncAvailable()) return () => {}
-  return useFavorites.subscribe(() => schedulePush())
+  // подписка не зависит от доступности облака: она появится позже
+  return useFavorites.subscribe(() => schedulePush(1200))
+}
+
+/** Полный цикл: забрать чужое, слить, отправить своё. */
+export async function syncNow(releaseIds: string[] | null): Promise<string> {
+  const c = cloud()
+  if (!c) return 'облако недоступно'
+  const ids = releaseIds ?? Object.keys(getState().tracks).map((id) => id.replace(/-\d+$/, ''))
+  await pullAndMerge(Array.from(new Set(ids)))
+  await pushAll()
+  return `${diag.lastPull} · ${diag.lastPush}`
 }
 
 

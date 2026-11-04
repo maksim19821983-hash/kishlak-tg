@@ -18,7 +18,8 @@ import { CatalogRepo } from '@/data/CatalogRepo'
 import { SpikePage } from '@/features/spike/SpikePage'
 import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
-import { initCloud, pullAndMerge, pushAll, schedulePush, watchFavorites } from './cloudSync'
+import { initCloud, schedulePush, watchFavorites, syncNow } from './cloudSync'
+import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
 
 function firstUnlistenedIndex(release: Release): number {
@@ -75,23 +76,41 @@ export function App() {
     }
   }, [])
 
-  // подтягиваем данные аккаунта из облака Телеграма (телефон ↔ ПК) и отдаём обратно
+  // синхронизация без участия пользователя: при старте, при возврате в приложение и раз в минуту
   useEffect(() => {
     let cancelled = false
-    initCloud()
-      .then((ok) => {
-        if (cancelled || !ok) return
-        return CatalogRepo.load().then((cat) => pullAndMerge(cat.releases.map((r) => r.id)))
-      })
-      .then(() => { if (!cancelled) void pushAll() })
-      .catch(() => {})
+    let releaseIds: string[] | null = null
+    let ready = false
 
-    const onHide = (): void => { void pushAll() }
-    document.addEventListener('visibilitychange', onHide)
-    const timer = setInterval(() => schedulePush(0), 60_000)
+    const boot = async (): Promise<void> => {
+      const ok = await initCloud()
+      if (cancelled || !ok) return
+      const cat = await CatalogRepo.load()
+      if (cancelled) return
+      releaseIds = cat.releases.map((r) => r.id)
+      await syncNow(releaseIds)
+      ready = true
+    }
+    void boot()
+
+    // прогресс прослушиваний сохранился локально → отправляем в облако
+    onPersist(() => schedulePush(2000))
+
+    const sync = (): void => {
+      if (cancelled || !ready) return
+      void syncNow(releaseIds)
+    }
+
+    const onVisible = (): void => {
+      if (document.visibilityState === 'visible') sync()
+      else schedulePush(0)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+
+    const timer = setInterval(sync, 90_000)
     return () => {
       cancelled = true
-      document.removeEventListener('visibilitychange', onHide)
+      document.removeEventListener('visibilitychange', onVisible)
       clearInterval(timer)
     }
   }, [])

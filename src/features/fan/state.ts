@@ -139,6 +139,13 @@ export function setState(next: FanState): void {
   _state = next
 }
 
+let _onPersist: (() => void) | null = null
+
+/** Позволяет подписаться на сохранение прогресса (используется синхронизацией). */
+export function onPersist(cb: () => void): void {
+  _onPersist = cb
+}
+
 function persistNow(): void {
   _lastSaveAt = Date.now()
   _saveTimer = null
@@ -147,6 +154,8 @@ function persistNow(): void {
   } catch {
     // квота localStorage — молча пропускаем
   }
+  // локально сохранили — просим синхронизацию отправить это в облако
+  _onPersist?.()
 }
 
 export function saveStateNow(): void {
