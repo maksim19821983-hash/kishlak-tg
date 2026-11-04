@@ -59,6 +59,18 @@ export const onRequest = async (context: { request: Request; env: Env }): Promis
   const { request, env } = context
   if (request.method === 'OPTIONS') return new Response(null, { headers: CORS })
 
+  // проверка настроек без подписи: открывается в браузере, показывает чего не хватает
+  const url = new URL(request.url)
+  if (url.searchParams.get('probe') === '1') {
+    return json({
+      kv: env.STATE === undefined ? 'нет привязки STATE' : 'ок',
+      botToken: (env.BOT_TOKEN ?? '') === '' ? 'нет токена' : `есть (${(env.BOT_TOKEN ?? '').length} символов)`,
+    })
+  }
+
+  if (env.STATE === undefined) return json({ error: 'KV не привязано к проекту' }, 503)
+  if ((env.BOT_TOKEN ?? '') === '') return json({ error: 'нет секрета BOT_TOKEN' }, 503)
+
   const initData = request.headers.get('x-init-data') ?? ''
   const userId = await verifyInitData(initData, env.BOT_TOKEN ?? '')
   if (userId === null) return json({ error: 'bad signature' }, 401)
