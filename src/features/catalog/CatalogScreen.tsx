@@ -12,6 +12,7 @@ import { SearchField } from '@/ui/SearchField'
 import { useDownloads } from '@/features/offline/downloads'
 import { useOnline } from '@/features/offline/useOnline'
 import { useServiceWorker } from '@/features/offline/useServiceWorker'
+import { AccountLinkTelegram } from '@/features/offline/AccountLink'
 import { DownloadIcon, OfflineIcon } from '@/ui/icons'
 import { toggleTheme } from '@/features/polarity/usePolarity'
 import { haptic } from '@/app/telegram'
@@ -128,6 +129,8 @@ export function CatalogScreen({ onPlayRelease, onOpenPlayer, openReleaseId, onRe
       )}
 
       <SearchField value={query} onChange={setQuery} placeholder="поиск: альбом или трек" />
+
+      <AccountLinkTelegram />
 
       <p
         className="font-mono uppercase text-dim flex items-center"

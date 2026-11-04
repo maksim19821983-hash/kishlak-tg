@@ -20,6 +20,7 @@ import { PolarityPage } from '@/features/polarity/PolarityPage'
 import { BootScreen } from './BootScreen'
 import { remoteAvailable, syncRemote } from './remoteSync'
 import { InstallHint } from '@/features/offline/InstallHint'
+import { AccountLinkBrowser } from '@/features/offline/AccountLink'
 import { ErrorOverlay } from './ErrorOverlay'
 import { onPersist } from '@/features/fan/state'
 import { Onboarding, hasSeenOnboarding } from '@/features/onboarding/Onboarding'
@@ -245,6 +246,8 @@ export function App() {
       )}
 
       <ErrorOverlay />
+
+      <AccountLinkBrowser />
 
       <InstallHint />
 
