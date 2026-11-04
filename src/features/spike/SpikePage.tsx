@@ -111,6 +111,7 @@ function CloudPanel() {
         error: d.lastError,
         payload: d.payload,
         sync: d.lastSyncAt,
+        probe: d.probe,
       })
     }
     tick()

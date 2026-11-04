@@ -18,6 +18,7 @@ type Cloud = {
 // CloudStorage разрешает только латиницу, цифры, дефис и подчёркивание: точки запрещены
 const FAV_KEY = 'fav_v1'
 const STATE_PREFIX = 'state_v1_'
+const PROBE_KEY = 'probe_v1'
 const CHUNK_LIMIT = 3400   // запас до лимита CloudStorage в 4096 байт
 const MAX_CHUNKS = 9
 const FAN_PREFIX = 'fan_'
@@ -50,11 +51,12 @@ type Diag = {
   lastError: string
   payload: string
   lastSyncAt: string
+  probe: string
 }
 
 const diag: Diag = {
   available: false, sdkPlatform: '-', lastPull: '-', lastPush: '-', remoteFav: '-', keys: 0, lastError: '—',
-  payload: '—', lastSyncAt: '—',
+  payload: '—', lastSyncAt: '—', probe: '—',
 }
 
 export function getCloudDiag(): Diag {
@@ -356,13 +358,21 @@ export async function syncCompact(): Promise<string> {
 
   diag.lastError = '—'
 
-  // 1) читаем все куски, пока не встретим пустой
+  // 1) читаем все куски; первый читаем дважды — облако может ответить с задержкой
   const raws: string[] = []
   for (let i = 0; i < MAX_CHUNKS; i++) {
-    const raw = await withTimeout(read(c, `${STATE_PREFIX}${i}`), 1500, null)
+    let raw = await withTimeout(read(c, `${STATE_PREFIX}${i}`), 1500, null)
+    if (raw === null && i === 0) {
+      await new Promise((r) => setTimeout(r, 700))
+      raw = await withTimeout(read(c, `${STATE_PREFIX}${i}`), 1500, null)
+    }
     if (raw === null) break
     raws.push(raw)
   }
+
+  // маркер: если после перезапуска он пуст — облако не сохраняет данные между сессиями
+  const probe = await withTimeout(read(c, PROBE_KEY), 1500, null)
+  diag.probe = probe === null ? 'пусто' : new Date(Number(probe) * 1000).toLocaleString('ru-RU')
 
   const remote = mergeChunks(raws)
   if (remote) {
@@ -391,6 +401,8 @@ export async function syncCompact(): Promise<string> {
     written += 1
     diag.keys = written
   }
+
+  await withTimeout(write(c, PROBE_KEY, String(Math.floor(Date.now() / 1000))), 1500, undefined)
 
   // проверяем, что запись реально легла: читаем обратно первый кусок
   const check = await withTimeout(read(c, `${STATE_PREFIX}0`), 2000, null)
