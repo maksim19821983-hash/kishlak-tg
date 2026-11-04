@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Release } from '@/data/types'
 import { useAudioStore } from '@/audio/store'
 import type { Track } from '@/data/types'
@@ -67,7 +68,7 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
     touchStartY.current = null
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 anim-frame"
       style={{
@@ -112,7 +113,7 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
         className="absolute inset-0 flex flex-col"
         style={{
           paddingTop: 'calc(64px + env(safe-area-inset-top))',
-          paddingBottom: 'calc(28px + env(safe-area-inset-bottom))',
+          paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
           paddingLeft: 24, paddingRight: 24,
         }}
       >
@@ -258,7 +259,8 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
       >
         <span className="font-mono text-mono-label uppercase text-[rgba(241,237,230,.7)]">← назад</span>
       </button>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

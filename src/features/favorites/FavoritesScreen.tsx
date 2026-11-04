@@ -176,6 +176,7 @@ export function FavoritesScreen({ onOpenPlayer }: Props) {
                       {releaseById.get(track.releaseId)?.title ?? ''}
                     </p>
                   </div>
+                  {downloads[track.id] !== undefined && <DownloadIcon size={13} color="var(--dim)" />}
                   <span className="font-mono text-mono-num tabular-nums text-dim shrink-0">
                     {fmt(track.duration)}
                   </span>
