@@ -3,6 +3,7 @@ import type { AudioPort, PlaybackState } from './port'
 import { initialPlaybackState } from './port'
 import { shuffleOrder, nextIndex, prevIndex, clampIndex } from './queue'
 import { updateMediaMetadata, updatePositionState, setupMediaSession } from './mediaSession'
+import { localSrc } from '@/features/offline/downloads'
 
 // Обложка альбома — пока хардкод, в Шаге 4 придёт через load()
 const FALLBACK_COVER = '/content/covers/vdps-2026.jpg'
@@ -106,10 +107,18 @@ class WebAudioEngine implements AudioPort {
     const track = tracks[idx] ?? null
     this.patch({ queue: tracks, index: idx, track, status: 'loading', currentTime: 0, duration: 0, error: null })
     if (track) {
-      this.el.src = track.audio
-      this.el.load()
       this.applyMetadata(track)
+      void this.setSource(track)
     }
+  }
+
+  /** Скачанный трек играем из кэша (blob), остальные — сетью. */
+  private async setSource(track: Track): Promise<void> {
+    const cached = await localSrc(track).catch(() => null)
+    // пока читали кэш, трек могли переключить
+    if (this.state.track?.id !== track.id) return
+    this.el.src = cached ?? track.audio
+    this.el.load()
   }
 
   play(): void {

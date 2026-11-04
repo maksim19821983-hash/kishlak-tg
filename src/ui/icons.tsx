@@ -107,3 +107,24 @@ export function IconClose({ size = 16 }: { size?: number }) {
     </svg>
   )
 }
+
+export function DownloadIcon({ size = 14, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ display: 'block' }}>
+      <path d="M12 4v11" />
+      <path d="M7.5 11.5 12 16l4.5-4.5" />
+      <path d="M5 20h14" />
+    </svg>
+  )
+}
+
+export function OfflineIcon({ size = 14, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ display: 'block' }}>
+      <path d="M4 9a12 12 0 0 1 16 0" opacity=".35" />
+      <path d="M7 13a7.5 7.5 0 0 1 10 0" opacity=".55" />
+      <circle cx="12" cy="18" r="1.4" fill={color} stroke="none" />
+      <path d="M3 3l18 18" />
+    </svg>
+  )
+}

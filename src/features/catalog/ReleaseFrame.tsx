@@ -5,6 +5,8 @@ import type { Track } from '@/data/types'
 import { showBackButton, hideBackButton, disableVerticalSwipes, haptic } from '@/app/telegram'
 import { useFavorites } from '@/features/favorites/store'
 import { HeartButton } from '@/ui/HeartButton'
+import { useDownloads, downloadTrack, removeReleaseDownloads } from '@/features/offline/downloads'
+import { DownloadIcon } from '@/ui/icons'
 import { TrackMenu } from '@/ui/TrackMenu'
 import { IconMore } from '@/ui/icons'
 
@@ -192,6 +194,8 @@ export function ReleaseFrame({ release, listenedCount, onClose, onPlay, onPlayTr
             />
           </div>
 
+          <ReleaseDownload release={release} />
+
           <div className="flex items-center gap-3">
             <button
               onClick={onPlay}
@@ -263,4 +267,62 @@ export function useCurrentTrackMeta() {
   const status = useAudioStore((s) => s.status)
   const currentTime = useAudioStore((s) => s.currentTime)
   return { track, status, currentTime }
+}
+
+
+/** Скачивание релиза целиком: прогресс, вес и удаление. */
+function ReleaseDownload({ release }: { release: { id: string; tracks: { id: string; audio: string; lrc?: string; cover?: string; title: string; duration: number }[] } }) {
+  const records = useDownloads((s) => s.records)
+  const [busyCount, setBusyCount] = useState(0)
+
+  const saved = release.tracks.filter((t) => records[t.id] !== undefined)
+  const bytes = saved.reduce((sum, t) => sum + (records[t.id]?.bytes ?? 0), 0)
+  const all = saved.length === release.tracks.length && release.tracks.length > 0
+
+  const downloadAll = async (): Promise<void> => {
+    const pending = release.tracks.filter((t) => records[t.id] === undefined)
+    setBusyCount(pending.length)
+    for (const track of pending) {
+      try {
+        await downloadTrack(track as never, release.id)
+      } catch {
+        /* одна песня не скачалась — продолжаем остальные */
+      }
+      setBusyCount((n) => Math.max(0, n - 1))
+    }
+  }
+
+  const removeAll = async (): Promise<void> => {
+    await removeReleaseDownloads(release as never)
+  }
+
+  return (
+    <div className="flex items-center justify-between mb-4" style={{ minHeight: 32 }}>
+      <span className="font-mono uppercase text-dim" style={{ fontSize: 9.5, letterSpacing: '.16em' }}>
+        {saved.length === 0
+          ? 'не скачано'
+          : `скачано ${saved.length} из ${release.tracks.length} · ${(bytes / 1024 / 1024).toFixed(1)} МБ`}
+      </span>
+
+      {all ? (
+        <button
+          onClick={() => void removeAll()}
+          className="font-mono uppercase"
+          style={{ fontSize: 9.5, letterSpacing: '.14em', color: 'rgba(241,237,230,.75)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+        >
+          <DownloadIcon size={12} color="rgba(241,237,230,.75)" />
+          удалить
+        </button>
+      ) : (
+        <button
+          onClick={() => void downloadAll()}
+          className="font-mono uppercase"
+          style={{ fontSize: 9.5, letterSpacing: '.14em', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: 6, opacity: busyCount > 0 ? 0.6 : 1 }}
+        >
+          <DownloadIcon size={12} color="var(--accent)" />
+          {busyCount > 0 ? `качаю ${busyCount}` : saved.length > 0 ? 'скачать остальное' : 'скачать альбом'}
+        </button>
+      )}
+    </div>
+  )
 }

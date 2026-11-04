@@ -4,6 +4,9 @@ import { CatalogRepo } from '@/data/CatalogRepo'
 import type { Release, Track } from '@/data/types'
 import { Cassette } from './Cassette'
 import { VolumeControl } from './VolumeControl'
+import { useDownloads, downloadTrack, removeDownload } from '@/features/offline/downloads'
+import { useOnline } from '@/features/offline/useOnline'
+import { DownloadIcon, OfflineIcon } from '@/ui/icons'
 import { IconShuffle, IconRepeat, IconMore } from '@/ui/icons'
 import { HeartButton } from '@/ui/HeartButton'
 import { TrackMenu } from '@/ui/TrackMenu'
@@ -45,6 +48,8 @@ function buildFlat(releases: Release[]): FlatTrack[] {
 type PlayerTabProps = { onOpenRelease?: (releaseId: string) => void; onOpenDebug?: () => void }
 
 export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
+  const online = useOnline()
+  const downloads = useDownloads((s) => s.records)
   const track       = useAudioStore((s) => s.track)
   const queue       = useAudioStore((s) => s.queue)
   const index       = useAudioStore((s) => s.index)
@@ -75,6 +80,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
   const polarity = useCurrentPolarity()
   const [flatTracks, setFlatTracks] = useState<FlatTrack[]>([])
   const [menuTrackId, setMenuTrackId] = useState<string | null>(null)
+  const [offlineNotice, setOfflineNotice] = useState<string | null>(null)
   // кроссфейд строки в превью: сначала гасим старую, потом ставим новую
   const [shownLyric, setShownLyric] = useState('')
   const [lyricFading, setLyricFading] = useState(false)
@@ -249,6 +255,25 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         className="flex items-center justify-between px-screen shrink-0"
         style={{ height: 40 }}
       >
+        {!online && (
+          <span
+            className="font-mono uppercase"
+            style={{
+              fontSize: 8.5,
+              letterSpacing: '.18em',
+              padding: '3px 7px',
+              borderRadius: 999,
+              border: '1px solid var(--line)',
+              color: 'var(--dim)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            <OfflineIcon size={11} color="var(--dim)" />
+            офлайн
+          </span>
+        )}
         <span
           className="font-mono text-mono-label uppercase text-ink"
           onPointerDown={() => {
@@ -511,13 +536,22 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         </div>
         {flatTracks.map((ft, globalIdx) => {
           const isPlaying = track?.id === ft.track.id
+          const saved = downloads[ft.track.id] !== undefined
+          const unavailable = !online && !saved
           return (
             <div
               key={ft.track.id}
               ref={isPlaying ? playingRowRef : undefined}
-              onClick={() => handleTrackTap(globalIdx)}
+              onClick={() => {
+                if (unavailable) {
+                  setOfflineNotice('нет сети — эта песня не скачана')
+                  window.setTimeout(() => setOfflineNotice(null), 2200)
+                  return
+                }
+                handleTrackTap(globalIdx)
+              }}
               className="flex items-center gap-3 px-screen py-2 border-b border-line last:border-0 active:bg-surface"
-              style={{ minHeight: 44, cursor: 'pointer' }}
+              style={{ minHeight: 44, cursor: 'pointer', opacity: unavailable ? 0.45 : 1 }}
             >
               <span
                 className="font-mono text-mono-num tabular-nums shrink-0 w-6"
@@ -537,6 +571,7 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
                   {ft.release.title}
                 </p>
               </div>
+              {saved && <DownloadIcon size={13} color="var(--dim)" />}
               <span className="font-mono text-mono-num tabular-nums text-dim shrink-0">
                 {fmt(ft.track.duration)}
               </span>
@@ -562,6 +597,25 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         {/* отступ под TabBar */}
         <div style={{ height: 8 }} />
       </div>
+
+      {offlineNotice !== null && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-[80] anim-fade-up"
+          style={{
+            bottom: 'calc(env(safe-area-inset-bottom) + 74px)',
+            background: 'var(--ink)',
+            color: 'var(--bg)',
+            padding: '9px 14px',
+            borderRadius: 999,
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            letterSpacing: '.04em',
+          }}
+          role="status"
+        >
+          {offlineNotice}
+        </div>
+      )}
 
       {insertOpen && lyrics && (
         <InsertScreen
@@ -593,6 +647,18 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
                 label: 'Играть следующим',
                 onSelect: () => { playNext(menuTrack); haptic('light') },
               },
+              downloads[menuTrack.id] !== undefined
+                ? {
+                    label: 'Удалить скачанное',
+                    onSelect: () => { void removeDownload(menuTrack); haptic('light') },
+                  }
+                : {
+                    label: 'Скачать для офлайна',
+                    onSelect: () => {
+                      void downloadTrack(menuTrack, menuTrack.releaseId)
+                      haptic('medium')
+                    },
+                  },
               {
                 label: 'Перейти к альбому',
                 onSelect: () => { onOpenRelease?.(menuTrack.releaseId) },
