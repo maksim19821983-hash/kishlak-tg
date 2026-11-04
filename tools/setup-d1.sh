@@ -54,7 +54,7 @@ print('   wrangler.toml обновлён')
 PY
 
 echo '── 2/5 создаю таблицы'
-npx wrangler d1 execute "$DB_NAME" --file server/schema.sql --remote
+npx wrangler d1 execute "$DB_NAME" --file server/schema.sql --remote -y
 
 echo '── 3/5 ключ для сводки статистики'
 if npx wrangler pages secret list --project-name kishlak-tg 2>/dev/null | grep -q STATS_KEY; then
