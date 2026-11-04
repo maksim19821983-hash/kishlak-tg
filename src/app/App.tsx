@@ -35,6 +35,9 @@ function firstUnlistenedIndex(release: Release): number {
 /** Фон сцены — обложка играющего релиза: афиша сверху, бумага снизу. */
 const COVER_BACKDROP = true
 
+/** Диагностика доступна только в разработке или при сборке с VITE_DEBUG=1. */
+const DEBUG_ENABLED = import.meta.env.DEV || import.meta.env.VITE_DEBUG === '1'
+
 export function App() {
   usePolarity()
   const cover = useAudioStore((s) => s.track?.cover)
@@ -158,16 +161,7 @@ export function App() {
   }, [])
 
   const p = window.location.pathname
-  // отладка в Телеграме: открыть бота со ссылкой ?startapp=debug
-  const startParam = (() => {
-    try {
-      return (window.Telegram?.WebApp as unknown as { initDataUnsafe?: { start_param?: string } } | undefined)
-        ?.initDataUnsafe?.start_param ?? ''
-    } catch {
-      return ''
-    }
-  })()
-  if (p === '/spike' || startParam === 'debug') return <SpikePage />
+  if (DEBUG_ENABLED && (p === '/spike' || p === '/debug')) return <SpikePage />
   if (import.meta.env.DEV && p === '/polarity') return <PolarityPage />
 
   const handlePlayTrack = (trackId: string) => {
@@ -252,7 +246,7 @@ export function App() {
         <div className="absolute inset-0 tab-pane" data-active={activeTab === 'player'}>
           <PlayerTab
             onOpenRelease={(id) => { setPendingRelease(id); setActiveTab('catalog') }}
-            onOpenDebug={() => setShowDebug(true)}
+            onOpenDebug={DEBUG_ENABLED ? () => setShowDebug(true) : undefined}
           />
         </div>
         <div className="absolute inset-0 overflow-y-auto overscroll-contain tab-pane" data-active={activeTab === 'catalog'}>
@@ -274,7 +268,7 @@ export function App() {
 
       <TabBar active={activeTab} onSelect={setActiveTab} />
 
-      {showDebug && (
+      {DEBUG_ENABLED && showDebug && (
         <div className="fixed inset-0 z-[70] bg-bg overflow-y-auto">
           <div className="flex items-center justify-between px-4 pt-4">
             <span className="font-mono uppercase text-dim" style={{ fontSize: 10, letterSpacing: '.16em' }}>

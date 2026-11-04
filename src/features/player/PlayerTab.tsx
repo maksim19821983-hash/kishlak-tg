@@ -252,8 +252,9 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         <span
           className="font-mono text-mono-label uppercase text-ink"
           onPointerDown={() => {
-            // долгое нажатие на «КИШЛАК» — диагностика (для отладки на устройстве)
-            const timer = setTimeout(() => onOpenDebug?.(), 700)
+            // долгое нажатие на «КИШЛАК» — диагностика (только в отладочной сборке)
+            if (!onOpenDebug) return
+            const timer = setTimeout(() => onOpenDebug(), 700)
             const clear = (): void => { clearTimeout(timer); window.removeEventListener('pointerup', clear) }
             window.addEventListener('pointerup', clear, { once: true })
           }}
