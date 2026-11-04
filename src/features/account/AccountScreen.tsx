@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createPairCode, claimPairCode, deviceToken, clearDeviceToken } from '@/app/pairing'
 import { syncRemote } from '@/app/remoteSync'
+import { IconCopy, IconCheck } from '@/ui/icons'
 
 function inTelegram(): boolean {
   try {
@@ -25,6 +26,7 @@ export function AccountBlock({ compact = false, onLinked }: { compact?: boolean;
   const [input, setInput] = useState('')
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const createCode = async (): Promise<void> => {
     setBusy(true)
@@ -36,6 +38,31 @@ export function AccountBlock({ compact = false, onLinked }: { compact?: boolean;
       setStatus(e instanceof Error ? e.message : String(e))
     }
     setBusy(false)
+  }
+
+  const copyCode = async (value: string): Promise<void> => {
+    try {
+      await navigator.clipboard?.writeText(value)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+      return
+    } catch {
+      /* clipboard может быть закрыт — пробуем по-старому */
+    }
+    try {
+      const area = document.createElement('textarea')
+      area.value = value
+      area.style.position = 'fixed'
+      area.style.opacity = '0'
+      document.body.appendChild(area)
+      area.select()
+      document.execCommand('copy')
+      document.body.removeChild(area)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+    } catch {
+      setStatus('не удалось скопировать — выдели код вручную')
+    }
   }
 
   const claim = async (): Promise<void> => {
@@ -78,9 +105,25 @@ export function AccountBlock({ compact = false, onLinked }: { compact?: boolean;
             </button>
           ) : (
             <>
-              <p className="font-display uppercase text-ink" style={{ fontSize: compact ? 26 : 32, letterSpacing: '.2em', marginTop: 10 }}>
-                {code}
-              </p>
+              <div className="flex items-center" style={{ gap: 10, marginTop: 10 }}>
+                <p className="font-display uppercase text-ink" style={{ fontSize: compact ? 26 : 32, letterSpacing: '.2em' }}>
+                  {code}
+                </p>
+                <button
+                  onClick={() => void copyCode(code)}
+                  aria-label={copied ? 'Код скопирован' : 'Скопировать код'}
+                  className="flex items-center justify-center"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 8,
+                    border: '1px solid var(--line)',
+                    color: copied ? 'var(--accent)' : 'var(--dim)',
+                  }}
+                >
+                  {copied ? <IconCheck size={15} color="var(--accent)" /> : <IconCopy size={15} color="var(--dim)" />}
+                </button>
+              </div>
               <p className="font-mono text-dim" style={{ fontSize: 10, lineHeight: 1.5, marginTop: 4 }}>
                 код живёт 10 минут, вводить на kishlak-tg.pages.dev
               </p>
