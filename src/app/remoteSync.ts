@@ -6,8 +6,11 @@
 import { useFavorites } from '@/features/favorites/store'
 import { getState, setState, saveStateNow, type TrackFact } from '@/features/fan/state'
 
-/** Заполняется после деплоя воркера: адрес вида https://kishlak-sync.<аккаунт>.workers.dev */
-export const REMOTE_URL: string = (import.meta.env.VITE_SYNC_URL as string | undefined) ?? ''
+/**
+ * По умолчанию синхронизация на том же домене (/api/sync, Pages Function) —
+ * так нет кросс-доменных запросов и их блокировок. VITE_SYNC_URL может переопределить адрес.
+ */
+export const REMOTE_URL: string = (import.meta.env.VITE_SYNC_URL as string | undefined) ?? '/api/sync'
 
 type Payload = {
   fav: { tracks: string[]; releases: string[]; updatedAt?: number }

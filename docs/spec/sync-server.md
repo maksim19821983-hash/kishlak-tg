@@ -70,3 +70,16 @@ VITE_DEBUG=1 VITE_SYNC_URL="https://kishlak-sync.maksim19821983.workers.dev" npm
 
 Перенос данных кодом (`src/app/transfer.ts`) остаётся в коде как аварийный путь,
 но в обычной сборке кнопок для него нет.
+
+
+## Вариант без отдельного домена: Pages Function
+
+Если клиенты блокируют `*.workers.dev`, синхронизация живёт на том же домене:
+`functions/api/sync.ts` → адрес `/api/sync`.
+
+Требуется в панели Cloudflare → Workers & Pages → проект `kishlak-tg` → Settings:
+
+1. **Functions → KV namespace bindings**: переменная `STATE` → namespace, созданный для воркера;
+2. **Environment variables**: секрет `BOT_TOKEN` (тот же токен бота).
+
+После сохранения настроек достаточно передеплоить сайт — клиент по умолчанию ходит на `/api/sync`.
