@@ -599,16 +599,6 @@ export function PlayerTab({ onOpenRelease, onOpenDebug }: PlayerTabProps) {
         <div style={{ height: 8 }} />
       </div>
 
-      {!online && (
-        <div className="px-screen" style={{ marginTop: 6 }}>
-          <p className="font-mono text-dim" style={{ fontSize: 9.5, letterSpacing: '.12em', textTransform: 'uppercase' }}>
-            {track !== null && downloads[track.id] !== undefined
-              ? 'офлайн · играет из кэша'
-              : 'офлайн · эта песня не скачана'}
-          </p>
-        </div>
-      )}
-
       {errorText !== null && errorText !== '' && (
         <div className="px-screen" style={{ marginTop: 6 }}>
           <p className="font-mono text-dim" style={{ fontSize: 10, letterSpacing: '.06em' }}>
